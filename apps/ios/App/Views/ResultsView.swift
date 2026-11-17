@@ -30,7 +30,7 @@ struct ResultsView: View {
                     if let p = model.plan {
                         Text("Fastest way: \(Format.duration(minutes: p.fastest.minutes)), \(Format.distance(km: p.fastest.km))")
                             .font(.caption).foregroundStyle(.secondary)
-                        Text(p.attribution.joined(separator: " · ")).font(.caption2).foregroundStyle(.tertiary)
+                        Text((p.attribution + ["Suggestions only: road signs and local rules come first"]).joined(separator: " · ")).font(.caption2).foregroundStyle(.tertiary)
                     }
                 }
                 .padding()

@@ -185,7 +185,7 @@ function planView(): string {
       </div>
       <p class="muted small">Saved journeys open in the iPhone app after you sign in with the same Apple ID (coming with Sign in with Apple on the web).</p>
     </div>
-    <p class="attribution">${esc(j.days.find((d) => d.plan)?.plan?.attribution.join(' · ') ?? '© OpenStreetMap contributors')}</p>`;
+    <p class="attribution">${esc(j.days.find((d) => d.plan)?.plan?.attribution.join(' · ') ?? '© OpenStreetMap contributors')} · Suggestions only: road signs and local rules come first.</p>`;
 }
 
 function chip(key: 'rentalCar' | 'avoidUnpaved' | 'avoidTolls', label: string) {
