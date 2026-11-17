@@ -177,7 +177,10 @@ test('handoff: shaping points ≤ 9, in driving order, include stops', () => {
 
 test('contracts apply defaults and reject bad input', () => {
   const r = PlanRequestSchema.parse({ origin: SIENA, destination: MONTALCINO });
-  assert.equal(r.extraMinutes, 45);
+  assert.equal(r.extraMinutes, undefined, 'no cap unless the driver sets one');
+  assert.equal(r.style, 'scenic');
+  assert.deepEqual(r.interests, []);
+  assert.equal(r.vehicle, 'car');
   assert.equal(r.prefs.avoidUnpaved, true);
   assert.equal(r.maxRoutes, 3);
   assert.throws(() => PlanRequestSchema.parse({ origin: { lat: 99, lon: 0 }, destination: MONTALCINO }));

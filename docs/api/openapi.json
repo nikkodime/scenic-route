@@ -92,11 +92,44 @@
             "maxItems": 8,
             "default": []
           },
+          "style": {
+            "type": "string",
+            "enum": [
+              "relaxed",
+              "scenic",
+              "most_beautiful"
+            ],
+            "default": "scenic"
+          },
+          "interests": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "views",
+                "heritage",
+                "water",
+                "mountains",
+                "countryside",
+                "quiet"
+              ]
+            },
+            "maxItems": 6,
+            "default": []
+          },
           "extraMinutes": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 300,
-            "default": 45
+            "maximum": 300
+          },
+          "vehicle": {
+            "type": "string",
+            "enum": [
+              "car",
+              "campervan",
+              "caravan"
+            ],
+            "default": "car"
           },
           "departAt": {
             "type": "string",
@@ -171,6 +204,9 @@
               "minutes"
             ],
             "additionalProperties": false
+          },
+          "budgetMinutes": {
+            "type": "number"
           },
           "routes": {
             "type": "array",

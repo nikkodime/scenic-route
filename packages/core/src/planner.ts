@@ -3,14 +3,43 @@
 // fixtures, and (later) on device.
 
 import { distKm, encodePolyline, paddedBBox, resample, type LatLon } from './geo.ts';
-import type { ScenicFeature } from './features.ts';
+import { FEATURE_FAMILY, type ScenicFeature } from './features.ts';
 import { candidateWaypointSets, clusterSpots, corridorBBox, detourProbes, type Spot } from './candidates.ts';
 import { bestStretch, describe, reliefStats, scoreRoute, SCORE_MODEL, type RouteGeometry, type ScoredRoute, type SegmentSample } from './score.ts';
 import { rankRoutes } from './rank.ts';
 import { assessConditions, weatherSamplePoints, type HourlyForecast } from './conditions.ts';
 import { isBlocked, routeAdvisories, type Advisory, type Zone } from './advisories.ts';
 import { appleMapsUrl, googleMapsUrl, shapingPoints } from './exports.ts';
-import type { PlanRequest, PlanResponse, Preferences, RouteOption } from './contracts.ts';
+import type { Interest, PlanRequest, PlanResponse, Preferences, RouteOption, RouteStyle, Vehicle } from './contracts.ts';
+
+/** What each route style means: time budget as a share of the fastest drive, and what a minute costs in ranking. */
+export const STYLES: Record<RouteStyle, { share: number; min: number; max: number; pointsPerMinute: number; strengths: number[] }> = {
+  relaxed: { share: 0.15, min: 10, max: 30, pointsPerMinute: 0.6, strengths: [1] },
+  scenic: { share: 0.4, min: 20, max: 90, pointsPerMinute: 0.15, strengths: [1, 2, 3] },
+  most_beautiful: { share: 0.8, min: 40, max: 180, pointsPerMinute: 0.03, strengths: [2, 3] },
+};
+
+/** Extra-time budget for a style, optionally capped by the driver. */
+export function budgetMinutes(style: RouteStyle, fastestMinutes: number, cap?: number): number {
+  const s = STYLES[style];
+  const b = Math.round(Math.min(s.max, Math.max(s.min, fastestMinutes * s.share)));
+  return cap == null ? b : Math.min(b, cap);
+}
+
+/** Interests reweight places: chosen families count more, the rest less. */
+export function applyInterests(features: ScenicFeature[], interests: Interest[]): ScenicFeature[] {
+  const fams = new Set<string>(interests.filter((i) => i !== 'quiet'));
+  if (!fams.size) return features;
+  return features.map((f) => ({ ...f, weight: f.weight * (fams.has(FEATURE_FAMILY[f.type] === 'roads' ? 'views' : FEATURE_FAMILY[f.type]) ? 1.8 : 0.7) }));
+}
+
+/** Towing and big vehicles: never gravel, and only the gentler scenic strengths. */
+function vehicleRules(vehicle: Vehicle, prefs: Preferences, strengths: number[]): { prefs: Preferences; strengths: number[] } {
+  if (vehicle === 'car') return { prefs, strengths };
+  const maxStrength = vehicle === 'caravan' ? 1 : 2;
+  const s = [...new Set(strengths.map((x) => Math.min(x, maxStrength)))];
+  return { prefs: { ...prefs, avoidUnpaved: true }, strengths: s };
+}
 
 export interface RoutedPath extends RouteGeometry {
   motorwayKmByCountry?: Record<string, number>;
@@ -122,10 +151,14 @@ export async function planRoutes(req: PlanRequest, p: Providers, opts: PlanOptio
   const required: LatLon[] = [req.origin, ...req.stops, req.destination];
   const departure = req.departAt ? new Date(req.departAt) : now;
 
-  const area = corridorBBox(required, req.extraMinutes);
+  const style = STYLES[req.style];
+  const rules = vehicleRules(req.vehicle, req.prefs, style.strengths);
+  // Before the fastest route is known, estimate it from the straight line (about 1.1 min per km).
+  const directKm = required.slice(1).reduce((s, b, i) => s + distKm(required[i], b), 0);
+  const area = corridorBBox(required, budgetMinutes(req.style, directKm * 1.1, req.extraMinutes));
   const zones = p.zones ? await p.zones(area) : [];
   const ztl = zones.filter((z) => z.properties.kind === 'ztl');
-  const base = { prefs: req.prefs, avoidZones: ztl };
+  const base = { prefs: rules.prefs, avoidZones: ztl };
 
   // 1. Fastest route: the budget anchor. Without it there is nothing to plan.
   let fastest: RoutedPath;
@@ -136,10 +169,12 @@ export async function planRoutes(req: PlanRequest, p: Providers, opts: PlanOptio
     throw new PlanError('No route found between these places.');
   }
 
+  const budget = budgetMinutes(req.style, fastest.minutes, req.extraMinutes);
+
   // 2. Scenic features in the corridor.
   let features: ScenicFeature[] = [];
   try {
-    features = await p.features.features(area);
+    features = applyInterests(await p.features.features(area), req.interests);
   } catch (e) {
     log('features failed', e);
     warnings.push('Scenic places could not be loaded; scores are based on roads and hills only.');
@@ -149,7 +184,7 @@ export async function planRoutes(req: PlanRequest, p: Providers, opts: PlanOptio
   // 3. Candidates.
   const jobs: { source: Candidate['source']; points: LatLon[]; stops: Spot[]; opts: RouteOptions; alt?: boolean }[] = [];
   if (p.router.supportsScenic) {
-    for (const strength of [1, 2, 3]) jobs.push({ source: 'scenic_model', points: required, stops: [], opts: { ...base, profile: 'scenic', strength } });
+    for (const strength of rules.strengths) jobs.push({ source: 'scenic_model', points: required, stops: [], opts: { ...base, profile: 'scenic', strength } });
   }
   if (p.router.alternatives) jobs.push({ source: 'alternative', points: required, stops: [], opts: { ...base, profile: p.router.supportsScenic ? 'scenic' : 'fastest', strength: 1 }, alt: true });
 
@@ -158,7 +193,7 @@ export async function planRoutes(req: PlanRequest, p: Providers, opts: PlanOptio
   const legLen = required.slice(1).map((b, i) => distKm(required[i], b));
   const totalDirect = legLen.reduce((a, b) => a + b, 0) || 1;
   for (let i = 1; i < required.length; i++) {
-    const share = req.extraMinutes * (legLen[i - 1] / totalDirect);
+    const share = budget * (legLen[i - 1] / totalDirect);
     const sets = candidateWaypointSets(required[i - 1], required[i], spots, share, 8).slice(1);
     // No scenic places known for this leg: still explore side roads so hills and bends can win.
     legSets.push(sets.length ? sets : detourProbes(required[i - 1], required[i], share));
@@ -193,10 +228,10 @@ export async function planRoutes(req: PlanRequest, p: Providers, opts: PlanOptio
     }
     let segments: SegmentSample[] | null = null;
     if (p.segments) { try { segments = await p.segments.sample(c.path.line); } catch (e) { log('segments failed', e); } }
-    const scored = scoreRoute({ route: c.path, features, relief, segments });
+    const scored = scoreRoute({ route: c.path, features, relief, segments, quiet: req.interests.includes('quiet') });
     const advisories = routeAdvisories({
       line: c.path.line, unpavedKm: c.path.unpavedKm, tollKm: c.path.tollKm, ferryKm: c.path.ferryKm,
-      motorwayKmByCountry: c.path.motorwayKmByCountry, zones, date: departure, prefs: req.prefs,
+      motorwayKmByCountry: c.path.motorwayKmByCountry, zones, date: departure, prefs: rules.prefs,
     });
     return { ...c, minutes: c.path.minutes, line: c.path.line, scored, advisories };
   })).flatMap((r) => (r.status === 'fulfilled' ? [r.value] : []));
@@ -210,7 +245,7 @@ export async function planRoutes(req: PlanRequest, p: Providers, opts: PlanOptio
   }
 
   const fastestMinutes = fastest.minutes;
-  const ranked = rankRoutes(usable, fastestMinutes, req.extraMinutes, req.maxRoutes);
+  const ranked = rankRoutes(usable, fastestMinutes, budget, req.maxRoutes, style.pointsPerMinute);
 
   // 6. Weather and light for the chosen routes: one batched forecast call.
   const samplesPer = ranked.map((r) => weatherSamplePoints(r.line, r.path.km, r.minutes, departure, 4));
@@ -258,6 +293,7 @@ export async function planRoutes(req: PlanRequest, p: Providers, opts: PlanOptio
   return {
     planId,
     modelVersion: SCORE_MODEL.version,
+    budgetMinutes: budget,
     fastest: { km: Math.round(fastest.km * 10) / 10, minutes: Math.round(fastestMinutes) },
     routes,
     warnings,

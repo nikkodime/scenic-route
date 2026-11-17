@@ -21,9 +21,11 @@ export interface Rankable {
  * Routes over `fastestMinutes + extraMinutes` (+10% slack) are dropped. A route
  * that mostly overlaps a better one (>85% both ways) is a duplicate.
  */
-export function rankRoutes<T extends Rankable>(routes: T[], fastestMinutes: number, extraMinutes: number, keep = 3): T[] {
+export function rankRoutes<T extends Rankable>(routes: T[], fastestMinutes: number, extraMinutes: number, keep = 3, pointsPerMinute = 0): T[] {
   const limit = fastestMinutes + extraMinutes * 1.1 + 1;
-  const ok = routes.filter((r) => r.minutes <= limit).sort((a, b) => b.scored.score - a.scored.score || a.minutes - b.minutes);
+  // Utility: score minus what the extra time costs this driver (0 = only beauty counts).
+  const u = (r: T) => r.scored.score - pointsPerMinute * Math.max(0, r.minutes - fastestMinutes);
+  const ok = routes.filter((r) => r.minutes <= limit).sort((a, b) => u(b) - u(a) || a.minutes - b.minutes);
   const picked: T[] = [];
   for (const r of ok) {
     if (picked.some((p) => overlap(p.line, r.line) > 0.85 && Math.min(overlap(r.line, p.line), 1) > 0.85)) continue;

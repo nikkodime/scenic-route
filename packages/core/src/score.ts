@@ -124,16 +124,19 @@ const mean = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.l
 export function windowScenery(near: NearFeature[], km: number): number {
   const M = SCORE_MODEL;
   const n = Math.max(1, Math.round(km / M.windowKm));
-  const per: Map<FeatureType, number>[] = Array.from({ length: n }, () => new Map());
+  const per: Map<FeatureType, { count: number; weight: number }>[] = Array.from({ length: n }, () => new Map());
   for (const f of near) {
     const w = Math.min(n - 1, Math.floor((f.atKm / Math.max(km, 0.1)) * n));
     const add = f.distKm < M.nearKm ? 1 : M.farFactor;
-    per[w].set(f.type, (per[w].get(f.type) ?? 0) + add);
+    const cell = per[w].get(f.type) ?? { count: 0, weight: 0 };
+    cell.count += add;
+    cell.weight = Math.max(cell.weight, f.weight); // the best of a type sets its value (peak height, interests)
+    per[w].set(f.type, cell);
   }
   let sum = 0;
   for (const types of per) {
     let v = 0;
-    for (const [t, count] of types) v += FEATURE_WEIGHTS[t] * M.typeCap * (1 - Math.exp(-count / M.typeCap));
+    for (const { count, weight } of types.values()) v += weight * M.typeCap * (1 - Math.exp(-count / M.typeCap));
     sum += 1 - Math.exp(-v / M.sceneryScale);
   }
   return sum / n;
@@ -144,9 +147,11 @@ export interface ScoreInput {
   features: ScenicFeature[];
   relief?: Relief | null;
   segments?: SegmentSample[] | null;
+  /** The driver asked for quiet roads: motorways and towns cost more. */
+  quiet?: boolean;
 }
 
-export function scoreRoute({ route, features, relief = null, segments = null }: ScoreInput): ScoredRoute {
+export function scoreRoute({ route, features, relief = null, segments = null, quiet = false }: ScoreInput): ScoredRoute {
   const M = SCORE_MODEL;
   const km = Math.max(route.km, 0.1);
   const near = featuresAlong(route.line, features);
@@ -179,7 +184,7 @@ export function scoreRoute({ route, features, relief = null, segments = null }: 
 
   const motorwayShare = Math.min(1, (route.motorwayKm ?? 0) / km);
   const urbanShare = Math.min(1, (route.urbanKm ?? 0) / km);
-  total *= (1 - M.motorwayPenalty * motorwayShare) * (1 - M.urbanPenalty * urbanShare);
+  total *= (1 - (quiet ? 0.9 : M.motorwayPenalty) * motorwayShare) * (1 - (quiet ? 0.6 : M.urbanPenalty) * urbanShare);
 
   const byType: Partial<Record<FeatureType, number>> = {};
   for (const f of near) byType[f.type] = (byType[f.type] ?? 0) + 1;

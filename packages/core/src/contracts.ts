@@ -3,6 +3,13 @@
 import { z } from 'zod';
 import { FEATURE_TYPES } from './features.ts';
 
+export const ROUTE_STYLES = ['relaxed', 'scenic', 'most_beautiful'] as const;
+export const INTERESTS = ['views', 'heritage', 'water', 'mountains', 'countryside', 'quiet'] as const;
+export const VEHICLES = ['car', 'campervan', 'caravan'] as const;
+export type RouteStyle = (typeof ROUTE_STYLES)[number];
+export type Interest = (typeof INTERESTS)[number];
+export type Vehicle = (typeof VEHICLES)[number];
+
 export const LatLonSchema = z.object({
   lat: z.number().min(-90).max(90),
   lon: z.number().min(-180).max(180),
@@ -23,8 +30,17 @@ export const PlanRequestSchema = z.object({
   destination: PlaceSchema,
   /** Places the driver must pass, in order (e.g. lunch stop). */
   stops: z.array(PlaceSchema).max(8).default([]),
-  /** Extra minutes on top of the fastest route the driver is happy to spend. */
-  extraMinutes: z.number().int().min(0).max(300).default(45),
+  /**
+   * How much the driver wants scenery over speed. Sets the time budget from the fastest route
+   * (relaxed ≈ +15%, scenic ≈ +40%, most beautiful ≈ +80%) and how strongly time counts in ranking.
+   */
+  style: z.enum(ROUTE_STYLES).default('scenic'),
+  /** What the driver loves; matching places count more, others less. Empty = everything equally. */
+  interests: z.array(z.enum(INTERESTS)).max(INTERESTS.length).default([]),
+  /** Optional hard cap on extra minutes over the fastest route. Without it the style decides. */
+  extraMinutes: z.number().int().min(0).max(300).optional(),
+  /** Car + caravan and campervans stay on calmer, wider roads and never take gravel. */
+  vehicle: z.enum(VEHICLES).default('car'),
   departAt: z.string().datetime({ offset: true }).optional(),
   prefs: PreferencesSchema.default({}),
   maxRoutes: z.number().int().min(1).max(5).default(3),
@@ -92,6 +108,8 @@ export const PlanResponseSchema = z.object({
   planId: z.string(),
   modelVersion: z.string(),
   fastest: z.object({ km: z.number(), minutes: z.number() }),
+  /** The extra-time budget the planner used (from the style, capped by extraMinutes). */
+  budgetMinutes: z.number().optional(),
   routes: z.array(RouteOptionSchema),
   /** Problems that did not stop planning, e.g. "weather unavailable". */
   warnings: z.array(z.string()),

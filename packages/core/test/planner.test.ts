@@ -76,3 +76,44 @@ test('without any scenic places, side-road probes still offer an alternative to 
   assert.ok(res.routes.some((r) => r.source === 'via_spots'));
   for (const r of res.routes) assert.deepEqual(r.scenicStops, [], 'probe points are not shown as scenic stops');
 });
+
+test('style sets the time budget; an explicit cap wins', async () => {
+  const { budgetMinutes } = await import('../src/index.ts');
+  assert.equal(budgetMinutes('relaxed', 60), 10);
+  assert.equal(budgetMinutes('scenic', 100), 40);
+  assert.equal(budgetMinutes('most_beautiful', 100), 80);
+  assert.equal(budgetMinutes('most_beautiful', 300), 180);
+  assert.equal(budgetMinutes('most_beautiful', 100, 30), 30);
+  const relaxed = await planRoutes(PlanRequestSchema.parse({ origin: SIENA, destination: DEST, style: 'relaxed', departAt: '2026-06-01T07:00:00Z' }), fakeProviders());
+  const beautiful = await planRoutes(PlanRequestSchema.parse({ origin: SIENA, destination: DEST, style: 'most_beautiful', departAt: '2026-06-01T07:00:00Z' }), fakeProviders());
+  assert.ok(relaxed.budgetMinutes! < beautiful.budgetMinutes!);
+  for (const r of relaxed.routes) assert.ok(r.extraMinutes <= relaxed.budgetMinutes! * 1.1 + 1);
+  assert.ok(Math.max(...beautiful.routes.map((r) => r.extraMinutes)) >= Math.max(...relaxed.routes.map((r) => r.extraMinutes)));
+});
+
+test('interests reweight places; quiet makes motorways cost more', async () => {
+  const { applyInterests, scoreRoute } = await import('../src/index.ts');
+  const f = [
+    { id: 'a', lat: 43, lon: 11, type: 'lake' as const, weight: 3, name: '' },
+    { id: 'b', lat: 43, lon: 11, type: 'castle' as const, weight: 3, name: '' },
+  ];
+  const w = applyInterests(f, ['water']);
+  assert.ok(w[0].weight > 3 && w[1].weight < 3);
+  assert.equal(applyInterests(f, []), f);
+  const line = [{ lat: 43, lon: 11 }, { lat: 43.1, lon: 11.1 }];
+  const route = { line, km: 14, minutes: 12, motorwayKm: 14 };
+  const near = [{ id: 'v', lat: 43.05, lon: 11.05, type: 'viewpoint' as const, weight: 5, name: 'View' }];
+  const loud = scoreRoute({ route, features: near }).score;
+  assert.ok(loud > 0);
+  assert.ok(scoreRoute({ route, features: near, quiet: true }).score < loud);
+});
+
+test('caravans never get gravel and only the gentlest scenic strength', async () => {
+  const p = fakeProviders();
+  await planRoutes(req({ vehicle: 'caravan', prefs: { avoidUnpaved: false } }), p);
+  const router = p.router as FakeRouter;
+  const scenic = router.calls.filter((c) => c.opts.profile === 'scenic');
+  assert.ok(scenic.length > 0);
+  assert.ok(scenic.every((c) => (c.opts.strength ?? 1) <= 1));
+  assert.ok(router.calls.every((c) => c.opts.prefs.avoidUnpaved));
+});
