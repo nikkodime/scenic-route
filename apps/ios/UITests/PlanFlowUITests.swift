@@ -8,6 +8,8 @@ final class PlanFlowUITests: XCTestCase {
         app.launch()
         let plan = app.buttons["planButton"]
         XCTAssertTrue(plan.waitForExistence(timeout: 10))
+        // The plan button sits below the style, interests and vehicle pickers: scroll it into view first.
+        for _ in 0..<3 where plan.frame.maxY > app.windows.firstMatch.frame.maxY - 120 { app.swipeUp() }
         // On iOS 26 the ScrollView edge effect makes XCUITest report the button as not hittable; tap its centre.
         plan.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
         XCTAssertTrue(app.staticTexts["Most scenic"].waitForExistence(timeout: 90))
