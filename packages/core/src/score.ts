@@ -1,0 +1,202 @@
+// Scoring a route for beauty, 0–100. One model, used by the API, the web planner and ratings analysis.
+
+import { bearing, distKm, lineLengthKm, paddedBBox, resample, angleDiff, type LatLon } from './geo.ts';
+import { FEATURE_FAMILY, FEATURE_LABEL, FEATURE_WEIGHTS, type FeatureType, type ScenicFeature } from './features.ts';
+
+export const SCORE_MODEL = {
+  version: '2026.11.1',
+  weights: { scenery: 0.45, views: 0.15, relief: 0.15, bends: 0.15, variety: 0.1 },
+  /** Feature reach from the road, km. Closer features count fully, farther ones partly. */
+  reachKm: 1.2,
+  nearKm: 0.5,
+  farFactor: 0.6,
+  /** Feature points per km at which scenery is ~63% of max. */
+  sceneryScale: 0.5,
+  /** Heading change (°/km) that counts as a proper hill road. */
+  bendsFull: 120,
+  /** Above this, bends stop adding and start to tire (hairpin stacks). */
+  bendsTiring: 320,
+  motorwayPenalty: 0.7,
+  urbanPenalty: 0.3,
+} as const;
+
+export interface RouteStats {
+  motorwayKm?: number;
+  unpavedKm?: number;
+  tollKm?: number;
+  urbanKm?: number;
+  ferryKm?: number;
+}
+
+export interface RouteGeometry extends RouteStats {
+  line: LatLon[];
+  km: number;
+  minutes: number;
+}
+
+/** Optional pipeline data sampled along the route (0..1 each), ~1 sample per km. */
+export interface SegmentSample {
+  beauty: number;
+  view: number;
+}
+
+export interface Relief {
+  min: number;
+  max: number;
+  climb: number;
+}
+
+export interface NearFeature extends ScenicFeature {
+  distKm: number;
+  /** Position along the route, km from start. */
+  atKm: number;
+}
+
+export interface ScoreParts {
+  scenery: number;
+  views: number | null;
+  relief: number | null;
+  bends: number;
+  variety: number;
+  motorwayPct: number;
+  urbanPct: number;
+}
+
+export interface ScoredRoute {
+  score: number;
+  parts: ScoreParts;
+  highlights: { name: string; type: FeatureType; atKm: number }[];
+  byType: Partial<Record<FeatureType, number>>;
+  near: NearFeature[];
+  modelVersion: string;
+}
+
+/** Average absolute heading change in degrees per km. */
+export function bendiness(line: LatLon[]): number {
+  const pts = resample(line, 0.1);
+  let turn = 0;
+  for (let i = 2; i < pts.length; i++) {
+    const d = angleDiff(bearing(pts[i - 2], pts[i - 1]), bearing(pts[i - 1], pts[i]));
+    if (d < 120) turn += d; // ignore U-turn artefacts
+  }
+  return turn / (lineLengthKm(line) || 1);
+}
+
+/** Features within reach of the route, each counted once, with their position along it. */
+export function featuresAlong(line: LatLon[], features: ScenicFeature[], reachKm: number = SCORE_MODEL.reachKm): NearFeature[] {
+  const step = 0.4;
+  const pts = resample(line, step);
+  const bb = paddedBBox(line, reachKm + 0.5);
+  const out: NearFeature[] = [];
+  for (const f of features) {
+    if (f.lat < bb[0] || f.lat > bb[2] || f.lon < bb[1] || f.lon > bb[3]) continue;
+    let best = Infinity, idx = 0;
+    for (let i = 0; i < pts.length; i++) {
+      const d = distKm(pts[i], f);
+      if (d < best) { best = d; idx = i; }
+    }
+    if (best <= reachKm) out.push({ ...f, distKm: best, atKm: idx * step });
+  }
+  const seen = new Set<string>();
+  return out.filter((f) => (seen.has(f.id) ? false : (seen.add(f.id), true)));
+}
+
+export function reliefStats(elevations: (number | null)[]): Relief | null {
+  const e = elevations.filter((x): x is number => Number.isFinite(x));
+  if (e.length < 2) return null;
+  let climb = 0;
+  for (let i = 1; i < e.length; i++) climb += Math.max(0, e[i] - e[i - 1]);
+  return { min: Math.min(...e), max: Math.max(...e), climb };
+}
+
+const clamp = (x: number, lo = 0, hi = 100) => Math.max(lo, Math.min(hi, x));
+const mean = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
+
+export interface ScoreInput {
+  route: RouteGeometry;
+  features: ScenicFeature[];
+  relief?: Relief | null;
+  segments?: SegmentSample[] | null;
+}
+
+export function scoreRoute({ route, features, relief = null, segments = null }: ScoreInput): ScoredRoute {
+  const M = SCORE_MODEL;
+  const km = Math.max(route.km, 0.1);
+  const near = featuresAlong(route.line, features);
+
+  const raw = near.reduce((s, f) => s + f.weight * (f.distKm < M.nearKm ? 1 : M.farFactor), 0);
+  const featureScenery = 100 * (1 - Math.exp(-raw / Math.max(5, km) / M.sceneryScale));
+  const hasSeg = !!segments && segments.length > 0;
+  const scenery = hasSeg ? 0.6 * featureScenery + 0.4 * 100 * mean(segments!.map((s) => s.beauty)) : featureScenery;
+
+  const views = hasSeg ? 100 * mean(segments!.map((s) => s.view)) : null;
+  const reliefScore = relief ? clamp((relief.max - relief.min) / 6 + relief.climb / Math.max(5, km) / 0.4) : null;
+
+  const b = bendiness(route.line);
+  let bends = clamp((b / M.bendsFull) * 100);
+  if (b > M.bendsTiring) bends = clamp(100 - (b - M.bendsTiring) / 4, 60);
+
+  const families = new Set(near.filter((f) => f.weight >= 1.5).map((f) => FEATURE_FAMILY[f.type]));
+  const variety = clamp((families.size / 4) * 100);
+
+  // Missing parts hand their weight to scenery, so scores stay comparable with and without pipeline data.
+  const w = M.weights;
+  let sceneryW = w.scenery;
+  let total = w.bends * bends + w.variety * variety;
+  if (views == null) sceneryW += w.views; else total += w.views * views;
+  if (reliefScore == null) sceneryW += w.relief; else total += w.relief * reliefScore;
+  total += sceneryW * scenery;
+
+  const motorwayShare = Math.min(1, (route.motorwayKm ?? 0) / km);
+  const urbanShare = Math.min(1, (route.urbanKm ?? 0) / km);
+  total *= (1 - M.motorwayPenalty * motorwayShare) * (1 - M.urbanPenalty * urbanShare);
+
+  const byType: Partial<Record<FeatureType, number>> = {};
+  for (const f of near) byType[f.type] = (byType[f.type] ?? 0) + 1;
+
+  return {
+    score: Math.round(clamp(total)),
+    parts: {
+      scenery: Math.round(scenery),
+      views: views == null ? null : Math.round(views),
+      relief: reliefScore == null ? null : Math.round(reliefScore),
+      bends: Math.round(bends),
+      variety: Math.round(variety),
+      motorwayPct: Math.round(motorwayShare * 100),
+      urbanPct: Math.round(urbanShare * 100),
+    },
+    highlights: near
+      .filter((f) => f.name && f.weight >= 2.5)
+      .sort((a, b) => b.weight - a.weight)
+      .slice(0, 6)
+      .sort((a, b) => a.atKm - b.atKm)
+      .map((f) => ({ name: f.name, type: f.type, atKm: Math.round(f.atKm * 10) / 10 })),
+    byType,
+    near,
+    modelVersion: M.version,
+  };
+}
+
+/** One plain line about a route's character, e.g. "3 hill towns, 2 viewpoints, cypress avenue". */
+export function describe(scored: Pick<ScoredRoute, 'byType'>): string {
+  const parts = (Object.entries(scored.byType) as [FeatureType, number][])
+    .sort((a, b) => FEATURE_WEIGHTS[b[0]] * b[1] - FEATURE_WEIGHTS[a[0]] * a[1])
+    .slice(0, 3)
+    .map(([t, n]) => (n === 1 ? `a ${FEATURE_LABEL[t][0]}` : `${n} ${FEATURE_LABEL[t][1]}`));
+  if (!parts.length) return 'Mostly plain roads';
+  const s = parts.join(', ');
+  return s[0].toUpperCase() + s.slice(1);
+}
+
+/** Where along the route the beauty is concentrated: the best `windowKm` stretch. */
+export function bestStretch(near: NearFeature[], routeKm: number, windowKm = 15): { fromKm: number; toKm: number } | null {
+  if (!near.length) return null;
+  const sorted = [...near].sort((a, b) => a.atKm - b.atKm);
+  let best = -1, from = 0;
+  for (const f of sorted) {
+    const start = Math.max(0, Math.min(f.atKm, routeKm - windowKm));
+    const sum = sorted.filter((g) => g.atKm >= start && g.atKm <= start + windowKm).reduce((s, g) => s + g.weight, 0);
+    if (sum > best) { best = sum; from = start; }
+  }
+  return { fromKm: Math.round(from), toKm: Math.round(Math.min(routeKm, from + windowKm)) };
+}

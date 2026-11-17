@@ -2,5 +2,20 @@
   "name": "scenic-route",
   "private": true,
   "type": "module",
-  "scripts": { "test": "node --test test/*.test.js" }
+  "workspaces": ["packages/*", "services/*", "apps/web"],
+  "engines": { "node": ">=22.18" },
+  "scripts": {
+    "test": "npm run test:prototype && npm run test:core && npm run test:api",
+    "test:prototype": "node --test test/*.test.js",
+    "test:core": "node --test packages/core/test/*.test.ts",
+    "test:api": "node --test services/api/test/*.test.ts",
+    "typecheck": "tsc -p packages/core && tsc -p services/api && tsc -p apps/web",
+    "dev:api": "npm run dev -w services/api",
+    "dev:web": "npm run dev -w apps/web",
+    "build:web": "npm run build -w apps/web"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.0"
+  }
 }
