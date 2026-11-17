@@ -64,7 +64,7 @@ struct PlanView: View {
             .padding()
         }
         .background(Theme.background)
-        .navigationTitle("Panoramica")
+        .toolbar(.hidden, for: .navigationBar)
         .navigationBarTitleDisplayMode(.inline)
         .sheet(item: $picking) { field in
             PlaceSearchView(title: field == .origin ? "Start" : "Destination", allowCurrentLocation: field == .origin) { place in

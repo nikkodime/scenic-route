@@ -162,8 +162,12 @@ export function scoreRoute({ route, features, relief = null, segments = null }: 
   let bends = clamp((b / M.bendsFull) * 100);
   if (b > M.bendsTiring) bends = clamp(100 - (b - M.bendsTiring) / 4, 60);
 
-  const families = new Set(near.filter((f) => f.weight >= 1.5).map((f) => FEATURE_FAMILY[f.type]));
-  const variety = clamp((families.size / 4) * 100);
+  // Variety: how many landscape families a typical 5 km stretch offers (not the whole route, which in
+  // dense OSM areas always touches every family).
+  const nWin = Math.max(1, Math.round(km / M.windowKm));
+  const fam: Set<string>[] = Array.from({ length: nWin }, () => new Set());
+  for (const f of near) if (f.weight >= 1.5) fam[Math.min(nWin - 1, Math.floor((f.atKm / km) * nWin))].add(FEATURE_FAMILY[f.type]);
+  const variety = clamp((mean(fam.map((s) => s.size)) / 3) * 100);
 
   // Missing parts hand their weight to scenery, so scores stay comparable with and without pipeline data.
   const w = M.weights;
