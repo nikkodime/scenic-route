@@ -6,7 +6,7 @@
 
 import { mkdirSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { overpassQuery, parseOverpass, type BBox, type ScenicFeature } from '@scenic/core';
 import { makeHttp } from '../src/http.ts';
 import { loadConfig } from '../src/config.ts';
@@ -86,4 +86,4 @@ async function main() {
   console.log(`wrote ${region}.json: ${features.length} places`, counts);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) await main();
+if (import.meta.url === pathToFileURL(process.argv[1]).href) await main();
