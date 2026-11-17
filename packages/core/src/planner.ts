@@ -2,7 +2,7 @@
 // Providers are injected, so the same code runs on the server, in tests with
 // fixtures, and (later) on device.
 
-import { distKm, encodePolyline, paddedBBox, resample, type LatLon } from './geo.ts';
+import { distKm, encodePolyline, paddedBBox, pointInGeometry, resample, type LatLon } from './geo.ts';
 import { FEATURE_FAMILY, type ScenicFeature } from './features.ts';
 import { candidateWaypointSets, clusterSpots, corridorBBox, detourProbes, type Spot } from './candidates.ts';
 import { bestStretch, describe, reliefStats, scoreRoute, SCORE_MODEL, type RouteGeometry, type ScoredRoute, type SegmentSample } from './score.ts';
@@ -13,6 +13,9 @@ import { appleMapsUrl, googleMapsUrl, shapingPoints } from './exports.ts';
 import type { Interest, PlanRequest, PlanResponse, Preferences, RouteOption, RouteStyle, Vehicle } from './contracts.ts';
 
 /** What each route style means: time budget as a share of the fastest drive, and what a minute costs in ranking. */
+/** Longer than this as the crow flies is not one day's scenic drive (and usually a wrong start point). */
+export const MAX_DIRECT_KM = 900;
+
 export const STYLES: Record<RouteStyle, { share: number; min: number; max: number; pointsPerMinute: number; strengths: number[] }> = {
   relaxed: { share: 0.15, min: 10, max: 30, pointsPerMinute: 0.6, strengths: [1] },
   scenic: { share: 0.4, min: 20, max: 90, pointsPerMinute: 0.15, strengths: [1, 2, 3] },
@@ -121,13 +124,13 @@ export class PlanError extends Error {
   }
 }
 
-async function pool<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<PromiseSettledResult<R>[]> {
+async function pool<T, R>(items: T[], limit: number, fn: (item: T, index: number) => Promise<R>): Promise<PromiseSettledResult<R>[]> {
   const out: PromiseSettledResult<R>[] = new Array(items.length);
   let next = 0;
   const worker = async () => {
     while (next < items.length) {
       const i = next++;
-      try { out[i] = { status: 'fulfilled', value: await fn(items[i]) }; }
+      try { out[i] = { status: 'fulfilled', value: await fn(items[i], i) }; }
       catch (reason) { out[i] = { status: 'rejected', reason }; }
     }
   };
@@ -135,9 +138,9 @@ async function pool<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>
   return out;
 }
 
-function labelFor(r: Evaluated, i: number, best: Evaluated, fastestMinutes: number): string {
+function labelFor(r: Evaluated, best: Evaluated, fastestMinutes: number): string {
+  if (r === best) return 'Most scenic';
   if (r.source === 'fastest') return 'Fastest';
-  if (i === 0) return 'Most scenic';
   if (r.minutes - fastestMinutes < 10) return 'Scenic and quick';
   if (r.scored.score >= best.scored.score - 5) return 'Also beautiful';
   return 'Balanced';
@@ -157,8 +160,17 @@ export async function planRoutes(req: PlanRequest, p: Providers, opts: PlanOptio
   const rules = vehicleRules(req.vehicle, req.prefs, style.strengths);
   // Before the fastest route is known, estimate it from the straight line (about 1.1 min per km).
   const directKm = required.slice(1).reduce((s, b, i) => s + distKm(required[i], b), 0);
+  if (directKm > MAX_DIRECT_KM) throw new PlanError("That's more than a day's drive. Plan it as a journey with several days.");
   const area = corridorBBox(required, budgetMinutes(req.style, directKm * 1.1, req.extraMinutes));
-  const zones = p.zones ? await p.zones(area) : [];
+  const allZones = p.zones ? await p.zones(area) : [];
+  // A ZTL around the start or destination can't be avoided: say so once, and don't flag every route.
+  const endpoints = [req.origin, req.destination];
+  const zones = allZones.filter((z) => !(z.properties.kind === 'ztl' && endpoints.some((e) => pointInGeometry(e, z.geometry))));
+  for (const z of allZones) {
+    if (zones.includes(z)) continue;
+    const where = pointInGeometry(req.origin, z.geometry) ? 'You start' : 'Your destination is';
+    warnings.push(`${where} inside the ${z.properties.name} ZTL (limited traffic zone): drive in only with a permit or a hotel registration, otherwise park outside.`);
+  }
   const ztl = zones.filter((z) => z.properties.kind === 'ztl');
   const base = { prefs: rules.prefs, avoidZones: ztl };
 
@@ -220,14 +232,18 @@ export async function planRoutes(req: PlanRequest, p: Providers, opts: PlanOptio
   for (const r of results) if (r.status === 'fulfilled') candidates.push(...r.value); else log('candidate failed', r.reason);
 
   // 4. Score every candidate (elevation + segment samples fetched per route, in parallel).
-  const evaluated = (await pool(candidates, opts.concurrency ?? 4, async (c): Promise<Evaluated> => {
-    let relief = null;
-    if (p.elevation) {
-      try {
-        const pts = resample(c.path.line, Math.max(0.5, c.path.km / 90)).slice(0, 100);
-        relief = reliefStats(await p.elevation.elevations(pts));
-      } catch (e) { log('elevation failed', e); }
-    }
+  // Elevation for every candidate in one batched request (the free service is rate-limited per call).
+  const elevPts = candidates.map((c) => resample(c.path.line, Math.max(0.5, c.path.km / 90)).slice(0, 100));
+  let elevs: (number | null)[][] | null = null;
+  if (p.elevation) {
+    try {
+      const flat = await p.elevation.elevations(elevPts.flat());
+      let k = 0;
+      elevs = elevPts.map((pts) => { const out = flat.slice(k, k + pts.length); k += pts.length; return out; });
+    } catch (e) { log('elevation failed', e); }
+  }
+  const evaluated = (await pool(candidates, opts.concurrency ?? 4, async (c, ci): Promise<Evaluated> => {
+    const relief = elevs ? reliefStats(elevs[ci]) : null;
     let segments: SegmentSample[] | null = null;
     if (p.segments) { try { segments = await p.segments.sample(c.path.line); } catch (e) { log('segments failed', e); } }
     const scored = scoreRoute({ route: c.path, features, relief, segments, quiet: req.interests.includes('quiet') });
@@ -247,7 +263,9 @@ export async function planRoutes(req: PlanRequest, p: Providers, opts: PlanOptio
   }
 
   const fastestMinutes = fastest.minutes;
-  const ranked = rankRoutes(usable, fastestMinutes, budget, req.maxRoutes, style.pointsPerMinute);
+  // An explicit time limit is a promise: no slack over it. The style budget may stretch by 10%.
+  const ranked = rankRoutes(usable, fastestMinutes, budget, req.maxRoutes, style.pointsPerMinute, req.extraMinutes != null ? 0 : 0.1);
+  const best = ranked.reduce<Evaluated | null>((b, r) => (!b || r.scored.score > b.scored.score ? r : b), null);
 
   // 6. Weather and light for the chosen routes: one batched forecast call.
   const samplesPer = ranked.map((r) => weatherSamplePoints(r.line, r.path.km, r.minutes, departure, 4));
@@ -269,7 +287,7 @@ export async function planRoutes(req: PlanRequest, p: Providers, opts: PlanOptio
     return {
       id: `${planId}-${i + 1}`,
       rank: i + 1,
-      label: labelFor(r, i, ranked[0], fastestMinutes),
+      label: labelFor(r, best!, fastestMinutes),
       source: r.source,
       score: r.scored.score,
       parts: r.scored.parts,

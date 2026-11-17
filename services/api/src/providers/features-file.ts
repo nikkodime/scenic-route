@@ -48,6 +48,14 @@ export class FileFeatures {
   covers(b: BBox): boolean {
     return this.regions.some((r) => contains(r.bbox, b));
   }
+  /** Share of the bbox's area inside shipped regions (0..1, regions assumed not to overlap). */
+  coverage(b: BBox): number {
+    const area = (x: BBox) => Math.max(0, x[2] - x[0]) * Math.max(0, x[3] - x[1]);
+    const total = area(b) || 1;
+    let inside = 0;
+    for (const r of this.regions) inside += area([Math.max(b[0], r.bbox[0]), Math.max(b[1], r.bbox[1]), Math.min(b[2], r.bbox[2]), Math.min(b[3], r.bbox[3])]);
+    return Math.min(1, inside / total);
+  }
   inBBox(b: BBox): ScenicFeature[] {
     const out: ScenicFeature[] = [];
     for (let i = Math.floor(b[0] / CELL); i <= Math.floor(b[2] / CELL); i++) {
@@ -70,7 +78,9 @@ export class LayeredFeatures implements FeatureSource {
     this.remote = remote;
   }
   async features(b: BBox): Promise<ScenicFeature[]> {
-    if (this.local.covers(b) || !this.remote) return this.local.inBBox(b);
+    // Mostly inside a shipped region: answer locally rather than wait up to 30 s on a public mirror
+    // for the last edge of the corridor.
+    if (this.local.coverage(b) >= 0.6 || !this.remote) return this.local.inBBox(b);
     try {
       return await this.remote.features(b);
     } catch (e) {

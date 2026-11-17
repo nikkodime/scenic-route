@@ -126,3 +126,22 @@ test('caravans never get gravel and only the gentlest scenic strength', async ()
   assert.ok(scenic.every((c) => (c.opts.strength ?? 1) <= 1));
   assert.ok(router.calls.every((c) => c.opts.prefs.avoidUnpaved));
 });
+
+test('a ZTL around the start is one plan warning, not a block on every route', async () => {
+  const ztl = squareZone(SIENA, 0.8, { kind: 'ztl', name: 'Siena' });
+  const p = fakeProviders({ zones: () => [ztl] });
+  const res = await planRoutes(req(), p);
+  assert.ok(res.routes.length >= 2);
+  assert.ok(res.warnings.some((w) => /You start inside the Siena ZTL/.test(w)), JSON.stringify(res.warnings));
+  assert.ok(!res.warnings.some((w) => /Every route has a restriction/.test(w)));
+  for (const r of res.routes) assert.ok(!r.advisories.some((a) => a.kind === 'ztl'));
+  assert.ok(p.router.calls.every((c) => !c.opts.avoidZones?.length), 'the router is not asked to avoid the zone it starts in');
+});
+
+test('more than a day away is refused; an explicit time limit is never exceeded; labels follow scores', async () => {
+  await assert.rejects(planRoutes(req({ origin: { lat: 38.7, lon: -9.1, label: 'Lisbon' } }), fakeProviders()), (e: unknown) => e instanceof PlanError && /more than a day/.test((e as Error).message));
+  const res = await planRoutes(req({ extraMinutes: 30 }), fakeProviders());
+  for (const r of res.routes) assert.ok(r.minutes <= res.fastest.minutes + 30 + 0.5, `${r.minutes} vs ${res.fastest.minutes}`);
+  const top = Math.max(...res.routes.map((r) => r.score));
+  assert.equal(res.routes.find((r) => r.label === 'Most scenic')?.score, top);
+});

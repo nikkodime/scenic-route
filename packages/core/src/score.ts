@@ -200,8 +200,10 @@ export function scoreRoute({ route, features, relief = null, segments = null, qu
       motorwayPct: Math.round(motorwayShare * 100),
       urbanPct: Math.round(urbanShare * 100),
     },
+    // Highlights are places along the way: not the start or finish town, and only real names
+    // (OSM sometimes has notes like "view from cafe terrace" in the name tag).
     highlights: near
-      .filter((f) => f.name && f.weight >= 2.5)
+      .filter((f) => f.name && f.weight >= 2.5 && /^[\p{Lu}\p{N}]/u.test(f.name) && f.atKm > 1.5 && f.atKm < km - 1.5)
       .sort((a, b) => b.weight - a.weight)
       .slice(0, 6)
       .sort((a, b) => a.atKm - b.atKm)

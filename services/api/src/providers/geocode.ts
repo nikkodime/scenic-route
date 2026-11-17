@@ -48,7 +48,13 @@ export function rankPlaces(results: GeocodeResult[], q: string): GeocodeResult[]
     return s;
   };
   const europe = results.filter(inEurope);
-  return (europe.length ? europe : results).map((r, i) => ({ r, i, s: score(r) })).sort((a, b) => b.s - a.s || a.i - b.i).map((x) => x.r);
+  const ranked = (europe.length ? europe : results).map((r, i) => ({ r, i, s: score(r) })).sort((a, b) => b.s - a.s || a.i - b.i).map((x) => x.r);
+  // The same town often comes back twice (city and administrative boundary): keep the better one.
+  const seen = new Set<string>();
+  return ranked.filter((r) => {
+    const k = `${r.label.split(',')[0].trim().toLowerCase()}@${Math.round(r.lat * 20)},${Math.round(r.lon * 20)}`;
+    return seen.has(k) ? false : (seen.add(k), true);
+  });
 }
 
 export class PhotonGeocoder implements Geocoder {

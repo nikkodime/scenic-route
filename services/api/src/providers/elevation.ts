@@ -15,7 +15,8 @@ export class OpenMeteoElevation implements ElevationSource {
     this.apiKey = apiKey;
   }
   async elevations(points: LatLon[]): Promise<(number | null)[]> {
-    const key = (p: LatLon) => `${p.lat.toFixed(3)},${p.lon.toFixed(3)}`;
+    // ~500 m grid: plenty for relief, and nearby plans share cache entries (the free tier is rate-limited).
+    const key = (p: LatLon) => `${(Math.round(p.lat * 200) / 200).toFixed(3)},${(Math.round(p.lon * 200) / 200).toFixed(3)}`;
     const missing = [...new Set(points.map(key).filter((k) => this.cache.get(k) === undefined))];
     for (let i = 0; i < missing.length; i += 100) {
       const chunk = missing.slice(i, i + 100);

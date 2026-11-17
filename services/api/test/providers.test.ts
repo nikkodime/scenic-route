@@ -216,3 +216,19 @@ test('geocoder falls back when the first one fails', async () => {
   assert.equal((await g.search('Lucca'))[0].label, 'Lucca, Tuscany, Italy');
   await assert.rejects(new FallbackGeocoder(down, down).search('Lucca'));
 });
+
+test('geocoder drops a duplicate of the same town; mostly-covered corridors stay local', async () => {
+  const { rankPlaces } = await import('../src/providers/geocode.ts');
+  const r = rankPlaces([
+    { lat: 43.7696, lon: 11.2558, label: 'Florence, Tuscany, Italy', kind: 'city' },
+    { lat: 43.7710, lon: 11.2540, label: 'Florence, Tuscany, Italy', kind: 'county' },
+    { lat: 34.8, lon: -87.67, label: 'Florence, Alabama, USA', kind: 'city' },
+  ], 'Florence');
+  assert.equal(r.length, 1);
+  const { FileFeatures, LayeredFeatures } = await import('../src/providers/features-file.ts');
+  const local = new FileFeatures([{ region: 't', bbox: [43, 11, 44, 12], fetchedAt: '', attribution: '', features: [{ id: 'n/1', lat: 43.9, lon: 11.5, type: 'viewpoint', weight: 5, name: 'V' }] }]);
+  let calls = 0;
+  const layered = new LayeredFeatures(local, { features: async () => { calls++; return []; } });
+  await layered.features([43.5, 11.2, 44.2, 11.8]); // 70% inside
+  assert.equal(calls, 0);
+});
