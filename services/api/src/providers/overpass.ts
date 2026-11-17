@@ -23,11 +23,15 @@ export class OverpassFeatures implements FeatureSource {
     const b = snapBBox(bbox);
     return this.cache.wrap(b.join(','), 24 * 3600_000, async () => {
       let last: unknown;
+      // All mirrors together get 30 s, so a plan still fits inside the iOS client's 45 s timeout.
+      const deadline = Date.now() + 30_000;
       for (const url of this.urls) {
+        const timeoutMs = Math.min(25_000, deadline - Date.now());
+        if (timeoutMs < 3_000) break;
         try {
           const json = await this.http.json(url, {
             method: 'POST', body: 'data=' + encodeURIComponent(overpassQuery(b)),
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, timeoutMs: 25000, retries: 0,
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, timeoutMs, retries: 0,
           });
           return parseOverpass(json);
         } catch (e) { last = e; }
