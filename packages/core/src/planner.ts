@@ -149,6 +149,8 @@ export async function planRoutes(req: PlanRequest, p: Providers, opts: PlanOptio
   const planId = opts.id?.() ?? Math.random().toString(36).slice(2, 10);
   const warnings: string[] = [];
   const required: LatLon[] = [req.origin, ...req.stops, req.destination];
+  // Under 200 m end to end there is no drive to plan; say so instead of returning a 0 km "route".
+  if (required.slice(1).every((pt, i) => distKm(required[i], pt) < 0.2)) throw new PlanError('Start and destination are the same place.');
   const departure = req.departAt ? new Date(req.departAt) : now;
 
   const style = STYLES[req.style];

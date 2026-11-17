@@ -63,6 +63,15 @@ test('no fastest route → PlanError 422', async () => {
   await assert.rejects(planRoutes(req(), fakeProviders({ router })), (e: unknown) => e instanceof PlanError && e.status === 422);
 });
 
+test('same start and destination → PlanError 422, router never called', async () => {
+  const router = new FakeRouter();
+  let called = false;
+  router.route = async () => { called = true; throw new Error('should not route'); };
+  const r = PlanRequestSchema.parse({ origin: SIENA, destination: { ...SIENA, lat: SIENA.lat + 0.0005 }, extraMinutes: 30 });
+  await assert.rejects(planRoutes(r, fakeProviders({ router })), (e: unknown) => e instanceof PlanError && e.status === 422 && /same place/.test(e.message));
+  assert.equal(called, false);
+});
+
 test('gravel routes are dropped for rental cars', async () => {
   const router = new FakeRouter(true, (_pts, opts) => (opts.profile === 'scenic' ? { unpavedKm: 4 } : {}));
   const res = await planRoutes(req({ prefs: { rentalCar: true } }), fakeProviders({ router }));
