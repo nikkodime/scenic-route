@@ -1,0 +1,72 @@
+# Panoramica on one small server: a Synology NAS (Container Manager) or an Oracle Cloud
+# "Always Free" VM. See README.md in this folder.
+#
+# Everything heavy is prepared once on a bigger machine and copied into ./data:
+#   data/graph/       GraphHopper graph (import on a Mac with 12+ GB RAM, then copy)
+#   data/dem/         elevation tiles (node services/api/scripts/fetch-dem.ts ...)
+# The scenic places (infra/data/features/*.json) and ZTL zones ship inside the API image.
+#
+#   cp .env.example .env    # then fill in JWT_SECRET and TUNNEL_TOKEN
+#   docker compose up -d --build
+services:
+  graphhopper:
+    image: eclipse-temurin:21-jre
+    restart: unless-stopped
+    working_dir: /app
+    # Serve the prebuilt graph only. datareader.file is never read when the graph exists.
+    command: >
+      sh -c "test -f /app/gh.jar || curl -sSfL -o /app/gh.jar https://repo1.maven.org/maven2/com/graphhopper/graphhopper-web/11.0/graphhopper-web-11.0.jar;
+             exec java -Xmx${GH_XMX:-3g} -Ddw.graphhopper.graph.location=/data/graph
+             -Ddw.graphhopper.custom_models.directory=/config/custom_models
+             -Ddw.graphhopper.datareader.file=/data/unused.osm.pbf
+             -jar /app/gh.jar server /config/config.yml"
+    volumes:
+      - ../graphhopper:/config:ro
+      - ./data:/data
+      - ghapp:/app
+    expose: ['8989']
+
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: panoramica
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-panoramica}
+      POSTGRES_DB: panoramica
+    volumes: [pgdata:/var/lib/postgresql/data]
+    expose: ['5432']
+
+  api:
+    build: { context: ../.., dockerfile: services/api/Dockerfile }
+    restart: unless-stopped
+    depends_on: [graphhopper, postgres]
+    environment:
+      NODE_ENV: production
+      PORT: '8787'
+      ROUTER: graphhopper
+      GRAPHHOPPER_URL: http://graphhopper:8989
+      ELEVATION: hgt
+      DEM_DIR: /dem
+      WEATHER: metno
+      GEOCODER: photon
+      DATABASE_URL: postgres://panoramica:${POSTGRES_PASSWORD:-panoramica}@postgres:5432/panoramica
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
+      CORS_ORIGINS: ${CORS_ORIGINS:-https://nikkodime.github.io}
+    volumes:
+      - ./data/dem:/dem:ro
+    # Reachable on the home network for testing (http://<server>:8787); the tunnel serves HTTPS.
+    ports: ['8787:8787']
+
+  # Free HTTPS address for the phone, no router changes: Cloudflare Tunnel.
+  # Create the tunnel in the Cloudflare dashboard (Zero Trust → Networks → Tunnels),
+  # point its public hostname at http://api:8787 and paste the token into .env.
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    depends_on: [api]
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN:?set TUNNEL_TOKEN in .env}
+    profiles: [tunnel]
+
+volumes: { pgdata: {}, ghapp: {} }
