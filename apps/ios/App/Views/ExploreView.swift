@@ -40,9 +40,15 @@ struct ExploreView: View {
 
             VStack(alignment: .leading, spacing: 10) {
                 if let attribution = model.explore?.attribution {
-                    Text(attribution.joined(separator: " · ")).font(.system(size: 9)).foregroundStyle(Theme.ink3)
-                        .padding(.horizontal, 8).padding(.vertical, 3).background(.ultraThinMaterial, in: Capsule())
-                        .padding(.leading, Theme.gutter)
+                    // Credits stay one tap away instead of a paragraph over the map.
+                    Menu {
+                        ForEach(attribution, id: \.self) { Text($0) }
+                    } label: {
+                        Image(systemName: "info.circle").font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.ink2)
+                            .frame(width: 28, height: 28).background(.ultraThinMaterial, in: Circle())
+                    }
+                    .accessibilityLabel("Data sources")
+                    .padding(.leading, Theme.gutter)
                 }
                 ScrollView(.horizontal, showsIndicators: false) {
                     LazyHStack(spacing: 12) {
