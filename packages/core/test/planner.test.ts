@@ -231,8 +231,9 @@ test('round trips prefer coming back another way', async () => {
 test('explore puts the places you love first; famous places outweigh hamlets', async () => {
   const { destinationCandidates, featureWeight } = await import('../src/index.ts');
   const f = (id: string, lat: number, lon: number, type: 'village' | 'lake', weight: number, name: string) => ({ id, lat, lon, type, weight, name });
-  const feats = [f('a', 43.5, 11.3, 'village', 5, 'Greve'), f('b', 43.1, 12.1, 'lake', 3, 'Lago Trasimeno')];
+  const feats = [f('a', 43.5, 11.3, 'village', 9, 'Greve'), f('b', 43.1, 12.1, 'lake', 5, 'Lago Trasimeno'), f('c', 43.12, 12.06, 'village', 3, 'Castiglione del Lago')];
   assert.equal(destinationCandidates(SIENA, feats, 80)[0].label, 'Greve');
   assert.equal(destinationCandidates(SIENA, feats, 80, 10, new Set(['water']))[0].label, 'Lago Trasimeno');
+  assert.equal(destinationCandidates(SIENA, feats, 80, 10, new Set(['water']))[0].lat, 43.12, 'drives to the town on the shore');
   assert.ok(featureWeight('village', { place: 'village', wikipedia: 'it:Fiesole' }) > featureWeight('village', { place: 'hamlet' }) * 3);
 });

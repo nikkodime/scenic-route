@@ -3,7 +3,7 @@
 
 import { distKm, encodePolyline, paddedBBox, resample, type LatLon } from './geo.ts';
 import { FEATURE_FAMILY, type FeatureType, type ScenicFeature } from './features.ts';
-import { clusterSpots, type Spot } from './candidates.ts';
+import type { Spot } from './candidates.ts';
 import { describe, reliefStats, scoreRoute } from './score.ts';
 import { sunTimes } from './sun.ts';
 import { applyInterests, PlanError, type PlanOptions, type Providers, type RoutedPath } from './planner.ts';
@@ -14,36 +14,79 @@ export const reachKm = (minutes: number) => minutes * 0.8;
 
 /** Places worth driving to: a named place, preferably a town, plus what's around it. */
 const DESTINATION_TYPES = new Set<FeatureType>(['hilltop_village', 'village', 'viewpoint', 'lake', 'beach', 'castle', 'heritage', 'mountain_pass', 'waterfall', 'coast', 'peak']);
+const TOWNS = new Set<FeatureType>(['hilltop_village', 'village']);
+/** What visitors come to see: a town ringed by these is famous (Monteriggioni's walls, San Gimignano's towers). */
+const SIGHTS = new Set<FeatureType>(['viewpoint', 'castle', 'heritage', 'attraction']);
 
-function townFor(spot: Spot, features: ScenicFeature[]): ScenicFeature | undefined {
-  // A town's name reads best ("Montalcino"); else the strongest named place in the spot.
-  return features
-    .filter((f) => (f.type === 'hilltop_village' || f.type === 'village') && f.name && distKm(f, spot) < 2.5)
-    .sort((a, b) => b.weight - a.weight || distKm(a, spot) - distKm(b, spot))[0];
+export interface DestinationCandidate extends Spot {
+  label: string;
+  /** The family of the place itself (a lake is water; a village with a stream is not). */
+  family: string;
 }
 
-/** Pick spread-out candidate places between minKm and maxKm from the origin, strongest first. */
-export function destinationCandidates(origin: LatLon, features: ScenicFeature[], maxKm: number, max = 10, prefer: Set<string> = new Set()): (Spot & { label: string })[] {
-  // Places of the families the driver loves come first; within each group, the richest first.
-  const loved = (s: Spot) => s.types.some((t) => prefer.has(FEATURE_FAMILY[t]));
-  // Worth the trip: a famous town counts more than a big cluster of vineyards (sum of weights over-rewards
-  // dense countryside), so rank by the town's own weight plus the cluster's, damped by its size.
-  const ranked = clusterSpots(features, 2.5).map((s) => {
-    const town = townFor(s, features);
-    return { s, town, value: s.weight / Math.sqrt(s.count) + 2 * (town?.weight ?? 0) };
-  });
-  ranked.sort((a, b) => Number(loved(b.s)) - Number(loved(a.s)) || b.value - a.value);
+/** A coarse grid so "what's near" stays fast for tens of thousands of places. */
+function gridIndex(features: ScenicFeature[], cellDeg = 0.05) {
+  const cells = new Map<string, ScenicFeature[]>();
+  const key = (lat: number, lon: number) => `${Math.floor(lat / cellDeg)},${Math.floor(lon / cellDeg)}`;
+  for (const f of features) {
+    const k = key(f.lat, f.lon);
+    const c = cells.get(k);
+    if (c) c.push(f); else cells.set(k, [f]);
+  }
+  return (p: LatLon, km: number): ScenicFeature[] => {
+    const dLat = km / 111, dLon = km / (111 * Math.cos((p.lat * Math.PI) / 180));
+    const out: ScenicFeature[] = [];
+    for (let i = Math.floor((p.lat - dLat) / cellDeg); i <= Math.floor((p.lat + dLat) / cellDeg); i++) {
+      for (let j = Math.floor((p.lon - dLon) / cellDeg); j <= Math.floor((p.lon + dLon) / cellDeg); j++) {
+        for (const f of cells.get(`${i},${j}`) ?? []) if (distKm(p, f) <= km) out.push(f);
+      }
+    }
+    return out;
+  };
+}
+
+/**
+ * Pick spread-out places between minKm and maxKm from the origin, the most worth a trip first.
+ * Fame comes from the place itself plus the sights around it, not from how many vineyards surround it.
+ * Places of the families the driver loves come first.
+ */
+export function destinationCandidates(origin: LatLon, features: ScenicFeature[], maxKm: number, max = 10, prefer: Set<string> = new Set()): DestinationCandidate[] {
+  const near = gridIndex(features);
   const minKm = Math.max(5, maxKm * 0.06);
   const gapKm = Math.max(5, maxKm * 0.12);
-  const out: (Spot & { label: string })[] = [];
-  for (const { s, town } of ranked) {
-    const d = distKm(origin, s);
+  const named = features.filter((f) => DESTINATION_TYPES.has(f.type) && f.name && /^[\p{Lu}\p{N}]/u.test(f.name) && f.weight >= 1.5);
+  const ranked: (DestinationCandidate & { fame: number; loved: boolean })[] = [];
+  for (const f of named) {
+    const d = distKm(origin, f);
     if (d < minKm || d > maxKm) continue;
-    if (!s.types.some((t) => DESTINATION_TYPES.has(t))) continue;
-    const label = town?.name || s.name;
-    if (!label || !/^[\p{Lu}\p{N}]/u.test(label)) continue;
-    if (out.some((o) => distKm(o, s) < gapKm || o.label === label)) continue;
-    out.push({ ...s, label });
+    const around = near(f, 1.5);
+    const sights = around.reduce((s, g) => s + (g !== f && SIGHTS.has(g.type) ? g.weight : 0), 0);
+    let fame: number;
+    let at: LatLon = f;
+    if (TOWNS.has(f.type)) fame = f.weight + 1.2 * Math.sqrt(sights);
+    // A palace or fortress among dozens of sights is a city centre (Siena, Lucca): limited traffic zones,
+    // not a scenic drive. Towns carry their own castles.
+    else if (sights > 60 || (SIGHTS.has(f.type) && around.some((g) => TOWNS.has(g.type) && g.name && distKm(f, g) < 1.2))) continue;
+    else if (f.type === 'lake') {
+      // Drive to the best town on the shore, but call it by the lake's name. Small ponds aren't trips.
+      if (f.weight < 3.5) continue;
+      const shore = near(f, 12).filter((g) => TOWNS.has(g.type) && g.name).sort((x, y) => y.weight - x.weight || distKm(f, x) - distKm(f, y))[0];
+      if (shore) at = shore;
+      fame = f.weight * 1.6;
+    } else if (f.type === 'beach' || f.type === 'coast') fame = f.weight * 1.1;
+    else fame = f.weight * 0.8 + 0.6 * Math.sqrt(sights); // a lone castle, viewpoint, pass, peak, waterfall or abbey
+    const family = FEATURE_FAMILY[f.type];
+    const spot = around.length ? around : [f];
+    ranked.push({
+      lat: at.lat, lon: at.lon, weight: fame, count: spot.length, name: f.name, types: [...new Set([f.type, ...spot.map((g) => g.type)])],
+      label: f.name, family, fame, loved: prefer.has(family),
+    });
+  }
+  ranked.sort((a, b) => Number(b.loved) - Number(a.loved) || b.fame - a.fame);
+  const out: DestinationCandidate[] = [];
+  for (const { fame, loved, ...c } of ranked) {
+    if (out.some((o) => distKm(o, c) < gapKm || o.label === c.label)) continue;
+    out.push(c);
     if (out.length === max) break;
   }
   return out;
@@ -81,7 +124,7 @@ export async function exploreFrom(req: ExploreRequest, p: Providers, opts: PlanO
   }
   const loved = applyInterests(features, req.interests);
   const prefer = new Set<string>(req.interests.filter((i) => i !== 'quiet'));
-  const candidates = destinationCandidates(req.origin, loved, maxKm, 16, prefer);
+  const candidates = destinationCandidates(req.origin, loved, maxKm, 11, prefer);
   if (!candidates.length) throw new PlanError('No scenic places found within that time yet. Try a longer drive.');
 
   const base = { prefs: { ...req.prefs, avoidUnpaved: req.prefs.avoidUnpaved || req.vehicle !== 'car' }, vehicle: req.vehicle };
@@ -133,7 +176,7 @@ export async function exploreFrom(req: ExploreRequest, p: Providers, opts: PlanO
   const scored = ok.map((r, i) => {
     const s = scoreRoute({ route: r.scenic, features, relief: elevs ? reliefStats(elevs[i]) : null, quiet });
     // The place matters as much as the road there: a great town at the end of a fine road leads.
-    const matches = r.c.types.some((t) => prefer.has(FEATURE_FAMILY[t]));
+    const matches = prefer.has(r.c.family);
     const value = 0.65 * s.score + 35 * Math.sqrt(r.c.weight / maxWeight) + (matches ? 15 : 0);
     return { ...r, s, value };
   });
