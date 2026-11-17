@@ -143,10 +143,10 @@ export async function exploreFrom(req: ExploreRequest, p: Providers, opts: PlanO
   // (scenic searches are the expensive part).
   const reachable = (await pool(candidates, opts.concurrency ?? 6, async (c) => {
     const fastOut = await p.router.route([req.origin, c], { ...base, profile: 'fastest' });
-    return fastOut.minutes > outMinutes * 0.92 ? null : { c, fastOut };
+    return fastOut.minutes > outMinutes ? null : { c, fastOut };
   })).filter((x): x is NonNullable<typeof x> => !!x).slice(0, 8);
   const routed = await pool(reachable, opts.concurrency ?? 4, async ({ c, fastOut }) => {
-    // The drive time is a promise: the fastest way must fit with room to spare, the scenic way must fit.
+    // The drive time is a promise: the fastest way must fit, and the scenic way is shown only when it fits too.
     if (!roundTrip) {
       const s = await scenicOr([req.origin, c], 2, fastOut);
       return { c, fastest: fastOut, scenic: s.minutes <= req.maxMinutes ? s : fastOut };
@@ -154,7 +154,7 @@ export async function exploreFrom(req: ExploreRequest, p: Providers, opts: PlanO
     // A loop: out by the most scenic road, back by a gentler scenic one (usually different), all within the time.
     const fastBack = await p.router.route([c, req.origin], { ...base, profile: 'fastest' });
     const fastest = join(fastOut, fastBack);
-    if (fastest.minutes > req.maxMinutes * 0.92) return null;
+    if (fastest.minutes > req.maxMinutes) return null;
     const out = await scenicOr([req.origin, c], 3, fastOut);
     const back = await scenicOr([c, req.origin], 1, fastBack);
     for (const loop of [join(out, back), join(out, fastBack), join(fastOut, back)]) if (loop.minutes <= req.maxMinutes) return { c, fastest, scenic: loop };

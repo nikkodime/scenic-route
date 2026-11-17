@@ -22,7 +22,7 @@ export interface PhotoSource {
 }
 
 /** Titles that are rarely a view of the place. */
-const NOT_A_VIEW = /\b(map|mappa|karte|plan|pianta|planimetria|stemma|stemmi|coat[ _]of[ _]arms|wappen|logo|diagram|schema|interior|interno|interni|cortile|courtyard|chiostro|cloister|altar|altare|organ|organo|tomb|tomba|lapide|plaque|targa|epigrafe|sign|cartello|insegna|ticket|menu|document|manuscript|coin|moneta|portrait|ritratto|stamp|francobollo|bus|train|treno|car|auto|ambulanza|ambulance|monumento|monument|memorial|caduti|statua|statue|busto|bust|fresco|affresco|dipinto|painting|mele|apple|frutto|fruit|fiore|fiori|flower|insetto|insect|farfalla|butterfly|uccello|bird|cane|dog|gatto|cat|museo|museum|detail|dettaglio|particolare)\b/i;
+const NOT_A_VIEW = /\b(map|mappa|karte|plan|pianta|planimetria|stemma|stemmi|coat[ _]of[ _]arms|wappen|logo|diagram|schema|interior|interno|interni|cortile|courtyard|chiostro|cloister|altar|altare|organ|organo|tomb|tomba|lapide|plaque|targa|epigrafe|sign|cartello|insegna|ticket|menu|document|manuscript|coin|moneta|portrait|ritratto|stamp|francobollo|bus|train|treno|car|auto|ambulanza|ambulance|monumento|monument|memorial|caduti|statua|statue|busto|bust|fresco|affresco|dipinto|painting|mele|apple|frutto|fruit|fiore|fiori|flower|insetto|insect|farfalla|butterfly|uccello|bird|cane|dog|gatto|cat|museo|museum|detail|dettaglio|particolare|stazione|station|railway|ferrovia|binari|bahnhof|gare)\b/i;
 
 const stripHtml = (s: string) => s.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
 
