@@ -34,7 +34,7 @@ struct ResultsView: View {
                             model.selectedRouteID = route.id
                             model.planPath.append(.route(route))
                         } label: {
-                            RouteCard(route: route, color: Theme.routeColors[i % Theme.routeColors.count], selected: route.id == model.selectedRouteID)
+                            RouteCard(route: route, number: i + 1, color: Theme.routeColors[i % Theme.routeColors.count], selected: route.id == model.selectedRouteID)
                                 .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
@@ -103,34 +103,51 @@ struct RouteMap: View {
     }
 }
 
-/// A route as a photo: its best moment leads, the stamp says how good, three icons say why.
+/// A route as a photo (spec "Route card"): its best moment leads, the stamp says how good,
+/// three highlight thumbnails and four icon + number pairs say why.
 struct RouteCard: View {
+    @Environment(AppModel.self) private var model
     let route: RouteOption
+    let number: Int
     let color: Color
     let selected: Bool
+    @State private var thumbs: [Photo] = []
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             MomentPhoto(candidates: route.heroCandidates)
-                .frame(width: 300, height: 168)
+                .frame(width: 300, height: 178)
+                .overlay(alignment: .topLeading) {
+                    HStack(spacing: 6) {
+                        Capsule().fill(color).frame(width: 18, height: 4)
+                        Text("\(number)").font(Theme.sofia(13, .bold)).foregroundStyle(Theme.ink)
+                    }
+                    .padding(.horizontal, 10).padding(.vertical, 6)
+                    .background(.white.opacity(0.82), in: Capsule())
+                    .padding(12)
+                }
                 .overlay(alignment: .topTrailing) {
-                    ScoreRing(score: route.score, color: .white, size: 54, inked: false)
-                        .shadow(color: .black.opacity(0.35), radius: 6)
-                        .padding(12)
+                    ScoreRing(score: route.score, color: Theme.green, size: 60)
+                        .padding(4)
+                        .background(.white.opacity(0.72), in: Circle())
+                        .padding(10)
                 }
                 .overlay(alignment: .bottomLeading) {
-                    RouteGlyph(line: route.line)
-                        .stroke(.white, style: StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round))
-                        .frame(width: 46, height: 46)
-                        .shadow(color: .black.opacity(0.5), radius: 3)
-                        .padding(12)
+                    HStack(spacing: -8) {
+                        ForEach(thumbs.prefix(3), id: \.url) { p in
+                            PhotoView(photo: p)
+                                .frame(width: 30, height: 30)
+                                .clipShape(Circle())
+                                .overlay(Circle().strokeBorder(.white, lineWidth: 2))
+                        }
+                    }
+                    .padding(12)
                 }
                 .clipped()
 
             VStack(alignment: .leading, spacing: 10) {
                 HStack(alignment: .firstTextBaseline) {
-                    Circle().fill(color).frame(width: 8, height: 8)
-                    Text(route.label).font(Theme.sofia(19, .semibold)).foregroundStyle(Theme.ink).lineLimit(1)
+                    Text(route.label).font(Theme.sofia(17, .semibold)).foregroundStyle(Theme.ink).lineLimit(1)
                     Spacer(minLength: 4)
                     ForEach(route.warnings.prefix(2), id: \.self) { a in
                         Image(systemName: AdvisoryStyle.symbol(a)).font(.system(size: 12, weight: .semibold))
@@ -140,13 +157,15 @@ struct RouteCard: View {
                 }
                 HStack(spacing: 14) {
                     Metric(symbol: "clock", value: Format.duration(minutes: route.minutes))
-                    if route.extraMinutes >= 1 { Metric(symbol: "plus", value: "\(Int(route.extraMinutes.rounded())) min", tint: color) }
+                    if route.extraMinutes >= 1 { Metric(symbol: "plus", value: "\(Int(route.extraMinutes.rounded())) min", tint: Theme.green) }
                     Metric(symbol: "road.lanes", value: Format.distance(km: route.km))
                 }
-                HStack(spacing: 14) {
-                    ForEach(Array(route.sceneryCounts.prefix(3).enumerated()), id: \.offset) { _, c in
-                        Metric(symbol: c.symbol, value: "\(c.count)")
-                            .accessibilityLabel("\(c.count) \(c.label)")
+                Rectangle().fill(Theme.line).frame(height: 1)
+                HStack(spacing: 0) {
+                    ForEach(route.scorePairs, id: \.label) { p in
+                        Metric(symbol: p.symbol, value: "\(Int(p.value))", tint: Theme.ink)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .accessibilityLabel("\(p.label) \(Int(p.value))")
                     }
                 }
             }
@@ -155,10 +174,15 @@ struct RouteCard: View {
         .frame(width: 300)
         .background(Theme.surface)
         .clipShape(RoundedRectangle(cornerRadius: 20))
-        .overlay(RoundedRectangle(cornerRadius: 20).strokeBorder(selected ? color : Theme.border, lineWidth: selected ? 2 : 1))
+        .overlay(RoundedRectangle(cornerRadius: 20).strokeBorder(selected ? Theme.green : Theme.border, lineWidth: selected ? 2 : 1))
         .shadow(color: Theme.ink.opacity(0.08), radius: 18, y: 10)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(route.label), score \(Int(route.score)), \(Format.duration(minutes: route.minutes)), \(route.summary)")
+        .accessibilityLabel("Route \(number), \(route.label), score \(Int(route.score)), \(Format.duration(minutes: route.minutes)), \(route.summary)")
+        .task(id: route.id) {
+            let moments = Array(route.moments.prefix(5))
+            let got = await model.distinctPhotos(for: moments)
+            thumbs = moments.compactMap { got[$0.id] }
+        }
     }
 }
 

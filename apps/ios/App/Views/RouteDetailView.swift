@@ -19,10 +19,10 @@ struct RouteDetailView: View {
             VStack(alignment: .leading, spacing: 28) {
                 hero
                 metrics.padding(.horizontal, Theme.gutter)
+                scoreParts.padding(.horizontal, Theme.gutter)
                 if moments.contains(where: { photos[$0.id] != nil }) { highlightStrip }
                 if let c = route.conditions { light(c).padding(.horizontal, Theme.gutter) }
                 if !route.advisories.isEmpty { goodToKnow.padding(.horizontal, Theme.gutter) }
-                scoreParts.padding(.horizontal, Theme.gutter)
                 rating.padding(.horizontal, Theme.gutter)
             }
             .padding(.bottom, 110)
@@ -58,7 +58,7 @@ struct RouteDetailView: View {
         }
         .tabViewStyle(.page(indexDisplayMode: .always))
         .onChange(of: photos.isEmpty) { _, empty in page = empty ? 99 : 0 }
-        .frame(height: 380)
+        .frame(height: 310)
         .overlay(alignment: .topTrailing) {
             if page != 99 {
                 ScoreRing(score: route.score, color: .white, size: 70, inked: false)
@@ -194,15 +194,12 @@ struct RouteDetailView: View {
     // MARK: The score, as four small rings.
 
     private var scoreParts: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            eyebrow("Score")
-            HStack(spacing: 0) {
-                partRing("binoculars.fill", route.parts.scenery, "Scenery")
-                if let r = route.parts.relief { partRing("mountain.2.fill", r, "Hills") }
-                partRing("road.lanes.curved.right", route.parts.bends, "Bends")
-                partRing("sparkles", route.parts.variety, "Variety")
-            }
+        HStack(spacing: 0) {
+            ForEach(route.scorePairs, id: \.label) { partRing($0.symbol, $0.value, $0.label) }
         }
+        .padding(.vertical, 16)
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 20))
+        .overlay(RoundedRectangle(cornerRadius: 20).strokeBorder(Theme.border))
     }
 
     private func partRing(_ symbol: String, _ value: Double, _ label: String) -> some View {
@@ -257,26 +254,31 @@ struct RouteDetailView: View {
             Button {
                 if let u = URL(string: route.handoff.googleMaps) { openURL(u) }
             } label: {
-                Label("Drive", systemImage: "car.fill").font(Theme.buttonFont)
+                Label("Start drive", systemImage: "location.north.fill").font(Theme.buttonFont)
                     .foregroundStyle(Theme.onAccent).frame(maxWidth: .infinity).frame(minHeight: 52)
                     .background(Theme.green, in: RoundedRectangle(cornerRadius: 16))
             }
             .buttonStyle(.plain)
             .accessibilityHint("Opens Google Maps with the scenic stops")
-            Menu {
-                Button { if let u = URL(string: route.handoff.appleMaps) { openURL(u) } } label: { Label("Apple Maps", systemImage: "map") }
-                ShareLink(item: GPXFile(name: route.summary, route: route), preview: SharePreview("Scenic route GPX")) {
-                    Label("GPX file", systemImage: "square.and.arrow.up")
-                }
-            } label: {
-                Image(systemName: "square.and.arrow.up").font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(Theme.green).frame(width: 52, height: 52)
-                    .background(Theme.greenTint, in: RoundedRectangle(cornerRadius: 16))
+            Button { if let u = URL(string: route.handoff.appleMaps) { openURL(u) } } label: {
+                squareIcon("mappin.and.ellipse")
             }
-            .accessibilityLabel("Send to")
+            .buttonStyle(.plain)
+            .accessibilityLabel("Open in Apple Maps")
+            ShareLink(item: GPXFile(name: route.summary, route: route), preview: SharePreview("Scenic route GPX")) {
+                squareIcon("arrow.down.to.line")
+            }
+            .accessibilityLabel("Save GPX for offline")
         }
         .padding(.horizontal, Theme.gutter).padding(.vertical, 10)
         .background(.regularMaterial)
+    }
+
+    private func squareIcon(_ symbol: String) -> some View {
+        Image(systemName: symbol).font(.system(size: 18, weight: .semibold))
+            .foregroundStyle(Theme.ink).frame(width: 52, height: 52)
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16))
+            .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Theme.border))
     }
 
     private func eyebrow(_ text: String) -> some View {

@@ -84,6 +84,15 @@ extension RouteOption {
     }
 
     var warnings: [Advisory] { advisories.filter { $0.severity != "info" } }
+
+    /// The four score parts in spec order (Views, Hills, Bends, then Light once the API sends it; Variety until then).
+    var scorePairs: [(symbol: String, value: Double, label: String)] {
+        var out: [(String, Double, String)] = [("binoculars.fill", parts.views ?? parts.scenery, "Views")]
+        if let r = parts.relief { out.append(("mountain.2.fill", r, "Hills")) }
+        out.append(("road.lanes.curved.right", parts.bends, "Bends"))
+        out.append(("sparkles", parts.variety, "Variety"))
+        return out.map { (symbol: $0.0, value: $0.1, label: $0.2) }
+    }
 }
 
 /// A photo for a place, loaded from /v1/photos, with the credit in the bottom-right corner.
