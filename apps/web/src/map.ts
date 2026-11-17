@@ -1,16 +1,16 @@
-// MapLibre map: chosen route in sandglow with graphite casing, alternatives in bone, numbered stops.
+// MapLibre map: chosen route in scenic green with a white halo, alternatives in dotted lake blue, numbered stops.
 
 import maplibregl, { type LngLatBoundsLike, type StyleSpecification } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { decodePolyline, type RouteOption } from '@scenic/core';
 
-const BLANK: StyleSpecification = { version: 8, sources: {}, layers: [{ id: 'bg', type: 'background', paint: { 'background-color': '#1a1f23' } }] };
+const BLANK: StyleSpecification = { version: 8, sources: {}, layers: [{ id: 'bg', type: 'background', paint: { 'background-color': '#e9ece6' } }] };
 
 /** Map style: ?mapStyle=blank for tests; VITE_MAP_STYLE in production (self-hosted PMTiles, terrain style per DESIGN.md). */
 function styleUrl(): string | StyleSpecification {
   const q = new URLSearchParams(location.search).get('mapStyle');
   if (q === 'blank') return BLANK;
-  return (import.meta.env.VITE_MAP_STYLE as string | undefined) ?? 'https://tiles.openfreemap.org/styles/dark';
+  return (import.meta.env.VITE_MAP_STYLE as string | undefined) ?? 'https://tiles.openfreemap.org/styles/positron';
 }
 
 export class RouteMap {
@@ -43,9 +43,9 @@ export class RouteMap {
       if (src) src.setData(data); else this.map.addSource(id, { type: 'geojson', data });
     }
     if (!this.map.getLayer('alt-line')) {
-      this.map.addLayer({ id: 'alt-line', type: 'line', source: 'alt', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#ece8df', 'line-width': 4, 'line-opacity': 0.75, 'line-dasharray': [1.5, 1.5] } });
-      this.map.addLayer({ id: 'sel-casing', type: 'line', source: 'sel', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#111416', 'line-width': 11 } });
-      this.map.addLayer({ id: 'sel-line', type: 'line', source: 'sel', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#f2b01e', 'line-width': 7 } });
+      this.map.addLayer({ id: 'alt-line', type: 'line', source: 'alt', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#2e5e8c', 'line-width': 4, 'line-opacity': 0.85, 'line-dasharray': [1, 1.6] } });
+      this.map.addLayer({ id: 'sel-casing', type: 'line', source: 'sel', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#ffffff', 'line-width': 11 } });
+      this.map.addLayer({ id: 'sel-line', type: 'line', source: 'sel', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#1e6b52', 'line-width': 7 } });
       this.map.on('click', 'alt-line', (e) => { const id = e.features?.[0]?.properties?.id; if (id) this.onPick?.(String(id)); });
       this.map.on('mouseenter', 'alt-line', () => (this.map.getCanvas().style.cursor = 'pointer'));
       this.map.on('mouseleave', 'alt-line', () => (this.map.getCanvas().style.cursor = ''));

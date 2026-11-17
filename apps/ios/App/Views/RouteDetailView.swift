@@ -40,7 +40,7 @@ struct RouteDetailView: View {
                                 }
                             } icon: {
                                 Image(systemName: a.severity == "info" ? "info.circle" : "exclamationmark.triangle.fill")
-                                    .foregroundStyle(a.severity == "info" ? Theme.ice : Theme.ember)
+                                    .foregroundStyle(a.severity == "info" ? Theme.lake : Theme.warning)
                             }
                         }
                     }
@@ -94,7 +94,7 @@ struct RouteDetailView: View {
             Button {
                 if let u = URL(string: route.handoff.googleMaps) { openURL(u) }
             } label: {
-                Label("DRIVE WITH GOOGLE MAPS", systemImage: "car.fill").font(Theme.titleFont.weight(.heavy))
+                Label("Drive with Google Maps", systemImage: "car.fill").font(Theme.buttonFont)
                     .foregroundStyle(Theme.onAccent).frame(maxWidth: .infinity).frame(minHeight: 52)
             }
             .buttonStyle(.borderedProminent)
@@ -150,13 +150,13 @@ struct RouteDetailView: View {
                 .frame(maxWidth: .infinity)
         }
         .buttonStyle(.bordered)
-        .tint(rated == up ? Theme.accent : Theme.ash)
+        .tint(rated == up ? Theme.accent : Theme.ink3)
         .disabled(rated != nil)
     }
 
     private func section<Content: View>(_ title: String, @ViewBuilder _ content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(title.uppercased()).font(Theme.labelFont).tracking(1.4).foregroundStyle(Theme.ash)
+            Text(title.uppercased()).font(Theme.labelFont).tracking(0.8).foregroundStyle(Theme.ink3)
             content()
         }
         .frame(maxWidth: .infinity, alignment: .leading)

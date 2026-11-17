@@ -17,7 +17,7 @@ async function call<T>(method: string, path: string, body?: unknown, auth = fals
   try {
     r = await fetch(`${BASE}${path}`, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
   } catch {
-    throw new Error('Cannot reach the Scenic Route server. Check your connection.');
+    throw new Error('Cannot reach the Panoramica server. Check your connection.');
   }
   if (r.status === 401 && auth) { try { localStorage.removeItem(TOKEN_KEY); } catch {} }
   if (!r.ok && r.status !== 409) {

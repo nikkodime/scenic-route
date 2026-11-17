@@ -51,7 +51,7 @@ struct PlanView: View {
                 } label: {
                     HStack {
                         if model.isPlanning { ProgressView().tint(.white) }
-                        Text(model.isPlanning ? "FINDING BEAUTIFUL ROADS…" : "FIND SCENIC ROUTES").font(Theme.titleFont.weight(.heavy))
+                        Text(model.isPlanning ? "Finding beautiful roads…" : "Find scenic routes").font(Theme.buttonFont)
                     }
                     .foregroundStyle(Theme.onAccent)
                     .frame(maxWidth: .infinity).frame(minHeight: 52)
@@ -64,7 +64,7 @@ struct PlanView: View {
             .padding()
         }
         .background(Theme.background)
-        .navigationTitle("Scenic Route")
+        .navigationTitle("Panoramica")
         .navigationBarTitleDisplayMode(.inline)
         .sheet(item: $picking) { field in
             PlaceSearchView(title: field == .origin ? "Start" : "Destination", allowCurrentLocation: field == .origin) { place in
@@ -75,7 +75,7 @@ struct PlanView: View {
 
     private var hero: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("TAKE THE BEAUTIFUL WAY").font(Theme.displayFont)
+            Text("Take the beautiful way").font(Theme.displayFont).tracking(-0.8).foregroundStyle(Theme.ink)
             Text("Tell us where you're going and how much extra time you'd enjoy. We'll find the road with the views.")
                 .foregroundStyle(.secondary)
         }
@@ -87,7 +87,7 @@ struct PlanView: View {
             HStack(spacing: 14) {
                 Image(systemName: icon).frame(width: 22).foregroundStyle(Theme.accent)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(title.uppercased()).font(Theme.labelFont).tracking(1.2).foregroundStyle(Theme.ash)
+                    Text(title.uppercased()).font(Theme.labelFont).tracking(0.8).foregroundStyle(Theme.ink3)
                     Text(value).foregroundStyle(.primary).lineLimit(1)
                 }
                 Spacer()

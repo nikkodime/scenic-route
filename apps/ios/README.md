@@ -1,4 +1,4 @@
-# Scenic Route for iOS
+# Panoramica for iOS
 
 SwiftUI app (iOS 17+, Swift 6) plus `ScenicKit`, a Swift package with the API
 models, client, polyline/GPX, formatting, theme tokens and the offline-first

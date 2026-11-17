@@ -5,12 +5,15 @@ import ScenicKit
 struct ScenicRouteApp: App {
     @State private var model = AppModel()
 
+    init() { Theme.registerFonts() }
+
     var body: some Scene {
         WindowGroup {
             RootView()
                 .environment(model)
                 .tint(Theme.accent)
-                .preferredColorScheme(.dark)
+                .font(Theme.bodyFont)
+                .preferredColorScheme(.light)
                 .task { await model.start() }
         }
     }

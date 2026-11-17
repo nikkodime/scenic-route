@@ -62,14 +62,14 @@ struct RouteMap: View {
                 ForEach(r.scenicStops, id: \.self) { s in
                     Annotation(s.name.isEmpty ? "Scenic spot" : s.name, coordinate: CLLocationCoordinate2D(latitude: s.lat, longitude: s.lon)) {
                         Image(systemName: "camera.fill").font(.caption2).padding(6)
-                            .background(Theme.graphite, in: RoundedRectangle(cornerRadius: 6)).overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Theme.sandglow, lineWidth: 2)).foregroundStyle(Theme.sandglow)
+                            .background(Theme.surface, in: Circle()).overlay(Circle().strokeBorder(Theme.accent, lineWidth: 2)).foregroundStyle(Theme.accent)
                     }
                 }
                 if let first = r.line.first {
-                    Marker("Start", systemImage: "car.fill", coordinate: CLLocationCoordinate2D(latitude: first.lat, longitude: first.lon)).tint(Theme.basalt)
+                    Marker("Start", systemImage: "car.fill", coordinate: CLLocationCoordinate2D(latitude: first.lat, longitude: first.lon)).tint(Theme.ink)
                 }
                 if let last = r.line.last {
-                    Marker("Arrive", systemImage: "flag.checkered", coordinate: CLLocationCoordinate2D(latitude: last.lat, longitude: last.lon)).tint(Theme.basalt)
+                    Marker("Arrive", systemImage: "flag.checkered", coordinate: CLLocationCoordinate2D(latitude: last.lat, longitude: last.lon)).tint(Theme.ink)
                 }
             }
         }
@@ -97,7 +97,7 @@ struct RouteCard: View {
                 .font(.caption).monospacedDigit()
                 if route.advisories.contains(where: { $0.severity != "info" }) {
                     Label(route.advisories.first { $0.severity != "info" }!.title, systemImage: "exclamationmark.triangle.fill")
-                        .font(.caption).foregroundStyle(Theme.ember)
+                        .font(.caption).foregroundStyle(Theme.warning)
                 }
             }
             Spacer(minLength: 0)
@@ -105,26 +105,34 @@ struct RouteCard: View {
         }
         .padding(14)
         .background(Theme.surface, in: RoundedRectangle(cornerRadius: Theme.corner))
-        .overlay(RoundedRectangle(cornerRadius: Theme.corner).strokeBorder(selected ? color : Theme.border, lineWidth: selected ? 2 : 1))
+        .overlay(RoundedRectangle(cornerRadius: Theme.corner).strokeBorder(selected ? Theme.accent : Theme.border, lineWidth: selected ? 1.5 : 1))
+        .shadow(color: Theme.ink.opacity(0.06), radius: 16, y: 8)
     }
 }
 
-/// Score plate from the design system: solid sandglow for the chosen route, outline for alternatives.
+/// The scenic score as a passport stamp (design system "Stamp"): double ring, slight rotation, worn ink.
+/// Ink follows the route's line colour; the chosen route's stamp is fully inked, alternatives a little faded.
 struct ScoreRing: View {
     let score: Double
     let color: Color
-    var size: CGFloat = 54
+    var size: CGFloat = 58
     var solid = true
 
     var body: some View {
-        VStack(spacing: 0) {
-            Text("\(Int(score))").font(.system(size: size * 0.5, weight: .heavy).width(.condensed)).monospacedDigit()
-            Text("SCENIC").font(.system(size: max(8, size * 0.14), weight: .bold, design: .monospaced)).tracking(1)
+        ZStack {
+            Circle().strokeBorder(color, lineWidth: 2)
+            Circle().strokeBorder(color, lineWidth: 1).padding(4)
+            VStack(spacing: 0) {
+                Text("\(Int(score))").font(Theme.sofia(size * 0.4, .bold)).monospacedDigit()
+                Text("SCENIC").font(Theme.sofia(max(7, size * 0.13), .semibold)).tracking(1)
+            }
         }
-        .foregroundStyle(solid ? Theme.onAccent : Theme.sandglow)
-        .frame(width: size * 1.07, height: size)
-        .background(solid ? Theme.sandglow : .clear, in: RoundedRectangle(cornerRadius: 6))
-        .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Theme.sandglow, lineWidth: solid ? 0 : 2))
+        .foregroundStyle(color)
+        .frame(width: size, height: size)
+        .opacity(solid ? 1 : 0.8)
+        .rotationEffect(.degrees(score.truncatingRemainder(dividingBy: 2) < 1 ? -6 : 4))
+        .blendMode(.multiply)
+        .accessibilityElement(children: .ignore)
         .accessibilityLabel("Scenery score \(Int(score)) out of 100")
     }
 }

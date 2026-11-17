@@ -62,7 +62,7 @@ function planView(): string {
   const t = totals(j);
   return `
     <header class="day-head">
-      <div><div class="label">Scenic Route · Planner</div><h1>Plan the beautiful way</h1></div>
+      <div><div class="label">Panoramica · Journey planner</div><h1>Plan the beautiful way</h1></div>
       <button class="btn link" data-action="trips">My trips</button>
     </header>
     <div class="field">
@@ -103,7 +103,7 @@ function dayCard(d: DayPlan, i: number): string {
     <div class="field">
       <span class="label">Extra time for the views</span>
       <div class="seg" role="group" aria-label="Extra time">
-        ${EXTRA_CHOICES.map((m) => `<button data-action="extra" data-day="${i}" data-min="${m}" aria-pressed="${d.extraMinutes === m}">${m === 0 ? '0' : m === 240 ? 'DAY' : `+${m}`}</button>`).join('')}
+        ${EXTRA_CHOICES.map((m) => `<button data-action="extra" data-day="${i}" data-min="${m}" aria-pressed="${d.extraMinutes === m}">${m === 0 ? '0' : m === 240 ? 'Day' : m >= 60 ? `+${m / 60} h` : `+${m}`}</button>`).join('')}
       </div>
     </div>
     <div class="field">
@@ -139,7 +139,7 @@ function results(d: DayPlan, i: number) {
       <button class="route" data-action="choose" data-day="${i}" data-route="${esc(r.id)}" aria-pressed="${r.id === (d.chosenRouteId ?? routes[0].id)}">
         <div class="plate"><b>${Math.round(r.score)}</b><span>SCENIC</span></div>
         <div>
-          <div style="font:700 20px var(--font-display);text-transform:uppercase">${esc(r.label)}</div>
+          <div style="font:600 18px var(--font-ui)">${esc(r.label)}</div>
           <div class="muted small">${esc(r.summary)}</div>
           <div class="stats">${duration(r.minutes)} · ${Math.round(r.km)} km · ${r.extraMinutes < 1 ? 'no extra' : `+${duration(r.extraMinutes)}`}</div>
           ${bars(r)}
@@ -169,7 +169,7 @@ function tripsView(): string {
   const list = state.trips;
   return `
     <header class="day-head">
-      <div><div class="label">Scenic Route</div><h1>My trips</h1></div>
+      <div><div class="label">Panoramica</div><h1>My trips</h1></div>
       <button class="btn link" data-action="back">Back to planner</button>
     </header>
     ${list == null ? '<p class="muted">Loading…</p>' : list.length === 0 ? '<p class="muted">No saved journeys yet.</p>' : list.map((t) => `

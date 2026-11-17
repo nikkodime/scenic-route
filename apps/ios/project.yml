@@ -24,10 +24,10 @@ targets:
     info:
       path: App/Info.plist
       properties:
-        CFBundleDisplayName: Scenic Route
+        CFBundleDisplayName: Panoramica
         UILaunchScreen: {}
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
-        NSLocationWhenInUseUsageDescription: Scenic Route uses your location as the start of your drive.
+        NSLocationWhenInUseUsageDescription: Panoramica uses your location as the start of your drive.
         LSApplicationQueriesSchemes: [comgooglemaps]
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true

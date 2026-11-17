@@ -43,7 +43,7 @@ try {
   if (shots) await page.screenshot({ path: `${shots}/web-debug.png` });
   await page.getByLabel('To', { exact: true }).fill('Amiata');
   await page.getByRole('option', { name: /Abbadia/ }).click();
-  await page.getByRole('button', { name: '+60' }).click();
+  await page.getByRole('button', { name: '+1 h' }).click();
   await page.getByRole('button', { name: 'Find scenic routes' }).click();
   await page.getByText('Most scenic').waitFor({ timeout: 20000 });
   const options = await page.locator('.route').count();
