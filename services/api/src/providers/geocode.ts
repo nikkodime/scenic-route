@@ -26,7 +26,10 @@ const cache = new TtlCache<GeocodeResult[]>(2000);
 /** Europe (incl. Canaries, Iceland, Cyprus, Turkey's west): minLon, minLat, maxLon, maxLat. */
 export const EUROPE_BBOX = [-25, 27, 45, 72] as const;
 const inEurope = (r: { lat: number; lon: number }) => r.lon >= EUROPE_BBOX[0] && r.lon <= EUROPE_BBOX[2] && r.lat >= EUROPE_BBOX[1] && r.lat <= EUROPE_BBOX[3];
-const SETTLEMENT = new Set(['city', 'town', 'village', 'hamlet', 'municipality', 'suburb', 'locality', 'administrative', 'island', 'peak', 'mountain_pass']);
+/** Places people live in. They outrank a name match, because with lang=en "Firenze" comes back labelled "Florence". */
+const POPULATED = new Set(['city', 'town', 'village', 'hamlet', 'municipality']);
+/** Other destinations. They rank below a town of the same name ("Pisa" the province vs the city). */
+const SETTLEMENT = new Set(['suburb', 'locality', 'administrative', 'island', 'peak', 'mountain_pass']);
 
 /**
  * Drivers type town names. "Pisa" must be the city of Pisa, not a pizzeria called Pisa
@@ -40,7 +43,8 @@ export function rankPlaces(results: GeocodeResult[], q: string): GeocodeResult[]
     if (inEurope(r)) s += 4;
     if (name === query) s += 3;
     else if (name.startsWith(query)) s += 1;
-    if (r.kind && SETTLEMENT.has(r.kind)) s += 2;
+    if (r.kind && POPULATED.has(r.kind)) s += 4;
+    else if (r.kind && SETTLEMENT.has(r.kind)) s += 1;
     return s;
   };
   const europe = results.filter(inEurope);

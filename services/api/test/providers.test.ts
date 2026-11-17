@@ -151,4 +151,16 @@ test('geocoder ranking: the city of Pisa beats a Pisa street and places outside 
   ], 'Pisa');
   assert.equal(ranked[0].label, 'Pisa, Toscana, Italia');
   assert.ok(!ranked.some((r) => r.label.includes('California')));
+  // The province of Pisa (centroid near Peccioli) must not beat the city.
+  const province = rankPlaces([
+    { lat: 43.47, lon: 10.68, label: 'Pisa, Tuscany, Italy', kind: 'administrative' },
+    { lat: 43.7159, lon: 10.4019, label: 'Pisa, Tuscany, Italy', kind: 'city' },
+  ], 'Pisa');
+  assert.equal(province[0].kind, 'city');
+  // With lang=en the city comes back as "Florence"; it still beats a street called Firenze.
+  const firenze = rankPlaces([
+    { lat: 50.85, lon: -1.22, label: 'Firenze, Fareham, Hampshire, England, United Kingdom', kind: 'residential' },
+    { lat: 43.7698, lon: 11.2556, label: 'Florence, Tuscany, Italy', kind: 'city' },
+  ], 'Firenze');
+  assert.equal(firenze[0].label, 'Florence, Tuscany, Italy');
 });
