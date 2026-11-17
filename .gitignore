@@ -1,3 +1,4 @@
 node_modules/
 .DS_Store
 infra/data/features/.cache/
+infra/data/dem/

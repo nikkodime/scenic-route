@@ -14,8 +14,10 @@ const Env = z.object({
   GRAPHHOPPER_PROFILE: z.string().default('car'),
   OSRM_URL: z.string().default('https://router.project-osrm.org'),
   OVERPASS_URLS: list.default('https://overpass-api.de/api/interpreter,https://overpass.private.coffee/api/interpreter,https://maps.mail.ru/osm/tools/overpass/api/interpreter,https://overpass.kumi.systems/api/interpreter'),
-  /** open-meteo (dev only: free tier is non-commercial) | none */
-  ELEVATION: z.enum(['open-meteo', 'none']).default('open-meteo'),
+  /** hgt (own tiles in DEM_DIR, Open-Meteo only where a tile is missing) | open-meteo (dev only: free tier is non-commercial) | none */
+  ELEVATION: z.enum(['hgt', 'open-meteo', 'none']).default('hgt'),
+  /** Elevation tiles from scripts/fetch-dem.ts (not in git: ~12 MB per 1° tile). */
+  DEM_DIR: z.string().default(fileURLToPath(new URL('../../../infra/data/dem/', import.meta.url))),
   /** metno (production, CC BY 4.0) | open-meteo (paid plan for production) | none */
   WEATHER: z.enum(['metno', 'open-meteo', 'none']).default('metno'),
   OPEN_METEO_API_KEY: z.string().optional(),

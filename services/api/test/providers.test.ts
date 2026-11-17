@@ -232,3 +232,37 @@ test('geocoder drops a duplicate of the same town; mostly-covered corridors stay
   await layered.features([43.5, 11.2, 44.2, 11.8]); // 70% inside
   assert.equal(calls, 0);
 });
+
+test('own elevation tiles: bilinear heights, gz unpacked once, missing tiles go to the fallback', async () => {
+  const { mkdtempSync, mkdirSync, writeFileSync, existsSync, rmSync } = await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const { gzipSync } = await import('node:zlib');
+  const { HgtElevation, tileName } = await import('../src/providers/dem.ts');
+  const { tileList } = await import('../scripts/fetch-dem.ts');
+  assert.deepEqual(tileName(43.3, 11.3), { dir: 'N43', name: 'N43E011' });
+  assert.deepEqual(tileName(-0.5, -3.2), { dir: 'S01', name: 'S01W004' });
+  assert.equal(tileList([41, 9, 45, 14]).length, 20);
+
+  // 3" tile whose height rises 1 m per row going south, with one void sample.
+  const n = 1201, buf = Buffer.alloc(n * n * 2);
+  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) buf.writeInt16BE(r === 600 && c === 600 ? -32768 : r, (r * n + c) * 2);
+  const dir = mkdtempSync(join(tmpdir(), 'dem-'));
+  mkdirSync(join(dir, 'N43'));
+  writeFileSync(join(dir, 'N43', 'N43E011.hgt.gz'), gzipSync(buf));
+  const asked: number[] = [];
+  const dem = new HgtElevation(dir, { elevations: async (p) => { asked.push(p.length); return p.map(() => 99); } });
+  const [north, mid, south, half, nearVoid, elsewhere] = await dem.elevations([
+    { lat: 43.9999, lon: 11.5 }, { lat: 43.5, lon: 11.5 }, { lat: 43.0001, lon: 11.5 },
+    { lat: 44 - 10.5 / 1200, lon: 11.2 }, { lat: 43.5, lon: 11.5 + 0.4 / 1200 }, { lat: 42.5, lon: 11.5 },
+  ]);
+  assert.ok(north! < 1 && south! > 1199, `${north} ${south}`);
+  assert.equal(half, 10.5);
+  assert.ok(Math.abs(mid! - 600) < 1, `void sample at the centre is skipped, neighbours still give a height (${mid})`);
+  assert.ok(nearVoid != null);
+  assert.equal(elsewhere, 99);
+  assert.deepEqual(asked, [1], 'only the point off our tiles goes to the fallback');
+  assert.ok(existsSync(join(dir, 'N43', 'N43E011.hgt')));
+  dem.close();
+  rmSync(dir, { recursive: true, force: true });
+});
