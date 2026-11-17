@@ -17,6 +17,9 @@ final class AppModel {
     var isPlanning = false
     var errorMessage: String?
     var selectedRouteID: String?
+    /// The Plan tab's navigation stack. One path, destinations declared at the root:
+    /// value links inside a view pushed with isPresented did not reliably push on iOS 26.
+    var planPath: [PlanScreen] = []
 
     // Trips
     var trips: [Trip] = []
@@ -107,4 +110,9 @@ final class AppModel {
             syncStatus = nil
         }
     }
+}
+
+enum PlanScreen: Hashable {
+    case results
+    case route(RouteOption)
 }

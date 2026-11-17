@@ -20,8 +20,16 @@ struct RootView: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
+        @Bindable var model = model
         TabView {
-            NavigationStack { PlanView() }
+            NavigationStack(path: $model.planPath) {
+                PlanView().navigationDestination(for: PlanScreen.self) { screen in
+                    switch screen {
+                    case .results: ResultsView()
+                    case .route(let route): RouteDetailView(route: route).onAppear { model.selectedRouteID = route.id }
+                    }
+                }
+            }
                 .tabItem { Label("Plan", systemImage: "map") }
             NavigationStack { TripsView() }
                 .tabItem { Label("Trips", systemImage: "suitcase") }

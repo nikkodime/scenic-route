@@ -11,5 +11,10 @@ final class PlanFlowUITests: XCTestCase {
         // On iOS 26 the ScrollView edge effect makes XCUITest report the button as not hittable; tap its centre.
         plan.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
         XCTAssertTrue(app.staticTexts["Most scenic"].waitForExistence(timeout: 90))
+        // The first route card opens the detail screen.
+        let card = app.buttons["routeCard0"]
+        XCTAssertTrue(card.waitForExistence(timeout: 5))
+        card.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        XCTAssertTrue(app.descendants(matching: .any)["routeDetail"].waitForExistence(timeout: 10))
     }
 }

@@ -78,6 +78,7 @@ struct RouteDetailView: View {
             }
             .padding()
         }
+        .accessibilityIdentifier("routeDetail")
         .navigationTitle(route.label)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

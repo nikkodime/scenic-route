@@ -14,10 +14,15 @@ struct ResultsView: View {
             ScrollView {
                 VStack(spacing: 12) {
                     ForEach(Array((model.plan?.routes ?? []).enumerated()), id: \.element.id) { i, route in
-                        NavigationLink(value: route) {
+                        Button {
+                            model.selectedRouteID = route.id
+                            model.planPath.append(.route(route))
+                        } label: {
                             RouteCard(route: route, color: Theme.routeColors[i % Theme.routeColors.count], selected: route.id == model.selectedRouteID)
+                                .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
+                        .accessibilityIdentifier("routeCard\(i)")
                     }
                     ForEach(model.plan?.warnings ?? [], id: \.self) { w in
                         Label(w, systemImage: "info.circle").font(.caption).foregroundStyle(.secondary)
@@ -35,10 +40,6 @@ struct ResultsView: View {
         }
         .navigationTitle(model.destination?.label?.components(separatedBy: ",").first ?? "Routes")
         .navigationBarTitleDisplayMode(.inline)
-        // Select on arrival: a simultaneous TapGesture on the link swallows the tap on iOS 18+.
-        .navigationDestination(for: RouteOption.self) { route in
-            RouteDetailView(route: route).onAppear { model.selectedRouteID = route.id }
-        }
     }
 }
 

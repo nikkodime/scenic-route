@@ -4,7 +4,6 @@ import ScenicKit
 struct PlanView: View {
     @Environment(AppModel.self) private var model
     @State private var picking: Field?
-    @State private var showResults = false
 
     enum Field: String, Identifiable { case origin, destination; var id: String { rawValue } }
 
@@ -47,7 +46,7 @@ struct PlanView: View {
                 Button {
                     Task {
                         await model.runPlan()
-                        if model.plan?.routes.isEmpty == false { showResults = true }
+                        if model.plan?.routes.isEmpty == false { model.planPath = [.results] }
                     }
                 } label: {
                     HStack {
@@ -72,7 +71,6 @@ struct PlanView: View {
                 if field == .origin { model.origin = place } else { model.destination = place }
             }
         }
-        .navigationDestination(isPresented: $showResults) { ResultsView() }
     }
 
     private var hero: some View {
