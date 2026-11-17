@@ -45,10 +45,31 @@ export function center(coords: unknown): { lat: number; lon: number } | null {
   return any ? { lat: (s + n) / 2, lon: (w + e) / 2 } : null;
 }
 
+/** Area in km² of a (Multi)Polygon's outer rings; 0 for other geometry. */
+export function areaKm2(g: { type: string; coordinates: unknown }): number {
+  const polys = g.type === 'Polygon' ? [g.coordinates as number[][][]] : g.type === 'MultiPolygon' ? (g.coordinates as number[][][][]) : [];
+  let total = 0;
+  for (const poly of polys) {
+    const ring = poly[0] ?? [];
+    const lat0 = ((ring[0]?.[1] ?? 0) * Math.PI) / 180;
+    let a = 0;
+    for (let i = 0; i < ring.length - 1; i++) {
+      const [x1, y1] = ring[i], [x2, y2] = ring[i + 1];
+      a += x1 * y2 - x2 * y1;
+    }
+    total += (Math.abs(a) / 2) * 111.32 * 111.32 * Math.cos(lat0);
+  }
+  return total;
+}
+
+/** Lakes smaller than this (farm ponds, irrigation basins) are not scenery. */
+export const MIN_LAKE_KM2 = 0.1;
+
 /** One osmium GeoJSON feature to a scenic place, applying the same extra conditions as the Overpass query. */
 export function toScenicFeature(f: GeoFeature): ScenicFeature | null {
   const tags = f.properties ?? {};
   if (tags.natural === 'water' && !['lake', 'reservoir'].includes(tags.water)) return null;
+  if (tags.natural === 'water' && areaKm2(f.geometry) < MIN_LAKE_KM2) return null;
   if (tags.natural === 'tree_row' && !/cupressus/i.test(tags.species ?? '') && tags.genus !== 'Cupressus') return null;
   if (tags.scenic === 'yes' && !tags.highway) return null;
   const type = classify(tags);

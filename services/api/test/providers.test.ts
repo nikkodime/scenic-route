@@ -202,6 +202,8 @@ test('osmium GeoJSON features become the same scenic places as Overpass gives', 
   assert.equal(f('a20', { type: 'MultiPolygon', coordinates: [[[[11, 43], [11.2, 43], [11.2, 43.2], [11, 43]]]] }, { natural: 'water', water: 'pond' }), null);
   const lake = f('a21', { type: 'MultiPolygon', coordinates: [[[[11, 43], [11.2, 43], [11.2, 43.2], [11, 43]]]] }, { natural: 'water', water: 'lake' });
   assert.equal(lake?.id, 'relation/10');
+  const pond = { type: 'Polygon', coordinates: [[[11, 43], [11.002, 43], [11.002, 43.002], [11, 43.002], [11, 43]]] };
+  assert.equal(f('a30', pond, { natural: 'water', water: 'reservoir' }), null, 'a 3 ha farm pond is not a lake');
   assert.deepEqual(center(row.coordinates), { lat: 43.05, lon: 11.1 });
   assert.equal(f('n9', { type: 'Point', coordinates: [11.5, 43.1] }, { place: 'village', ele: '420' })?.type, 'hilltop_village');
 });

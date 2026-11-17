@@ -4,14 +4,18 @@ import { bearing, distKm, lineLengthKm, paddedBBox, resample, angleDiff, type La
 import { FEATURE_FAMILY, FEATURE_LABEL, FEATURE_WEIGHTS, type FeatureType, type ScenicFeature } from './features.ts';
 
 export const SCORE_MODEL = {
-  version: '2026.11.1',
+  version: '2026.11.2',
   weights: { scenery: 0.45, views: 0.15, relief: 0.15, bends: 0.15, variety: 0.1 },
   /** Feature reach from the road, km. Closer features count fully, farther ones partly. */
   reachKm: 1.2,
   nearKm: 0.5,
   farFactor: 0.6,
-  /** Feature points per km at which scenery is ~63% of max. */
-  sceneryScale: 0.5,
+  /** Scenery is judged per stretch of this length, then averaged, so long routes aren't favoured. */
+  windowKm: 5,
+  /** Within a stretch, the n-th feature of one type adds less: a type saturates near this many. */
+  typeCap: 2,
+  /** Stretch value (weighted, capped points) at which a stretch is ~63% scenic. */
+  sceneryScale: 14,
   /** Heading change (°/km) that counts as a proper hill road. */
   bendsFull: 120,
   /** Above this, bends stop adding and start to tire (hairpin stacks). */
@@ -112,6 +116,29 @@ export function reliefStats(elevations: (number | null)[]): Relief | null {
 const clamp = (x: number, lo = 0, hi = 100) => Math.max(lo, Math.min(hi, x));
 const mean = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
 
+/**
+ * Scenery from features, 0..1. Each 5 km stretch gets a value where every feature type saturates (twenty
+ * vineyards or village towers are not twenty times one), and stretches are averaged. Dense OSM areas no
+ * longer max out every route; a stretch needs several kinds of beauty to score high.
+ */
+export function windowScenery(near: NearFeature[], km: number): number {
+  const M = SCORE_MODEL;
+  const n = Math.max(1, Math.round(km / M.windowKm));
+  const per: Map<FeatureType, number>[] = Array.from({ length: n }, () => new Map());
+  for (const f of near) {
+    const w = Math.min(n - 1, Math.floor((f.atKm / Math.max(km, 0.1)) * n));
+    const add = f.distKm < M.nearKm ? 1 : M.farFactor;
+    per[w].set(f.type, (per[w].get(f.type) ?? 0) + add);
+  }
+  let sum = 0;
+  for (const types of per) {
+    let v = 0;
+    for (const [t, count] of types) v += FEATURE_WEIGHTS[t] * M.typeCap * (1 - Math.exp(-count / M.typeCap));
+    sum += 1 - Math.exp(-v / M.sceneryScale);
+  }
+  return sum / n;
+}
+
 export interface ScoreInput {
   route: RouteGeometry;
   features: ScenicFeature[];
@@ -124,8 +151,7 @@ export function scoreRoute({ route, features, relief = null, segments = null }: 
   const km = Math.max(route.km, 0.1);
   const near = featuresAlong(route.line, features);
 
-  const raw = near.reduce((s, f) => s + f.weight * (f.distKm < M.nearKm ? 1 : M.farFactor), 0);
-  const featureScenery = 100 * (1 - Math.exp(-raw / Math.max(5, km) / M.sceneryScale));
+  const featureScenery = 100 * windowScenery(near, km);
   const hasSeg = !!segments && segments.length > 0;
   const scenery = hasSeg ? 0.6 * featureScenery + 0.4 * 100 * mean(segments!.map((s) => s.beauty)) : featureScenery;
 
