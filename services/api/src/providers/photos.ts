@@ -22,7 +22,7 @@ export interface PhotoSource {
 }
 
 /** Titles that are rarely a view of the place. */
-const NOT_A_VIEW = /\b(map|mappa|karte|plan|pianta|planimetria|stemma|coat[ _]of[ _]arms|wappen|logo|diagram|schema|interior|interno|interni|altar|altare|organ|organo|tomb|tomba|lapide|plaque|targa|sign|cartello|insegna|ticket|menu|document|manuscript|coin|moneta|portrait|ritratto|stamp|francobollo|bus|train|treno|car|auto)\b/i;
+const NOT_A_VIEW = /\b(map|mappa|karte|plan|pianta|planimetria|stemma|stemmi|coat[ _]of[ _]arms|wappen|logo|diagram|schema|interior|interno|interni|cortile|courtyard|chiostro|cloister|altar|altare|organ|organo|tomb|tomba|lapide|plaque|targa|epigrafe|sign|cartello|insegna|ticket|menu|document|manuscript|coin|moneta|portrait|ritratto|stamp|francobollo|bus|train|treno|car|auto|ambulanza|ambulance|monumento|monument|memorial|caduti|statua|statue|busto|bust|fresco|affresco|dipinto|painting|mele|apple|frutto|fruit|fiore|fiori|flower|insetto|insect|farfalla|butterfly|uccello|bird|cane|dog|gatto|cat|museo|museum|detail|dettaglio|particolare)\b/i;
 
 const stripHtml = (s: string) => s.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
 
@@ -56,7 +56,10 @@ export function parseCommons(json: { query?: { pages?: Record<string, CommonsPag
       title, author, license, source: ii.descriptionurl, rank: named * 2 + Math.min(1, ii.width / ii.height - 1),
     });
   }
-  return out.sort((a, b) => b.rank - a.rank).map(({ rank, ...p }) => p);
+  // Near-identical shots (same subject, numbered series) only once.
+  const seen = new Set<string>();
+  const subject = (t: string) => t.toLowerCase().replace(/[^a-zà-ù ]/g, ' ').replace(/\s+/g, ' ').trim().split(' ').slice(0, 3).join(' ');
+  return out.sort((a, b) => b.rank - a.rank).filter((p) => { const k = subject(p.title); if (seen.has(k)) return false; seen.add(k); return true; }).map(({ rank, ...p }) => p);
 }
 
 export class CommonsPhotos implements PhotoSource {

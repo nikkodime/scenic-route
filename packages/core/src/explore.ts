@@ -15,27 +15,32 @@ export const reachKm = (minutes: number) => minutes * 0.8;
 /** Places worth driving to: a named place, preferably a town, plus what's around it. */
 const DESTINATION_TYPES = new Set<FeatureType>(['hilltop_village', 'village', 'viewpoint', 'lake', 'beach', 'castle', 'heritage', 'mountain_pass', 'waterfall', 'coast', 'peak']);
 
-function nameFor(spot: Spot, features: ScenicFeature[]): string {
+function townFor(spot: Spot, features: ScenicFeature[]): ScenicFeature | undefined {
   // A town's name reads best ("Montalcino"); else the strongest named place in the spot.
-  const town = features
+  return features
     .filter((f) => (f.type === 'hilltop_village' || f.type === 'village') && f.name && distKm(f, spot) < 2.5)
     .sort((a, b) => b.weight - a.weight || distKm(a, spot) - distKm(b, spot))[0];
-  return town?.name || spot.name;
 }
 
 /** Pick spread-out candidate places between minKm and maxKm from the origin, strongest first. */
 export function destinationCandidates(origin: LatLon, features: ScenicFeature[], maxKm: number, max = 10, prefer: Set<string> = new Set()): (Spot & { label: string })[] {
   // Places of the families the driver loves come first; within each group, the richest first.
   const loved = (s: Spot) => s.types.some((t) => prefer.has(FEATURE_FAMILY[t]));
-  const spots = clusterSpots(features, 2.5).sort((a, b) => Number(loved(b)) - Number(loved(a)) || b.weight - a.weight);
-  const minKm = Math.max(6, maxKm * 0.15);
-  const gapKm = Math.max(6, maxKm * 0.2);
+  // Worth the trip: a famous town counts more than a big cluster of vineyards (sum of weights over-rewards
+  // dense countryside), so rank by the town's own weight plus the cluster's, damped by its size.
+  const ranked = clusterSpots(features, 2.5).map((s) => {
+    const town = townFor(s, features);
+    return { s, town, value: s.weight / Math.sqrt(s.count) + 2 * (town?.weight ?? 0) };
+  });
+  ranked.sort((a, b) => Number(loved(b.s)) - Number(loved(a.s)) || b.value - a.value);
+  const minKm = Math.max(5, maxKm * 0.06);
+  const gapKm = Math.max(5, maxKm * 0.12);
   const out: (Spot & { label: string })[] = [];
-  for (const s of spots) {
+  for (const { s, town } of ranked) {
     const d = distKm(origin, s);
     if (d < minKm || d > maxKm) continue;
     if (!s.types.some((t) => DESTINATION_TYPES.has(t))) continue;
-    const label = nameFor(s, features);
+    const label = town?.name || s.name;
     if (!label || !/^[\p{Lu}\p{N}]/u.test(label)) continue;
     if (out.some((o) => distKm(o, s) < gapKm || o.label === label)) continue;
     out.push({ ...s, label });
@@ -76,7 +81,7 @@ export async function exploreFrom(req: ExploreRequest, p: Providers, opts: PlanO
   }
   const loved = applyInterests(features, req.interests);
   const prefer = new Set<string>(req.interests.filter((i) => i !== 'quiet'));
-  const candidates = destinationCandidates(req.origin, loved, maxKm, 12, prefer);
+  const candidates = destinationCandidates(req.origin, loved, maxKm, 16, prefer);
   if (!candidates.length) throw new PlanError('No scenic places found within that time yet. Try a longer drive.');
 
   const base = { prefs: { ...req.prefs, avoidUnpaved: req.prefs.avoidUnpaved || req.vehicle !== 'car' }, vehicle: req.vehicle };
@@ -88,10 +93,14 @@ export async function exploreFrom(req: ExploreRequest, p: Providers, opts: PlanO
     if (!p.router.supportsScenic) return fallback;
     try { return await p.router.route(pts, { ...base, profile: 'scenic', strength }); } catch (e) { log('scenic leg failed', e); return fallback; }
   };
-  const routed = await pool(candidates, opts.concurrency ?? 4, async (c) => {
-    // The drive time is a promise: the fastest way must fit with room to spare, the scenic way must fit.
+  // Two passes: the quick fastest-road check for every candidate (cheap), then scenic roads for the best 8
+  // (scenic searches are the expensive part).
+  const reachable = (await pool(candidates, opts.concurrency ?? 6, async (c) => {
     const fastOut = await p.router.route([req.origin, c], { ...base, profile: 'fastest' });
-    if (fastOut.minutes > outMinutes * 0.85) return null;
+    return fastOut.minutes > outMinutes * 0.85 ? null : { c, fastOut };
+  })).filter((x): x is NonNullable<typeof x> => !!x).slice(0, 8);
+  const routed = await pool(reachable, opts.concurrency ?? 4, async ({ c, fastOut }) => {
+    // The drive time is a promise: the fastest way must fit with room to spare, the scenic way must fit.
     if (!roundTrip) {
       const s = await scenicOr([req.origin, c], 2, fastOut);
       return { c, fastest: fastOut, scenic: s.minutes <= req.maxMinutes ? s : fastOut };

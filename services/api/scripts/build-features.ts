@@ -84,7 +84,11 @@ export function toScenicFeature(f: GeoFeature): ScenicFeature | null {
     const num = Number(m[2]);
     id = m[1] === 'n' ? `node/${num}` : m[1] === 'w' ? `way/${num}` : num % 2 ? `relation/${(num - 1) / 2}` : `way/${num / 2}`;
   }
-  const weight = featureWeight(type, tags);
+  let weight = featureWeight(type, tags);
+  // Big lakes are destinations (Trasimeno, Bolsena); a reservoir of 0.2 km² is a glimpse.
+  if (type === 'lake') weight += Math.min(3, Math.log10(1 + areaKm2(f.geometry)) * 1.5);
+  // River and pool "beaches" are not the seaside: only named ones near the sea or a lake count much.
+  if (type === 'beach' && !tags.name) weight *= 0.4;
   return { id, lat: Math.round(c.lat * 1e5) / 1e5, lon: Math.round(c.lon * 1e5) / 1e5, type, weight, name: tags.name || '' };
 }
 
