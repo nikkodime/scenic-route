@@ -186,3 +186,12 @@ test('the start and finish towns never show up as highlights, by name', async ()
   const res = await planRoutes(req({ origin: { ...SIENA, label: 'Pienza, Tuscany' } }), fakeProviders());
   for (const r of res.routes) assert.ok(!r.highlights.some((h) => h.name === 'Pienza'));
 });
+
+test('"Most beautiful" prefers a long day full of scenery; "Scenic" and "Relaxed" the higher average', async () => {
+  const { beautyFor } = await import('../src/planner.ts');
+  // A: 80 km averaging 70 (scenery 60). B: 140 km through Chianti and the Val d'Orcia averaging 68 (scenery 65).
+  const a = (s: 'relaxed' | 'scenic' | 'most_beautiful') => beautyFor(s, 70, 80, 60), b = (s: 'relaxed' | 'scenic' | 'most_beautiful') => beautyFor(s, 68, 140, 65);
+  assert.ok(b('most_beautiful') - 0.03 * 40 > a('most_beautiful'), 'worth 40 more minutes');
+  assert.ok(a('relaxed') > b('relaxed'));
+  assert.ok(a('scenic') - 0.15 * 0 > b('scenic') - 0.15 * 40, 'not worth 40 minutes on Scenic');
+});

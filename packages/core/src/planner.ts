@@ -16,11 +16,22 @@ import type { Interest, PlanRequest, PlanResponse, Preferences, RouteOption, Rou
 /** Longer than this as the crow flies is not one day's scenic drive (and usually a wrong start point). */
 export const MAX_DIRECT_KM = 900;
 
-export const STYLES: Record<RouteStyle, { share: number; min: number; max: number; pointsPerMinute: number; strengths: number[] }> = {
-  relaxed: { share: 0.15, min: 10, max: 30, pointsPerMinute: 0.6, strengths: [1] },
-  scenic: { share: 0.4, min: 20, max: 90, pointsPerMinute: 0.15, strengths: [1, 2, 3] },
-  most_beautiful: { share: 0.8, min: 40, max: 180, pointsPerMinute: 0.03, strengths: [2, 3] },
+/**
+ * pointsPerScenicKm: how much the amount of beauty counts, not only its average. The score is a mean, so a long
+ * day through Chianti and the Val d'Orcia can average the same as a short pretty hop; "Most beautiful" prefers
+ * the long day.
+ */
+export const STYLES: Record<RouteStyle, { share: number; min: number; max: number; pointsPerMinute: number; pointsPerScenicKm: number; strengths: number[] }> = {
+  relaxed: { share: 0.15, min: 10, max: 30, pointsPerMinute: 0.6, pointsPerScenicKm: 0, strengths: [1] },
+  scenic: { share: 0.4, min: 20, max: 90, pointsPerMinute: 0.15, pointsPerScenicKm: 0.03, strengths: [1, 2, 3] },
+  most_beautiful: { share: 0.8, min: 40, max: 180, pointsPerMinute: 0.03, pointsPerScenicKm: 0.15, strengths: [2, 3] },
 };
+
+/** Km of scenery on a route: length weighted by how scenic it is (0..1). */
+export const scenicKm = (km: number, scenery: number) => (km * scenery) / 100;
+
+/** How beautiful a route is for this style, before time is counted: the score, plus the amount of scenery. */
+export const beautyFor = (style: RouteStyle, score: number, km: number, scenery: number) => score + STYLES[style].pointsPerScenicKm * scenicKm(km, scenery);
 
 /** Extra-time budget for a style, optionally capped by the driver. */
 export function budgetMinutes(style: RouteStyle, fastestMinutes: number, cap?: number): number {
@@ -278,10 +289,12 @@ export async function planRoutes(req: PlanRequest, p: Providers, opts: PlanOptio
 
   const fastestMinutes = fastest.minutes;
   // An explicit time limit is a promise: no slack over it. The style budget may stretch by 10%.
-  const chosen = rankRoutes(usable.map((r) => ({ r, minutes: r.minutes, line: r.line, scored: { score: r.fit } })), fastestMinutes, budget, req.maxRoutes, style.pointsPerMinute, req.extraMinutes != null ? 0 : 0.1).map((x) => x.r);
-  // Show them most scenic first (ties: quicker first); the ranking above only decided which to keep.
-  const ranked = [...chosen].sort((a, b) => b.scored.score - a.scored.score || a.minutes - b.minutes);
-  const best = ranked.reduce<Evaluated | null>((b, r) => (!b || r.scored.score > b.scored.score ? r : b), null);
+  const chosen = rankRoutes(usable.map((r) => ({ r, minutes: r.minutes, line: r.line, scored: { score: beautyFor(req.style, r.fit, r.path.km, r.scored.parts.scenery) } })), fastestMinutes, budget, req.maxRoutes, style.pointsPerMinute, req.extraMinutes != null ? 0 : 0.1).map((x) => x.r);
+  // Show the most beautiful first, ignoring time (that already decided which to keep); ties: quicker first.
+  // For "Most beautiful" the amount of scenery counts too, so the long day leads.
+  const beauty = (r: Evaluated) => beautyFor(req.style, r.scored.score, r.path.km, r.scored.parts.scenery);
+  const ranked = [...chosen].sort((a, b) => beauty(b) - beauty(a) || a.minutes - b.minutes);
+  const best = ranked[0] ?? null;
 
   // 6. Weather and light for the chosen routes: one batched forecast call.
   const samplesPer = ranked.map((r) => weatherSamplePoints(r.line, r.path.km, r.minutes, departure, 4));
