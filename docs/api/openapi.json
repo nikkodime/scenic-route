@@ -1,0 +1,3455 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Scenic Route API",
+    "version": "0.1.0",
+    "description": "Plan scenic drives. See docs/ARCHITECTURE.md."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8787"
+    }
+  ],
+  "components": {
+    "schemas": {
+      "PlanRequest": {
+        "type": "object",
+        "properties": {
+          "origin": {
+            "type": "object",
+            "properties": {
+              "lat": {
+                "type": "number",
+                "minimum": -90,
+                "maximum": 90
+              },
+              "lon": {
+                "type": "number",
+                "minimum": -180,
+                "maximum": 180
+              },
+              "label": {
+                "type": "string",
+                "maxLength": 300
+              }
+            },
+            "required": [
+              "lat",
+              "lon"
+            ],
+            "additionalProperties": false
+          },
+          "destination": {
+            "type": "object",
+            "properties": {
+              "lat": {
+                "type": "number",
+                "minimum": -90,
+                "maximum": 90
+              },
+              "lon": {
+                "type": "number",
+                "minimum": -180,
+                "maximum": 180
+              },
+              "label": {
+                "type": "string",
+                "maxLength": 300
+              }
+            },
+            "required": [
+              "lat",
+              "lon"
+            ],
+            "additionalProperties": false
+          },
+          "stops": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "lat": {
+                  "type": "number",
+                  "minimum": -90,
+                  "maximum": 90
+                },
+                "lon": {
+                  "type": "number",
+                  "minimum": -180,
+                  "maximum": 180
+                },
+                "label": {
+                  "type": "string",
+                  "maxLength": 300
+                }
+              },
+              "required": [
+                "lat",
+                "lon"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 8,
+            "default": []
+          },
+          "extraMinutes": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 300,
+            "default": 45
+          },
+          "departAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "prefs": {
+            "type": "object",
+            "properties": {
+              "rentalCar": {
+                "type": "boolean",
+                "default": false
+              },
+              "avoidUnpaved": {
+                "type": "boolean",
+                "default": true
+              },
+              "avoidTolls": {
+                "type": "boolean",
+                "default": false
+              },
+              "avoidMotorways": {
+                "type": "boolean",
+                "default": true
+              },
+              "vignettes": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 2,
+                  "maxLength": 2
+                },
+                "default": []
+              }
+            },
+            "additionalProperties": false,
+            "default": {}
+          },
+          "maxRoutes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5,
+            "default": 3
+          }
+        },
+        "required": [
+          "origin",
+          "destination"
+        ],
+        "additionalProperties": false
+      },
+      "PlanResponse": {
+        "type": "object",
+        "properties": {
+          "planId": {
+            "type": "string"
+          },
+          "modelVersion": {
+            "type": "string"
+          },
+          "fastest": {
+            "type": "object",
+            "properties": {
+              "km": {
+                "type": "number"
+              },
+              "minutes": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "km",
+              "minutes"
+            ],
+            "additionalProperties": false
+          },
+          "routes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "rank": {
+                  "type": "integer"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "source": {
+                  "type": "string",
+                  "enum": [
+                    "fastest",
+                    "scenic_model",
+                    "via_spots",
+                    "alternative"
+                  ]
+                },
+                "score": {
+                  "type": "number"
+                },
+                "parts": {
+                  "type": "object",
+                  "properties": {
+                    "scenery": {
+                      "type": "number"
+                    },
+                    "views": {
+                      "type": "number",
+                      "nullable": true
+                    },
+                    "relief": {
+                      "type": "number",
+                      "nullable": true
+                    },
+                    "bends": {
+                      "type": "number"
+                    },
+                    "variety": {
+                      "type": "number"
+                    },
+                    "motorwayPct": {
+                      "type": "number"
+                    },
+                    "urbanPct": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "scenery",
+                    "views",
+                    "relief",
+                    "bends",
+                    "variety",
+                    "motorwayPct",
+                    "urbanPct"
+                  ],
+                  "additionalProperties": false
+                },
+                "summary": {
+                  "type": "string"
+                },
+                "km": {
+                  "type": "number"
+                },
+                "minutes": {
+                  "type": "number"
+                },
+                "extraMinutes": {
+                  "type": "number"
+                },
+                "polyline": {
+                  "type": "string"
+                },
+                "bbox": {
+                  "type": "array",
+                  "minItems": 4,
+                  "maxItems": 4,
+                  "items": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ]
+                },
+                "highlights": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "viewpoint",
+                          "mountain_pass",
+                          "peak",
+                          "castle",
+                          "hilltop_village",
+                          "village",
+                          "heritage",
+                          "beach",
+                          "lake",
+                          "coast",
+                          "waterfall",
+                          "vineyard",
+                          "cypress",
+                          "scenic_road",
+                          "attraction"
+                        ]
+                      },
+                      "atKm": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "name",
+                      "type",
+                      "atKm"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "scenicStops": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "lat": {
+                        "type": "number",
+                        "minimum": -90,
+                        "maximum": 90
+                      },
+                      "lon": {
+                        "type": "number",
+                        "minimum": -180,
+                        "maximum": 180
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "types": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "enum": [
+                            "viewpoint",
+                            "mountain_pass",
+                            "peak",
+                            "castle",
+                            "hilltop_village",
+                            "village",
+                            "heritage",
+                            "beach",
+                            "lake",
+                            "coast",
+                            "waterfall",
+                            "vineyard",
+                            "cypress",
+                            "scenic_road",
+                            "attraction"
+                          ]
+                        }
+                      }
+                    },
+                    "required": [
+                      "lat",
+                      "lon",
+                      "name",
+                      "types"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "bestStretch": {
+                  "type": "object",
+                  "properties": {
+                    "fromKm": {
+                      "type": "number"
+                    },
+                    "toKm": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "fromKm",
+                    "toKm"
+                  ],
+                  "additionalProperties": false,
+                  "nullable": true
+                },
+                "conditions": {
+                  "type": "object",
+                  "properties": {
+                    "departure": {
+                      "type": "string"
+                    },
+                    "arrival": {
+                      "type": "string"
+                    },
+                    "sunrise": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "sunset": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "arrivesAfterDark": {
+                      "type": "boolean"
+                    },
+                    "goldenHour": {
+                      "type": "object",
+                      "properties": {
+                        "fromKm": {
+                          "type": "number"
+                        },
+                        "toKm": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "fromKm",
+                        "toKm"
+                      ],
+                      "additionalProperties": false,
+                      "nullable": true
+                    },
+                    "glare": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "fromKm": {
+                            "type": "number"
+                          },
+                          "toKm": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "fromKm",
+                          "toKm"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "weather": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "atKm": {
+                            "type": "number"
+                          },
+                          "eta": {
+                            "type": "string"
+                          },
+                          "cloud": {
+                            "type": "number"
+                          },
+                          "lowCloud": {
+                            "type": "number"
+                          },
+                          "precipProb": {
+                            "type": "number"
+                          },
+                          "precipMm": {
+                            "type": "number"
+                          },
+                          "visibilityKm": {
+                            "type": "number",
+                            "nullable": true
+                          },
+                          "fog": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "atKm",
+                          "eta",
+                          "cloud",
+                          "lowCloud",
+                          "precipProb",
+                          "precipMm",
+                          "visibilityKm",
+                          "fog"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "verdict": {
+                      "type": "string",
+                      "enum": [
+                        "great",
+                        "good",
+                        "mixed",
+                        "poor"
+                      ]
+                    },
+                    "notes": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": [
+                    "departure",
+                    "arrival",
+                    "sunrise",
+                    "sunset",
+                    "arrivesAfterDark",
+                    "goldenHour",
+                    "glare",
+                    "weather",
+                    "verdict",
+                    "notes"
+                  ],
+                  "additionalProperties": false,
+                  "nullable": true
+                },
+                "advisories": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "ztl",
+                          "lez",
+                          "unpaved",
+                          "vignette",
+                          "toll",
+                          "pass_closed",
+                          "pass_seasonal",
+                          "ferry"
+                        ]
+                      },
+                      "severity": {
+                        "type": "string",
+                        "enum": [
+                          "info",
+                          "warning",
+                          "block"
+                        ]
+                      },
+                      "title": {
+                        "type": "string"
+                      },
+                      "detail": {
+                        "type": "string"
+                      },
+                      "atKm": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "severity",
+                      "title",
+                      "detail"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "handoff": {
+                  "type": "object",
+                  "properties": {
+                    "googleMaps": {
+                      "type": "string"
+                    },
+                    "appleMaps": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "googleMaps",
+                    "appleMaps"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "id",
+                "rank",
+                "label",
+                "source",
+                "score",
+                "parts",
+                "summary",
+                "km",
+                "minutes",
+                "extraMinutes",
+                "polyline",
+                "bbox",
+                "highlights",
+                "scenicStops",
+                "bestStretch",
+                "conditions",
+                "advisories",
+                "handoff"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "attribution": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "planId",
+          "modelVersion",
+          "fastest",
+          "routes",
+          "warnings",
+          "attribution"
+        ],
+        "additionalProperties": false
+      },
+      "RouteOption": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "rank": {
+            "type": "integer"
+          },
+          "label": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "fastest",
+              "scenic_model",
+              "via_spots",
+              "alternative"
+            ]
+          },
+          "score": {
+            "type": "number"
+          },
+          "parts": {
+            "type": "object",
+            "properties": {
+              "scenery": {
+                "type": "number"
+              },
+              "views": {
+                "type": "number",
+                "nullable": true
+              },
+              "relief": {
+                "type": "number",
+                "nullable": true
+              },
+              "bends": {
+                "type": "number"
+              },
+              "variety": {
+                "type": "number"
+              },
+              "motorwayPct": {
+                "type": "number"
+              },
+              "urbanPct": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "scenery",
+              "views",
+              "relief",
+              "bends",
+              "variety",
+              "motorwayPct",
+              "urbanPct"
+            ],
+            "additionalProperties": false
+          },
+          "summary": {
+            "type": "string"
+          },
+          "km": {
+            "type": "number"
+          },
+          "minutes": {
+            "type": "number"
+          },
+          "extraMinutes": {
+            "type": "number"
+          },
+          "polyline": {
+            "type": "string"
+          },
+          "bbox": {
+            "type": "array",
+            "minItems": 4,
+            "maxItems": 4,
+            "items": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "highlights": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "viewpoint",
+                    "mountain_pass",
+                    "peak",
+                    "castle",
+                    "hilltop_village",
+                    "village",
+                    "heritage",
+                    "beach",
+                    "lake",
+                    "coast",
+                    "waterfall",
+                    "vineyard",
+                    "cypress",
+                    "scenic_road",
+                    "attraction"
+                  ]
+                },
+                "atKm": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "name",
+                "type",
+                "atKm"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "scenicStops": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "lat": {
+                  "type": "number",
+                  "minimum": -90,
+                  "maximum": 90
+                },
+                "lon": {
+                  "type": "number",
+                  "minimum": -180,
+                  "maximum": 180
+                },
+                "name": {
+                  "type": "string"
+                },
+                "types": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "viewpoint",
+                      "mountain_pass",
+                      "peak",
+                      "castle",
+                      "hilltop_village",
+                      "village",
+                      "heritage",
+                      "beach",
+                      "lake",
+                      "coast",
+                      "waterfall",
+                      "vineyard",
+                      "cypress",
+                      "scenic_road",
+                      "attraction"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "lat",
+                "lon",
+                "name",
+                "types"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "bestStretch": {
+            "type": "object",
+            "properties": {
+              "fromKm": {
+                "type": "number"
+              },
+              "toKm": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "fromKm",
+              "toKm"
+            ],
+            "additionalProperties": false,
+            "nullable": true
+          },
+          "conditions": {
+            "type": "object",
+            "properties": {
+              "departure": {
+                "type": "string"
+              },
+              "arrival": {
+                "type": "string"
+              },
+              "sunrise": {
+                "type": "string",
+                "nullable": true
+              },
+              "sunset": {
+                "type": "string",
+                "nullable": true
+              },
+              "arrivesAfterDark": {
+                "type": "boolean"
+              },
+              "goldenHour": {
+                "type": "object",
+                "properties": {
+                  "fromKm": {
+                    "type": "number"
+                  },
+                  "toKm": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "fromKm",
+                  "toKm"
+                ],
+                "additionalProperties": false,
+                "nullable": true
+              },
+              "glare": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "fromKm": {
+                      "type": "number"
+                    },
+                    "toKm": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "fromKm",
+                    "toKm"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "weather": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "atKm": {
+                      "type": "number"
+                    },
+                    "eta": {
+                      "type": "string"
+                    },
+                    "cloud": {
+                      "type": "number"
+                    },
+                    "lowCloud": {
+                      "type": "number"
+                    },
+                    "precipProb": {
+                      "type": "number"
+                    },
+                    "precipMm": {
+                      "type": "number"
+                    },
+                    "visibilityKm": {
+                      "type": "number",
+                      "nullable": true
+                    },
+                    "fog": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "atKm",
+                    "eta",
+                    "cloud",
+                    "lowCloud",
+                    "precipProb",
+                    "precipMm",
+                    "visibilityKm",
+                    "fog"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "verdict": {
+                "type": "string",
+                "enum": [
+                  "great",
+                  "good",
+                  "mixed",
+                  "poor"
+                ]
+              },
+              "notes": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "departure",
+              "arrival",
+              "sunrise",
+              "sunset",
+              "arrivesAfterDark",
+              "goldenHour",
+              "glare",
+              "weather",
+              "verdict",
+              "notes"
+            ],
+            "additionalProperties": false,
+            "nullable": true
+          },
+          "advisories": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "ztl",
+                    "lez",
+                    "unpaved",
+                    "vignette",
+                    "toll",
+                    "pass_closed",
+                    "pass_seasonal",
+                    "ferry"
+                  ]
+                },
+                "severity": {
+                  "type": "string",
+                  "enum": [
+                    "info",
+                    "warning",
+                    "block"
+                  ]
+                },
+                "title": {
+                  "type": "string"
+                },
+                "detail": {
+                  "type": "string"
+                },
+                "atKm": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "kind",
+                "severity",
+                "title",
+                "detail"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "handoff": {
+            "type": "object",
+            "properties": {
+              "googleMaps": {
+                "type": "string"
+              },
+              "appleMaps": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "googleMaps",
+              "appleMaps"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "id",
+          "rank",
+          "label",
+          "source",
+          "score",
+          "parts",
+          "summary",
+          "km",
+          "minutes",
+          "extraMinutes",
+          "polyline",
+          "bbox",
+          "highlights",
+          "scenicStops",
+          "bestStretch",
+          "conditions",
+          "advisories",
+          "handoff"
+        ],
+        "additionalProperties": false
+      },
+      "GeocodeResult": {
+        "type": "object",
+        "properties": {
+          "lat": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "lon": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "label": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "lat",
+          "lon",
+          "label"
+        ],
+        "additionalProperties": false
+      },
+      "Trip": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 5000,
+            "default": ""
+          },
+          "days": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "origin": {
+                  "type": "object",
+                  "properties": {
+                    "lat": {
+                      "type": "number",
+                      "minimum": -90,
+                      "maximum": 90
+                    },
+                    "lon": {
+                      "type": "number",
+                      "minimum": -180,
+                      "maximum": 180
+                    },
+                    "label": {
+                      "type": "string",
+                      "maxLength": 300
+                    }
+                  },
+                  "required": [
+                    "lat",
+                    "lon"
+                  ],
+                  "additionalProperties": false
+                },
+                "destination": {
+                  "type": "object",
+                  "properties": {
+                    "lat": {
+                      "type": "number",
+                      "minimum": -90,
+                      "maximum": 90
+                    },
+                    "lon": {
+                      "type": "number",
+                      "minimum": -180,
+                      "maximum": 180
+                    },
+                    "label": {
+                      "type": "string",
+                      "maxLength": 300
+                    }
+                  },
+                  "required": [
+                    "lat",
+                    "lon"
+                  ],
+                  "additionalProperties": false
+                },
+                "stops": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "lat": {
+                        "type": "number",
+                        "minimum": -90,
+                        "maximum": 90
+                      },
+                      "lon": {
+                        "type": "number",
+                        "minimum": -180,
+                        "maximum": 180
+                      },
+                      "label": {
+                        "type": "string",
+                        "maxLength": 300
+                      }
+                    },
+                    "required": [
+                      "lat",
+                      "lon"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "default": []
+                },
+                "extraMinutes": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 300,
+                  "default": 45
+                },
+                "route": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "rank": {
+                      "type": "integer"
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "source": {
+                      "type": "string",
+                      "enum": [
+                        "fastest",
+                        "scenic_model",
+                        "via_spots",
+                        "alternative"
+                      ]
+                    },
+                    "score": {
+                      "type": "number"
+                    },
+                    "parts": {
+                      "type": "object",
+                      "properties": {
+                        "scenery": {
+                          "type": "number"
+                        },
+                        "views": {
+                          "type": "number",
+                          "nullable": true
+                        },
+                        "relief": {
+                          "type": "number",
+                          "nullable": true
+                        },
+                        "bends": {
+                          "type": "number"
+                        },
+                        "variety": {
+                          "type": "number"
+                        },
+                        "motorwayPct": {
+                          "type": "number"
+                        },
+                        "urbanPct": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "scenery",
+                        "views",
+                        "relief",
+                        "bends",
+                        "variety",
+                        "motorwayPct",
+                        "urbanPct"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "summary": {
+                      "type": "string"
+                    },
+                    "km": {
+                      "type": "number"
+                    },
+                    "minutes": {
+                      "type": "number"
+                    },
+                    "extraMinutes": {
+                      "type": "number"
+                    },
+                    "polyline": {
+                      "type": "string"
+                    },
+                    "bbox": {
+                      "type": "array",
+                      "minItems": 4,
+                      "maxItems": 4,
+                      "items": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "number"
+                        }
+                      ]
+                    },
+                    "highlights": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "viewpoint",
+                              "mountain_pass",
+                              "peak",
+                              "castle",
+                              "hilltop_village",
+                              "village",
+                              "heritage",
+                              "beach",
+                              "lake",
+                              "coast",
+                              "waterfall",
+                              "vineyard",
+                              "cypress",
+                              "scenic_road",
+                              "attraction"
+                            ]
+                          },
+                          "atKm": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "type",
+                          "atKm"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "scenicStops": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "lat": {
+                            "type": "number",
+                            "minimum": -90,
+                            "maximum": 90
+                          },
+                          "lon": {
+                            "type": "number",
+                            "minimum": -180,
+                            "maximum": 180
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "types": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "viewpoint",
+                                "mountain_pass",
+                                "peak",
+                                "castle",
+                                "hilltop_village",
+                                "village",
+                                "heritage",
+                                "beach",
+                                "lake",
+                                "coast",
+                                "waterfall",
+                                "vineyard",
+                                "cypress",
+                                "scenic_road",
+                                "attraction"
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "lat",
+                          "lon",
+                          "name",
+                          "types"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "bestStretch": {
+                      "type": "object",
+                      "properties": {
+                        "fromKm": {
+                          "type": "number"
+                        },
+                        "toKm": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "fromKm",
+                        "toKm"
+                      ],
+                      "additionalProperties": false,
+                      "nullable": true
+                    },
+                    "conditions": {
+                      "type": "object",
+                      "properties": {
+                        "departure": {
+                          "type": "string"
+                        },
+                        "arrival": {
+                          "type": "string"
+                        },
+                        "sunrise": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "sunset": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "arrivesAfterDark": {
+                          "type": "boolean"
+                        },
+                        "goldenHour": {
+                          "type": "object",
+                          "properties": {
+                            "fromKm": {
+                              "type": "number"
+                            },
+                            "toKm": {
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "fromKm",
+                            "toKm"
+                          ],
+                          "additionalProperties": false,
+                          "nullable": true
+                        },
+                        "glare": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "fromKm": {
+                                "type": "number"
+                              },
+                              "toKm": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "fromKm",
+                              "toKm"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "weather": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "atKm": {
+                                "type": "number"
+                              },
+                              "eta": {
+                                "type": "string"
+                              },
+                              "cloud": {
+                                "type": "number"
+                              },
+                              "lowCloud": {
+                                "type": "number"
+                              },
+                              "precipProb": {
+                                "type": "number"
+                              },
+                              "precipMm": {
+                                "type": "number"
+                              },
+                              "visibilityKm": {
+                                "type": "number",
+                                "nullable": true
+                              },
+                              "fog": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "atKm",
+                              "eta",
+                              "cloud",
+                              "lowCloud",
+                              "precipProb",
+                              "precipMm",
+                              "visibilityKm",
+                              "fog"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "verdict": {
+                          "type": "string",
+                          "enum": [
+                            "great",
+                            "good",
+                            "mixed",
+                            "poor"
+                          ]
+                        },
+                        "notes": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "required": [
+                        "departure",
+                        "arrival",
+                        "sunrise",
+                        "sunset",
+                        "arrivesAfterDark",
+                        "goldenHour",
+                        "glare",
+                        "weather",
+                        "verdict",
+                        "notes"
+                      ],
+                      "additionalProperties": false,
+                      "nullable": true
+                    },
+                    "advisories": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "ztl",
+                              "lez",
+                              "unpaved",
+                              "vignette",
+                              "toll",
+                              "pass_closed",
+                              "pass_seasonal",
+                              "ferry"
+                            ]
+                          },
+                          "severity": {
+                            "type": "string",
+                            "enum": [
+                              "info",
+                              "warning",
+                              "block"
+                            ]
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "detail": {
+                            "type": "string"
+                          },
+                          "atKm": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "severity",
+                          "title",
+                          "detail"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "handoff": {
+                      "type": "object",
+                      "properties": {
+                        "googleMaps": {
+                          "type": "string"
+                        },
+                        "appleMaps": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "googleMaps",
+                        "appleMaps"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "rank",
+                    "label",
+                    "source",
+                    "score",
+                    "parts",
+                    "summary",
+                    "km",
+                    "minutes",
+                    "extraMinutes",
+                    "polyline",
+                    "bbox",
+                    "highlights",
+                    "scenicStops",
+                    "bestStretch",
+                    "conditions",
+                    "advisories",
+                    "handoff"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "origin",
+                "destination"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 1,
+            "maxItems": 60
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "deleted": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "days",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": false
+      },
+      "Rating": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tripId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "planId": {
+            "type": "string"
+          },
+          "routeId": {
+            "type": "string"
+          },
+          "thumbs": {
+            "type": "string",
+            "enum": [
+              "up",
+              "down"
+            ]
+          },
+          "comment": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "modelVersion": {
+            "type": "string"
+          },
+          "score": {
+            "type": "number"
+          },
+          "parts": {
+            "type": "object",
+            "properties": {
+              "scenery": {
+                "type": "number"
+              },
+              "views": {
+                "type": "number",
+                "nullable": true
+              },
+              "relief": {
+                "type": "number",
+                "nullable": true
+              },
+              "bends": {
+                "type": "number"
+              },
+              "variety": {
+                "type": "number"
+              },
+              "motorwayPct": {
+                "type": "number"
+              },
+              "urbanPct": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "scenery",
+              "views",
+              "relief",
+              "bends",
+              "variety",
+              "motorwayPct",
+              "urbanPct"
+            ],
+            "additionalProperties": false
+          },
+          "polyline": {
+            "type": "string"
+          },
+          "drivenAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "thumbs",
+          "modelVersion",
+          "score",
+          "parts",
+          "polyline",
+          "createdAt"
+        ],
+        "additionalProperties": false
+      },
+      "SyncRequest": {
+        "type": "object",
+        "properties": {
+          "cursor": {
+            "type": "integer",
+            "minimum": 0,
+            "nullable": true
+          },
+          "changes": {
+            "type": "object",
+            "properties": {
+              "trips": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "name": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 120
+                    },
+                    "notes": {
+                      "type": "string",
+                      "maxLength": 5000,
+                      "default": ""
+                    },
+                    "days": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "date": {
+                            "type": "string",
+                            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                          },
+                          "origin": {
+                            "type": "object",
+                            "properties": {
+                              "lat": {
+                                "type": "number",
+                                "minimum": -90,
+                                "maximum": 90
+                              },
+                              "lon": {
+                                "type": "number",
+                                "minimum": -180,
+                                "maximum": 180
+                              },
+                              "label": {
+                                "type": "string",
+                                "maxLength": 300
+                              }
+                            },
+                            "required": [
+                              "lat",
+                              "lon"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "destination": {
+                            "type": "object",
+                            "properties": {
+                              "lat": {
+                                "type": "number",
+                                "minimum": -90,
+                                "maximum": 90
+                              },
+                              "lon": {
+                                "type": "number",
+                                "minimum": -180,
+                                "maximum": 180
+                              },
+                              "label": {
+                                "type": "string",
+                                "maxLength": 300
+                              }
+                            },
+                            "required": [
+                              "lat",
+                              "lon"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "stops": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "lat": {
+                                  "type": "number",
+                                  "minimum": -90,
+                                  "maximum": 90
+                                },
+                                "lon": {
+                                  "type": "number",
+                                  "minimum": -180,
+                                  "maximum": 180
+                                },
+                                "label": {
+                                  "type": "string",
+                                  "maxLength": 300
+                                }
+                              },
+                              "required": [
+                                "lat",
+                                "lon"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "default": []
+                          },
+                          "extraMinutes": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 300,
+                            "default": 45
+                          },
+                          "route": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "rank": {
+                                "type": "integer"
+                              },
+                              "label": {
+                                "type": "string"
+                              },
+                              "source": {
+                                "type": "string",
+                                "enum": [
+                                  "fastest",
+                                  "scenic_model",
+                                  "via_spots",
+                                  "alternative"
+                                ]
+                              },
+                              "score": {
+                                "type": "number"
+                              },
+                              "parts": {
+                                "type": "object",
+                                "properties": {
+                                  "scenery": {
+                                    "type": "number"
+                                  },
+                                  "views": {
+                                    "type": "number",
+                                    "nullable": true
+                                  },
+                                  "relief": {
+                                    "type": "number",
+                                    "nullable": true
+                                  },
+                                  "bends": {
+                                    "type": "number"
+                                  },
+                                  "variety": {
+                                    "type": "number"
+                                  },
+                                  "motorwayPct": {
+                                    "type": "number"
+                                  },
+                                  "urbanPct": {
+                                    "type": "number"
+                                  }
+                                },
+                                "required": [
+                                  "scenery",
+                                  "views",
+                                  "relief",
+                                  "bends",
+                                  "variety",
+                                  "motorwayPct",
+                                  "urbanPct"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "summary": {
+                                "type": "string"
+                              },
+                              "km": {
+                                "type": "number"
+                              },
+                              "minutes": {
+                                "type": "number"
+                              },
+                              "extraMinutes": {
+                                "type": "number"
+                              },
+                              "polyline": {
+                                "type": "string"
+                              },
+                              "bbox": {
+                                "type": "array",
+                                "minItems": 4,
+                                "maxItems": 4,
+                                "items": [
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "number"
+                                  }
+                                ]
+                              },
+                              "highlights": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "name": {
+                                      "type": "string"
+                                    },
+                                    "type": {
+                                      "type": "string",
+                                      "enum": [
+                                        "viewpoint",
+                                        "mountain_pass",
+                                        "peak",
+                                        "castle",
+                                        "hilltop_village",
+                                        "village",
+                                        "heritage",
+                                        "beach",
+                                        "lake",
+                                        "coast",
+                                        "waterfall",
+                                        "vineyard",
+                                        "cypress",
+                                        "scenic_road",
+                                        "attraction"
+                                      ]
+                                    },
+                                    "atKm": {
+                                      "type": "number"
+                                    }
+                                  },
+                                  "required": [
+                                    "name",
+                                    "type",
+                                    "atKm"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "scenicStops": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "lat": {
+                                      "type": "number",
+                                      "minimum": -90,
+                                      "maximum": 90
+                                    },
+                                    "lon": {
+                                      "type": "number",
+                                      "minimum": -180,
+                                      "maximum": 180
+                                    },
+                                    "name": {
+                                      "type": "string"
+                                    },
+                                    "types": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string",
+                                        "enum": [
+                                          "viewpoint",
+                                          "mountain_pass",
+                                          "peak",
+                                          "castle",
+                                          "hilltop_village",
+                                          "village",
+                                          "heritage",
+                                          "beach",
+                                          "lake",
+                                          "coast",
+                                          "waterfall",
+                                          "vineyard",
+                                          "cypress",
+                                          "scenic_road",
+                                          "attraction"
+                                        ]
+                                      }
+                                    }
+                                  },
+                                  "required": [
+                                    "lat",
+                                    "lon",
+                                    "name",
+                                    "types"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "bestStretch": {
+                                "type": "object",
+                                "properties": {
+                                  "fromKm": {
+                                    "type": "number"
+                                  },
+                                  "toKm": {
+                                    "type": "number"
+                                  }
+                                },
+                                "required": [
+                                  "fromKm",
+                                  "toKm"
+                                ],
+                                "additionalProperties": false,
+                                "nullable": true
+                              },
+                              "conditions": {
+                                "type": "object",
+                                "properties": {
+                                  "departure": {
+                                    "type": "string"
+                                  },
+                                  "arrival": {
+                                    "type": "string"
+                                  },
+                                  "sunrise": {
+                                    "type": "string",
+                                    "nullable": true
+                                  },
+                                  "sunset": {
+                                    "type": "string",
+                                    "nullable": true
+                                  },
+                                  "arrivesAfterDark": {
+                                    "type": "boolean"
+                                  },
+                                  "goldenHour": {
+                                    "type": "object",
+                                    "properties": {
+                                      "fromKm": {
+                                        "type": "number"
+                                      },
+                                      "toKm": {
+                                        "type": "number"
+                                      }
+                                    },
+                                    "required": [
+                                      "fromKm",
+                                      "toKm"
+                                    ],
+                                    "additionalProperties": false,
+                                    "nullable": true
+                                  },
+                                  "glare": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "fromKm": {
+                                          "type": "number"
+                                        },
+                                        "toKm": {
+                                          "type": "number"
+                                        }
+                                      },
+                                      "required": [
+                                        "fromKm",
+                                        "toKm"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "weather": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "atKm": {
+                                          "type": "number"
+                                        },
+                                        "eta": {
+                                          "type": "string"
+                                        },
+                                        "cloud": {
+                                          "type": "number"
+                                        },
+                                        "lowCloud": {
+                                          "type": "number"
+                                        },
+                                        "precipProb": {
+                                          "type": "number"
+                                        },
+                                        "precipMm": {
+                                          "type": "number"
+                                        },
+                                        "visibilityKm": {
+                                          "type": "number",
+                                          "nullable": true
+                                        },
+                                        "fog": {
+                                          "type": "boolean"
+                                        }
+                                      },
+                                      "required": [
+                                        "atKm",
+                                        "eta",
+                                        "cloud",
+                                        "lowCloud",
+                                        "precipProb",
+                                        "precipMm",
+                                        "visibilityKm",
+                                        "fog"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "verdict": {
+                                    "type": "string",
+                                    "enum": [
+                                      "great",
+                                      "good",
+                                      "mixed",
+                                      "poor"
+                                    ]
+                                  },
+                                  "notes": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "departure",
+                                  "arrival",
+                                  "sunrise",
+                                  "sunset",
+                                  "arrivesAfterDark",
+                                  "goldenHour",
+                                  "glare",
+                                  "weather",
+                                  "verdict",
+                                  "notes"
+                                ],
+                                "additionalProperties": false,
+                                "nullable": true
+                              },
+                              "advisories": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "type": "string",
+                                      "enum": [
+                                        "ztl",
+                                        "lez",
+                                        "unpaved",
+                                        "vignette",
+                                        "toll",
+                                        "pass_closed",
+                                        "pass_seasonal",
+                                        "ferry"
+                                      ]
+                                    },
+                                    "severity": {
+                                      "type": "string",
+                                      "enum": [
+                                        "info",
+                                        "warning",
+                                        "block"
+                                      ]
+                                    },
+                                    "title": {
+                                      "type": "string"
+                                    },
+                                    "detail": {
+                                      "type": "string"
+                                    },
+                                    "atKm": {
+                                      "type": "number"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "severity",
+                                    "title",
+                                    "detail"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "handoff": {
+                                "type": "object",
+                                "properties": {
+                                  "googleMaps": {
+                                    "type": "string"
+                                  },
+                                  "appleMaps": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "googleMaps",
+                                  "appleMaps"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "rank",
+                              "label",
+                              "source",
+                              "score",
+                              "parts",
+                              "summary",
+                              "km",
+                              "minutes",
+                              "extraMinutes",
+                              "polyline",
+                              "bbox",
+                              "highlights",
+                              "scenicStops",
+                              "bestStretch",
+                              "conditions",
+                              "advisories",
+                              "handoff"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "required": [
+                          "origin",
+                          "destination"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "minItems": 1,
+                      "maxItems": 60
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "deleted": {
+                      "type": "boolean",
+                      "default": false
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "days",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "additionalProperties": false
+                },
+                "maxItems": 500,
+                "default": []
+              },
+              "ratings": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "tripId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "planId": {
+                      "type": "string"
+                    },
+                    "routeId": {
+                      "type": "string"
+                    },
+                    "thumbs": {
+                      "type": "string",
+                      "enum": [
+                        "up",
+                        "down"
+                      ]
+                    },
+                    "comment": {
+                      "type": "string",
+                      "maxLength": 2000
+                    },
+                    "modelVersion": {
+                      "type": "string"
+                    },
+                    "score": {
+                      "type": "number"
+                    },
+                    "parts": {
+                      "type": "object",
+                      "properties": {
+                        "scenery": {
+                          "type": "number"
+                        },
+                        "views": {
+                          "type": "number",
+                          "nullable": true
+                        },
+                        "relief": {
+                          "type": "number",
+                          "nullable": true
+                        },
+                        "bends": {
+                          "type": "number"
+                        },
+                        "variety": {
+                          "type": "number"
+                        },
+                        "motorwayPct": {
+                          "type": "number"
+                        },
+                        "urbanPct": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "scenery",
+                        "views",
+                        "relief",
+                        "bends",
+                        "variety",
+                        "motorwayPct",
+                        "urbanPct"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "polyline": {
+                      "type": "string"
+                    },
+                    "drivenAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "thumbs",
+                    "modelVersion",
+                    "score",
+                    "parts",
+                    "polyline",
+                    "createdAt"
+                  ],
+                  "additionalProperties": false
+                },
+                "maxItems": 500,
+                "default": []
+              }
+            },
+            "additionalProperties": false,
+            "default": {}
+          }
+        },
+        "required": [
+          "cursor"
+        ],
+        "additionalProperties": false
+      },
+      "SyncResponse": {
+        "type": "object",
+        "properties": {
+          "cursor": {
+            "type": "integer"
+          },
+          "changes": {
+            "type": "object",
+            "properties": {
+              "trips": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "name": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 120
+                    },
+                    "notes": {
+                      "type": "string",
+                      "maxLength": 5000,
+                      "default": ""
+                    },
+                    "days": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "date": {
+                            "type": "string",
+                            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                          },
+                          "origin": {
+                            "type": "object",
+                            "properties": {
+                              "lat": {
+                                "type": "number",
+                                "minimum": -90,
+                                "maximum": 90
+                              },
+                              "lon": {
+                                "type": "number",
+                                "minimum": -180,
+                                "maximum": 180
+                              },
+                              "label": {
+                                "type": "string",
+                                "maxLength": 300
+                              }
+                            },
+                            "required": [
+                              "lat",
+                              "lon"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "destination": {
+                            "type": "object",
+                            "properties": {
+                              "lat": {
+                                "type": "number",
+                                "minimum": -90,
+                                "maximum": 90
+                              },
+                              "lon": {
+                                "type": "number",
+                                "minimum": -180,
+                                "maximum": 180
+                              },
+                              "label": {
+                                "type": "string",
+                                "maxLength": 300
+                              }
+                            },
+                            "required": [
+                              "lat",
+                              "lon"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "stops": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "lat": {
+                                  "type": "number",
+                                  "minimum": -90,
+                                  "maximum": 90
+                                },
+                                "lon": {
+                                  "type": "number",
+                                  "minimum": -180,
+                                  "maximum": 180
+                                },
+                                "label": {
+                                  "type": "string",
+                                  "maxLength": 300
+                                }
+                              },
+                              "required": [
+                                "lat",
+                                "lon"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "default": []
+                          },
+                          "extraMinutes": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 300,
+                            "default": 45
+                          },
+                          "route": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "rank": {
+                                "type": "integer"
+                              },
+                              "label": {
+                                "type": "string"
+                              },
+                              "source": {
+                                "type": "string",
+                                "enum": [
+                                  "fastest",
+                                  "scenic_model",
+                                  "via_spots",
+                                  "alternative"
+                                ]
+                              },
+                              "score": {
+                                "type": "number"
+                              },
+                              "parts": {
+                                "type": "object",
+                                "properties": {
+                                  "scenery": {
+                                    "type": "number"
+                                  },
+                                  "views": {
+                                    "type": "number",
+                                    "nullable": true
+                                  },
+                                  "relief": {
+                                    "type": "number",
+                                    "nullable": true
+                                  },
+                                  "bends": {
+                                    "type": "number"
+                                  },
+                                  "variety": {
+                                    "type": "number"
+                                  },
+                                  "motorwayPct": {
+                                    "type": "number"
+                                  },
+                                  "urbanPct": {
+                                    "type": "number"
+                                  }
+                                },
+                                "required": [
+                                  "scenery",
+                                  "views",
+                                  "relief",
+                                  "bends",
+                                  "variety",
+                                  "motorwayPct",
+                                  "urbanPct"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "summary": {
+                                "type": "string"
+                              },
+                              "km": {
+                                "type": "number"
+                              },
+                              "minutes": {
+                                "type": "number"
+                              },
+                              "extraMinutes": {
+                                "type": "number"
+                              },
+                              "polyline": {
+                                "type": "string"
+                              },
+                              "bbox": {
+                                "type": "array",
+                                "minItems": 4,
+                                "maxItems": 4,
+                                "items": [
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "number"
+                                  }
+                                ]
+                              },
+                              "highlights": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "name": {
+                                      "type": "string"
+                                    },
+                                    "type": {
+                                      "type": "string",
+                                      "enum": [
+                                        "viewpoint",
+                                        "mountain_pass",
+                                        "peak",
+                                        "castle",
+                                        "hilltop_village",
+                                        "village",
+                                        "heritage",
+                                        "beach",
+                                        "lake",
+                                        "coast",
+                                        "waterfall",
+                                        "vineyard",
+                                        "cypress",
+                                        "scenic_road",
+                                        "attraction"
+                                      ]
+                                    },
+                                    "atKm": {
+                                      "type": "number"
+                                    }
+                                  },
+                                  "required": [
+                                    "name",
+                                    "type",
+                                    "atKm"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "scenicStops": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "lat": {
+                                      "type": "number",
+                                      "minimum": -90,
+                                      "maximum": 90
+                                    },
+                                    "lon": {
+                                      "type": "number",
+                                      "minimum": -180,
+                                      "maximum": 180
+                                    },
+                                    "name": {
+                                      "type": "string"
+                                    },
+                                    "types": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string",
+                                        "enum": [
+                                          "viewpoint",
+                                          "mountain_pass",
+                                          "peak",
+                                          "castle",
+                                          "hilltop_village",
+                                          "village",
+                                          "heritage",
+                                          "beach",
+                                          "lake",
+                                          "coast",
+                                          "waterfall",
+                                          "vineyard",
+                                          "cypress",
+                                          "scenic_road",
+                                          "attraction"
+                                        ]
+                                      }
+                                    }
+                                  },
+                                  "required": [
+                                    "lat",
+                                    "lon",
+                                    "name",
+                                    "types"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "bestStretch": {
+                                "type": "object",
+                                "properties": {
+                                  "fromKm": {
+                                    "type": "number"
+                                  },
+                                  "toKm": {
+                                    "type": "number"
+                                  }
+                                },
+                                "required": [
+                                  "fromKm",
+                                  "toKm"
+                                ],
+                                "additionalProperties": false,
+                                "nullable": true
+                              },
+                              "conditions": {
+                                "type": "object",
+                                "properties": {
+                                  "departure": {
+                                    "type": "string"
+                                  },
+                                  "arrival": {
+                                    "type": "string"
+                                  },
+                                  "sunrise": {
+                                    "type": "string",
+                                    "nullable": true
+                                  },
+                                  "sunset": {
+                                    "type": "string",
+                                    "nullable": true
+                                  },
+                                  "arrivesAfterDark": {
+                                    "type": "boolean"
+                                  },
+                                  "goldenHour": {
+                                    "type": "object",
+                                    "properties": {
+                                      "fromKm": {
+                                        "type": "number"
+                                      },
+                                      "toKm": {
+                                        "type": "number"
+                                      }
+                                    },
+                                    "required": [
+                                      "fromKm",
+                                      "toKm"
+                                    ],
+                                    "additionalProperties": false,
+                                    "nullable": true
+                                  },
+                                  "glare": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "fromKm": {
+                                          "type": "number"
+                                        },
+                                        "toKm": {
+                                          "type": "number"
+                                        }
+                                      },
+                                      "required": [
+                                        "fromKm",
+                                        "toKm"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "weather": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "atKm": {
+                                          "type": "number"
+                                        },
+                                        "eta": {
+                                          "type": "string"
+                                        },
+                                        "cloud": {
+                                          "type": "number"
+                                        },
+                                        "lowCloud": {
+                                          "type": "number"
+                                        },
+                                        "precipProb": {
+                                          "type": "number"
+                                        },
+                                        "precipMm": {
+                                          "type": "number"
+                                        },
+                                        "visibilityKm": {
+                                          "type": "number",
+                                          "nullable": true
+                                        },
+                                        "fog": {
+                                          "type": "boolean"
+                                        }
+                                      },
+                                      "required": [
+                                        "atKm",
+                                        "eta",
+                                        "cloud",
+                                        "lowCloud",
+                                        "precipProb",
+                                        "precipMm",
+                                        "visibilityKm",
+                                        "fog"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "verdict": {
+                                    "type": "string",
+                                    "enum": [
+                                      "great",
+                                      "good",
+                                      "mixed",
+                                      "poor"
+                                    ]
+                                  },
+                                  "notes": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "departure",
+                                  "arrival",
+                                  "sunrise",
+                                  "sunset",
+                                  "arrivesAfterDark",
+                                  "goldenHour",
+                                  "glare",
+                                  "weather",
+                                  "verdict",
+                                  "notes"
+                                ],
+                                "additionalProperties": false,
+                                "nullable": true
+                              },
+                              "advisories": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "type": "string",
+                                      "enum": [
+                                        "ztl",
+                                        "lez",
+                                        "unpaved",
+                                        "vignette",
+                                        "toll",
+                                        "pass_closed",
+                                        "pass_seasonal",
+                                        "ferry"
+                                      ]
+                                    },
+                                    "severity": {
+                                      "type": "string",
+                                      "enum": [
+                                        "info",
+                                        "warning",
+                                        "block"
+                                      ]
+                                    },
+                                    "title": {
+                                      "type": "string"
+                                    },
+                                    "detail": {
+                                      "type": "string"
+                                    },
+                                    "atKm": {
+                                      "type": "number"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "severity",
+                                    "title",
+                                    "detail"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "handoff": {
+                                "type": "object",
+                                "properties": {
+                                  "googleMaps": {
+                                    "type": "string"
+                                  },
+                                  "appleMaps": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "googleMaps",
+                                  "appleMaps"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "rank",
+                              "label",
+                              "source",
+                              "score",
+                              "parts",
+                              "summary",
+                              "km",
+                              "minutes",
+                              "extraMinutes",
+                              "polyline",
+                              "bbox",
+                              "highlights",
+                              "scenicStops",
+                              "bestStretch",
+                              "conditions",
+                              "advisories",
+                              "handoff"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "required": [
+                          "origin",
+                          "destination"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "minItems": 1,
+                      "maxItems": 60
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "deleted": {
+                      "type": "boolean",
+                      "default": false
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "days",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "ratings": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "tripId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "planId": {
+                      "type": "string"
+                    },
+                    "routeId": {
+                      "type": "string"
+                    },
+                    "thumbs": {
+                      "type": "string",
+                      "enum": [
+                        "up",
+                        "down"
+                      ]
+                    },
+                    "comment": {
+                      "type": "string",
+                      "maxLength": 2000
+                    },
+                    "modelVersion": {
+                      "type": "string"
+                    },
+                    "score": {
+                      "type": "number"
+                    },
+                    "parts": {
+                      "type": "object",
+                      "properties": {
+                        "scenery": {
+                          "type": "number"
+                        },
+                        "views": {
+                          "type": "number",
+                          "nullable": true
+                        },
+                        "relief": {
+                          "type": "number",
+                          "nullable": true
+                        },
+                        "bends": {
+                          "type": "number"
+                        },
+                        "variety": {
+                          "type": "number"
+                        },
+                        "motorwayPct": {
+                          "type": "number"
+                        },
+                        "urbanPct": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "scenery",
+                        "views",
+                        "relief",
+                        "bends",
+                        "variety",
+                        "motorwayPct",
+                        "urbanPct"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "polyline": {
+                      "type": "string"
+                    },
+                    "drivenAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "thumbs",
+                    "modelVersion",
+                    "score",
+                    "parts",
+                    "polyline",
+                    "createdAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "trips",
+              "ratings"
+            ],
+            "additionalProperties": false
+          },
+          "rejected": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "cursor",
+          "changes",
+          "rejected"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "securitySchemes": {
+      "bearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  },
+  "paths": {
+    "/v1/plan": {
+      "post": {
+        "operationId": "plan",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlanRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Ranked routes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "422": {
+            "description": "No route"
+          }
+        }
+      }
+    },
+    "/v1/geocode": {
+      "get": {
+        "operationId": "geocode",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "lat",
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "lon",
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Places",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/GeocodeResult"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/anonymous": {
+      "post": {
+        "operationId": "authAnonymous",
+        "responses": {
+          "200": {
+            "description": "Token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "userId": {
+                      "type": "string"
+                    },
+                    "token": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/apple": {
+      "post": {
+        "operationId": "authApple",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "identityToken"
+                ],
+                "properties": {
+                  "identityToken": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Token"
+          },
+          "401": {
+            "description": "Not verified"
+          }
+        }
+      }
+    },
+    "/v1/trips": {
+      "get": {
+        "operationId": "listTrips",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Trips",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "trips": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Trip"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/trips/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "get": {
+        "operationId": "getTrip",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Trip",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Trip"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      },
+      "put": {
+        "operationId": "putTrip",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Trip"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Stored",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Trip"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Server has a newer version",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Trip"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteTrip",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          }
+        }
+      }
+    },
+    "/v1/sync": {
+      "post": {
+        "operationId": "sync",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SyncRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Changes since cursor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SyncResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ratings": {
+      "post": {
+        "operationId": "addRatings",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "ratings": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/Rating"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Stored"
+          }
+        }
+      }
+    },
+    "/v1/regions": {
+      "get": {
+        "operationId": "regions",
+        "responses": {
+          "200": {
+            "description": "Regions and offline packs"
+          }
+        }
+      }
+    },
+    "/healthz": {
+      "get": {
+        "operationId": "health",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    }
+  }
+}
