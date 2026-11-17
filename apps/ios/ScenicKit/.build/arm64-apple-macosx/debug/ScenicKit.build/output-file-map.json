@@ -1,0 +1,54 @@
+{
+  "": {
+    "swift-dependencies": "/Users/nikolaydimitrov/2. Builds/scenic-route/apps/ios/ScenicKit/.build/arm64-apple-macosx/debug/ScenicKit.build/master.swiftdeps"
+  },
+  "/Users/nikolaydimitrov/2. Builds/scenic-route/apps/ios/ScenicKit/Sources/ScenicKit/APIClient.swift": {
+    "dependencies": "/Users/nikolaydimitrov/2. Builds/scenic-route/apps/ios/ScenicKit/.build/arm64-apple-macosx/debug/ScenicKit.build/APIClient.d",
+    "object": "/Users/nikolaydimitrov/2. Builds/scenic-route/apps/ios/ScenicKit/.build/arm64-apple-macosx/debug/ScenicKit.build/APIClient.swift.o",
+    "swiftmodule": "/Users/nikolaydimitrov/2. Builds/scenic-route/apps/ios/ScenicKit/.build/arm64-apple-macosx/debug/ScenicKit.build/APIClient~partial.swiftmodule",
+    "swift-dependencies": "/Users/nikolaydimitrov/2. Builds/scenic-route/apps/ios/ScenicKit/.build/arm64-apple-macosx/debug/ScenicKit.build/APIClient.swiftdeps",
+    "diagnostics": "/Users/nikolaydimitrov/2. Builds/scenic-route/apps/ios/ScenicKit/.build/arm64-apple-macosx/debug/ScenicKit.build/APIClient.dia"
+  },
+  "/Users/nikolaydimitrov/2. Builds/scenic-route/apps/ios/ScenicKit/Sources/ScenicKit/Format.swift": {
+    "dependencies": "/Users/nikolaydimitrov/2. Builds/scenic-route/apps/ios/ScenicKit/.build/arm64-apple-macosx/debug/ScenicKit.build/Format.d",
+    "object": "/Users/nikolaydimitrov/2. Builds/scenic-route/apps/ios/ScenicKit/.build/arm64-apple-macosx/debug/ScenicKit.build/Format.swift.o",
+    "swiftmodule": "/Users/nikolaydimitrov/2. Builds/scenic-route/apps/ios/ScenicKit/.build/arm64-apple-macosx/debug/ScenicKit.build/Format~partial.swiftmodule",
+    "swift-dependencies": "/Users/nikolaydimitrov/2. Builds/scenic-route/apps/ios/ScenicKit/.build/arm64-apple-macosx/debug/ScenicKit.build/Format.swiftdeps",
+    "diagnostics": "/Users/nikolaydimitrov/2. Builds/scenic-route/apps/ios/ScenicKit/.build/arm64-apple-macosx/debug/ScenicKit.build/Format.dia"
+  },
+  "/Users/nikolaydimitrov/2. Builds/scenic-route/apps/ios/ScenicKit/Sources/ScenicKit/Models.swift": {
+    "dependencies": "/Users/nikolaydimitrov/2. Builds/scenic-route/apps/ios/ScenicKit/.build/arm64-apple-macosx/debug/ScenicKit.build/Models.d",
+    "object": "/Users/nikolaydimitrov/2. Builds/scenic-route/apps/ios/ScenicKit/.build/arm64-apple-macosx/debug/ScenicKit.build/Models.swift.o",
+    "swiftmodule": "/Users/nikolaydimitrov/2. Builds/scenic-route/apps/ios/ScenicKit/.build/arm64-apple-macosx/debug/ScenicKit.build/Models~partial.swiftmodule",
+    "swift-dependencies": "/Users/nikolaydimitrov/2. Builds/scenic-route/apps/ios/ScenicKit/.build/arm64-apple-macosx/debug/ScenicKit.build/Models.swiftdeps",
+    "diagnostics": "/Users/nikolaydimitrov/2. Builds/scenic-route/apps/ios/ScenicKit/.build/arm64-apple-macosx/debug/ScenicKit.build/Models.dia"
+  },
+  "/Users/nikolaydimitrov/2. Builds/scenic-route/apps/ios/ScenicKit/Sources/ScenicKit/Polyline.swift": {
+    "dependencies": "/Users/nikolaydimitrov/2. Builds/scenic-route/apps/ios/ScenicKit/.build/arm64-apple-macosx/debug/ScenicKit.build/Polyline.d",
+    "object": "/Users/nikolaydimitrov/2. Builds/scenic-route/apps/ios/ScenicKit/.build/arm64-apple-macosx/debug/ScenicKit.build/Polyline.swift.o",
+    "swiftmodule": "/Users/nikolaydimitrov/2. Builds/scenic-route/apps/ios/ScenicKit/.build/arm64-apple-macosx/debug/ScenicKit.build/Polyline~partial.swiftmodule",
+    "swift-dependencies": "/Users/nikolaydimitrov/2. Builds/scenic-route/apps/ios/ScenicKit/.build/arm64-apple-macosx/debug/ScenicKit.build/Polyline.swiftdeps",
+    "diagnostics": "/Users/nikolaydimitrov/2. Builds/scenic-route/apps/ios/ScenicKit/.build/arm64-apple-macosx/debug/ScenicKit.build/Polyline.dia"
+  },
+  "/Users/nikolaydimitrov/2. Builds/scenic-route/apps/ios/ScenicKit/Sources/ScenicKit/Theme.swift": {
+    "dependencies": "/Users/nikolaydimitrov/2. Builds/scenic-route/apps/ios/ScenicKit/.build/arm64-apple-macosx/debug/ScenicKit.build/Theme.d",
+    "object": "/Users/nikolaydimitrov/2. Builds/scenic-route/apps/ios/ScenicKit/.build/arm64-apple-macosx/debug/ScenicKit.build/Theme.swift.o",
+    "swiftmodule": "/Users/nikolaydimitrov/2. Builds/scenic-route/apps/ios/ScenicKit/.build/arm64-apple-macosx/debug/ScenicKit.build/Theme~partial.swiftmodule",
+    "swift-dependencies": "/Users/nikolaydimitrov/2. Builds/scenic-route/apps/ios/ScenicKit/.build/arm64-apple-macosx/debug/ScenicKit.build/Theme.swiftdeps",
+    "diagnostics": "/Users/nikolaydimitrov/2. Builds/scenic-route/apps/ios/ScenicKit/.build/arm64-apple-macosx/debug/ScenicKit.build/Theme.dia"
+  },
+  "/Users/nikolaydimitrov/2. Builds/scenic-route/apps/ios/ScenicKit/Sources/ScenicKit/TripStore.swift": {
+    "dependencies": "/Users/nikolaydimitrov/2. Builds/scenic-route/apps/ios/ScenicKit/.build/arm64-apple-macosx/debug/ScenicKit.build/TripStore.d",
+    "object": "/Users/nikolaydimitrov/2. Builds/scenic-route/apps/ios/ScenicKit/.build/arm64-apple-macosx/debug/ScenicKit.build/TripStore.swift.o",
+    "swiftmodule": "/Users/nikolaydimitrov/2. Builds/scenic-route/apps/ios/ScenicKit/.build/arm64-apple-macosx/debug/ScenicKit.build/TripStore~partial.swiftmodule",
+    "swift-dependencies": "/Users/nikolaydimitrov/2. Builds/scenic-route/apps/ios/ScenicKit/.build/arm64-apple-macosx/debug/ScenicKit.build/TripStore.swiftdeps",
+    "diagnostics": "/Users/nikolaydimitrov/2. Builds/scenic-route/apps/ios/ScenicKit/.build/arm64-apple-macosx/debug/ScenicKit.build/TripStore.dia"
+  },
+  "/Users/nikolaydimitrov/2. Builds/scenic-route/apps/ios/ScenicKit/.build/arm64-apple-macosx/debug/ScenicKit.build/DerivedSources/resource_bundle_accessor.swift": {
+    "dependencies": "/Users/nikolaydimitrov/2. Builds/scenic-route/apps/ios/ScenicKit/.build/arm64-apple-macosx/debug/ScenicKit.build/resource_bundle_accessor.d",
+    "object": "/Users/nikolaydimitrov/2. Builds/scenic-route/apps/ios/ScenicKit/.build/arm64-apple-macosx/debug/ScenicKit.build/resource_bundle_accessor.swift.o",
+    "swiftmodule": "/Users/nikolaydimitrov/2. Builds/scenic-route/apps/ios/ScenicKit/.build/arm64-apple-macosx/debug/ScenicKit.build/resource_bundle_accessor~partial.swiftmodule",
+    "swift-dependencies": "/Users/nikolaydimitrov/2. Builds/scenic-route/apps/ios/ScenicKit/.build/arm64-apple-macosx/debug/ScenicKit.build/resource_bundle_accessor.swiftdeps",
+    "diagnostics": "/Users/nikolaydimitrov/2. Builds/scenic-route/apps/ios/ScenicKit/.build/arm64-apple-macosx/debug/ScenicKit.build/resource_bundle_accessor.dia"
+  }
+}

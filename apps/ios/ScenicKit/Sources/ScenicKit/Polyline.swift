@@ -26,6 +26,29 @@ public enum Polyline {
         return out
     }
 
+    /// Great-circle distance in km.
+    public static func km(_ a: Coordinate, _ b: Coordinate) -> Double {
+        let r = Double.pi / 180, dLat = (b.lat - a.lat) * r, dLon = (b.lon - a.lon) * r
+        let h = sin(dLat / 2) * sin(dLat / 2) + cos(a.lat * r) * cos(b.lat * r) * sin(dLon / 2) * sin(dLon / 2)
+        return 12742 * asin(min(1, sqrt(h)))
+    }
+
+    /// The point `atKm` along a line (clamped to its ends), e.g. to place a highlight that only knows its km.
+    public static func coordinate(on line: [Coordinate], atKm target: Double) -> Coordinate? {
+        guard var prev = line.first else { return nil }
+        var done = 0.0
+        for p in line.dropFirst() {
+            let step = km(prev, p)
+            if step > 0, done + step >= target {
+                let t = max(0, (target - done) / step)
+                return Coordinate(lat: prev.lat + (p.lat - prev.lat) * t, lon: prev.lon + (p.lon - prev.lon) * t)
+            }
+            done += step
+            prev = p
+        }
+        return line.last
+    }
+
     public static func encode(_ line: [Coordinate], precision: Int = 5) -> String {
         let f = pow(10.0, Double(precision))
         var out = "", pLat = 0, pLon = 0

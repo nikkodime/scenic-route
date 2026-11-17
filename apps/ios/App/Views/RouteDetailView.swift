@@ -9,135 +9,227 @@ struct RouteDetailView: View {
     @State private var camera: MapCameraPosition = .automatic
     @State private var saved = false
     @State private var rated: Bool?
+    @State private var page = 0
+    @State private var photos: [String: Photo] = [:]
+
+    private var moments: [ScenicMoment] { route.moments }
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                RouteMap(routes: [route], selectedID: route.id, camera: $camera)
-                    .frame(height: 240)
-                    .clipShape(RoundedRectangle(cornerRadius: Theme.corner))
-
-                HStack(spacing: 16) {
-                    ScoreRing(score: route.score, color: Theme.color(for: Format.band(score: route.score)), size: 72)
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(route.summary).font(Theme.headlineFont)
-                        Text("\(Format.duration(minutes: route.minutes)) · \(Format.distance(km: route.km)) · \(Format.extra(minutes: route.extraMinutes))")
-                            .font(.subheadline).foregroundStyle(.secondary).monospacedDigit()
-                    }
-                }
-
-                driveButtons
-
-                if let c = route.conditions { conditions(c) }
-
-                if !route.advisories.isEmpty {
-                    section("Good to know") {
-                        ForEach(route.advisories, id: \.self) { a in
-                            Label {
-                                VStack(alignment: .leading) {
-                                    Text(a.title).bold()
-                                    Text(a.detail).font(.callout).foregroundStyle(.secondary)
-                                }
-                            } icon: {
-                                Image(systemName: a.severity == "info" ? "info.circle" : "exclamationmark.triangle.fill")
-                                    .foregroundStyle(a.severity == "info" ? Theme.lake : Theme.warning)
-                            }
-                        }
-                    }
-                }
-
-                if !route.highlights.isEmpty {
-                    section("Along the way") {
-                        ForEach(route.highlights, id: \.self) { h in
-                            HStack {
-                                Text("km \(Int(h.atKm))").font(.caption.monospacedDigit()).foregroundStyle(.secondary).frame(width: 52, alignment: .leading)
-                                Text(h.name)
-                                Spacer()
-                                Text(h.type.replacingOccurrences(of: "_", with: " ")).font(.caption).foregroundStyle(.secondary)
-                            }
-                        }
-                    }
-                }
-
-                section("Why it scores \(Int(route.score))") {
-                    part("Scenery", route.parts.scenery)
-                    if let v = route.parts.views { part("Views", v) }
-                    if let r = route.parts.relief { part("Hills", r) }
-                    part("Bends", route.parts.bends)
-                    part("Variety", route.parts.variety)
-                    if route.parts.motorwayPct > 0 { Text("\(Int(route.parts.motorwayPct))% motorway").font(.caption).foregroundStyle(.secondary) }
-                }
-
-                section("After your drive") {
-                    HStack(spacing: 12) {
-                        rateButton(up: true)
-                        rateButton(up: false)
-                    }
-                    Text("Your ratings teach the app what beautiful means.").font(.caption).foregroundStyle(.secondary)
-                }
+            VStack(alignment: .leading, spacing: 28) {
+                hero
+                metrics.padding(.horizontal, Theme.gutter)
+                if moments.contains(where: { photos[$0.id] != nil }) { highlightStrip }
+                if let c = route.conditions { light(c).padding(.horizontal, Theme.gutter) }
+                if !route.advisories.isEmpty { goodToKnow.padding(.horizontal, Theme.gutter) }
+                scoreParts.padding(.horizontal, Theme.gutter)
+                rating.padding(.horizontal, Theme.gutter)
             }
-            .padding()
+            .padding(.bottom, 110)
         }
+        .background(Theme.background)
+        .task(id: route.id) { photos = await model.distinctPhotos(for: Array(moments.prefix(10))) }
+        .safeAreaInset(edge: .bottom) { driveBar }
         .accessibilityIdentifier("routeDetail")
         .navigationTitle(route.label)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                Button(saved ? "Saved" : "Save") { Task { await model.save(route: route); saved = true } }
-                    .disabled(saved)
-            }
-        }
-    }
-
-    private var driveButtons: some View {
-        VStack(spacing: 10) {
-            Button {
-                if let u = URL(string: route.handoff.googleMaps) { openURL(u) }
-            } label: {
-                Label("Drive with Google Maps", systemImage: "car.fill").font(Theme.buttonFont)
-                    .foregroundStyle(Theme.onAccent).frame(maxWidth: .infinity).frame(minHeight: 52)
-            }
-            .buttonStyle(.borderedProminent)
-            HStack {
-                Button {
-                    if let u = URL(string: route.handoff.appleMaps) { openURL(u) }
-                } label: { Label("Apple Maps", systemImage: "map").frame(maxWidth: .infinity) }
-                    .buttonStyle(.bordered)
-                ShareLink(item: GPXFile(name: route.summary, route: route), preview: SharePreview("Scenic route GPX")) {
-                    Label("GPX", systemImage: "square.and.arrow.up").frame(maxWidth: .infinity)
+                Button { Task { await model.save(route: route); saved = true } } label: {
+                    Image(systemName: saved ? "bookmark.fill" : "bookmark")
                 }
-                .buttonStyle(.bordered)
-            }
-            Text("Google Maps follows the scenic stops. Apple Maps only takes the first stop, so use it for short drives.")
-                .font(.caption2).foregroundStyle(.secondary)
-        }
-    }
-
-    private func conditions(_ c: Conditions) -> some View {
-        section(Format.verdictText(c.verdict)) {
-            HStack(spacing: 18) {
-                if let t = Format.time(c.arrival) { stat("Arrive", t, "flag.checkered") }
-                if let t = Format.time(c.sunset) { stat("Sunset", t, "sunset.fill") }
-                if let w = c.weather.first { stat("Cloud", "\(Int(w.cloud))%", "cloud.sun") }
-            }
-            ForEach(c.notes, id: \.self) { n in
-                Label(n, systemImage: "sparkle").font(.callout)
+                .disabled(saved)
+                .accessibilityLabel(saved ? "Saved" : "Save")
             }
         }
     }
 
-    private func stat(_ title: String, _ value: String, _ icon: String) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Label(title, systemImage: icon).font(.caption).foregroundStyle(.secondary)
-            Text(value).font(.headline.monospacedDigit())
+    // MARK: Hero: the route's best moments, swipeable, the map last.
+
+    private var hero: some View {
+        TabView(selection: $page) {
+            ForEach(Array(route.heroCandidates.filter { photos[$0.id] != nil }.prefix(4).enumerated()), id: \.element.id) { i, m in
+                CreditedPhoto(photo: photos[m.id], type: m.type)
+                    .overlay(alignment: .bottomLeading) { caption(m) }
+                    .tag(i)
+            }
+            RouteMap(routes: [route], selectedID: route.id, camera: $camera)
+                .tag(99)
+        }
+        .tabViewStyle(.page(indexDisplayMode: .always))
+        .onChange(of: photos.isEmpty) { _, empty in page = empty ? 99 : 0 }
+        .frame(height: 380)
+        .overlay(alignment: .topTrailing) {
+            if page != 99 {
+                ScoreRing(score: route.score, color: .white, size: 70, inked: false)
+                    .shadow(color: .black.opacity(0.35), radius: 8)
+                    .padding(16)
+            }
         }
     }
 
-    private func part(_ name: String, _ value: Double) -> some View {
-        HStack {
-            Text(name).frame(width: 70, alignment: .leading)
-            ProgressView(value: value, total: 100).tint(Theme.accent)
-            Text("\(Int(value))").font(.caption.monospacedDigit()).frame(width: 30, alignment: .trailing)
+    private func caption(_ m: ScenicMoment) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: PlaceIcon.symbol(m.type))
+            Text(m.name).lineLimit(1)
+        }
+        .font(Theme.sofia(15, .semibold)).foregroundStyle(.white)
+        .padding(.horizontal, 12).padding(.vertical, 7)
+        .background(.black.opacity(0.32), in: Capsule())
+        .padding(.leading, 16).padding(.bottom, 34)
+    }
+
+    // MARK: Numbers instead of a sentence.
+
+    private var metrics: some View {
+        HStack(spacing: 0) {
+            stat("clock", Format.duration(minutes: route.minutes), "Drive")
+            stat("road.lanes", Format.distance(km: route.km), "Distance")
+            stat("plus.circle", route.extraMinutes >= 1 ? "\(Int(route.extraMinutes.rounded())) min" : "0", "Extra")
+        }
+    }
+
+    private func stat(_ symbol: String, _ value: String, _ label: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Image(systemName: symbol).font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.green)
+            Text(value).font(Theme.sofia(20, .semibold)).monospacedDigit().foregroundStyle(Theme.ink).lineLimit(1).minimumScaleFactor(0.7)
+            Text(label).font(Theme.labelFont).foregroundStyle(Theme.ink3)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
+    }
+
+    // MARK: Why it's scenic: numbered photos in driving order.
+
+    private var highlightStrip: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            eyebrow("Highlights").padding(.horizontal, Theme.gutter)
+            ScrollView(.horizontal) {
+                LazyHStack(alignment: .top, spacing: 12) {
+                    ForEach(Array(moments.prefix(10).filter { photos[$0.id] != nil }.enumerated()), id: \.element.id) { i, m in
+                        VStack(alignment: .leading, spacing: 6) {
+                            CreditedPhoto(photo: photos[m.id], type: m.type)
+                                .frame(width: 128, height: 118)
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                                .overlay(alignment: .topLeading) {
+                                    Text("\(i + 1)").font(Theme.sofia(12, .bold)).foregroundStyle(.white)
+                                        .frame(width: 22, height: 22).background(Theme.green, in: Circle())
+                                        .padding(6)
+                                }
+                            Text(m.name).font(Theme.sofia(13, .semibold)).foregroundStyle(Theme.ink).lineLimit(1)
+                            HStack(spacing: 4) {
+                                Image(systemName: PlaceIcon.symbol(m.type))
+                                Text("km \(Int(m.km))").monospacedDigit()
+                            }
+                            .font(Theme.sofia(11, .medium)).foregroundStyle(Theme.ink3)
+                        }
+                        .frame(width: 128)
+                        .accessibilityElement(children: .combine)
+                    }
+                }
+            }
+            .contentMargins(.horizontal, Theme.gutter, for: .scrollContent)
+            .scrollIndicators(.hidden)
+        }
+    }
+
+    // MARK: Light and weather as tiles; sentences only behind a chip.
+
+    private func light(_ c: Conditions) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            eyebrow(Format.verdictText(c.verdict))
+            HStack(spacing: 10) {
+                if let t = Format.time(c.departure) { tile("car.fill", t, "Leave") }
+                if let t = Format.time(c.arrival) { tile("flag.checkered", t, "Arrive") }
+                if let t = Format.time(c.sunset) { tile("sunset.fill", t, "Sunset", tint: Theme.terracotta) }
+                if let w = c.weather.first { tile(w.precipProb > 40 ? "cloud.rain.fill" : w.cloud > 60 ? "cloud.fill" : "sun.max.fill", "\(Int(w.cloud))%", "Cloud") }
+            }
+            let flags = lightFlags(c)
+            if !flags.isEmpty {
+                ChipFlow(spacing: 8) {
+                    ForEach(flags, id: \.label) { f in
+                        Label(f.label, systemImage: f.symbol)
+                            .font(Theme.sofia(13, .semibold)).foregroundStyle(f.tint)
+                            .padding(.horizontal, 11).padding(.vertical, 7)
+                            .background(f.tint.opacity(0.10), in: RoundedRectangle(cornerRadius: 10))
+                            .accessibilityLabel(c.notes.joined(separator: ". "))
+                    }
+                }
+            }
+        }
+    }
+
+    private func lightFlags(_ c: Conditions) -> [(label: String, symbol: String, tint: Color)] {
+        var out: [(String, String, Color)] = []
+        if c.arrivesAfterDark { out.append(("After dark", "moon.stars.fill", Theme.ink2)) }
+        if c.goldenHour != nil { out.append(("Golden hour", "sun.horizon.fill", Theme.terracotta)) }
+        if !c.glare.isEmpty { out.append(("Low sun", "sun.max.trianglebadge.exclamationmark", Theme.terracotta)) }
+        if c.weather.contains(where: { $0.fog }) { out.append(("Fog", "cloud.fog.fill", Theme.ink2)) }
+        else if c.weather.contains(where: { $0.precipProb > 50 }) { out.append(("Rain", "cloud.rain.fill", Theme.lake)) }
+        return out.map { (label: $0.0, symbol: $0.1, tint: $0.2) }
+    }
+
+    private func tile(_ symbol: String, _ value: String, _ label: String, tint: Color = Theme.ink) -> some View {
+        VStack(spacing: 4) {
+            Image(systemName: symbol).font(.system(size: 15, weight: .semibold)).foregroundStyle(tint == Theme.ink ? Theme.green : tint)
+            Text(value).font(Theme.sofia(16, .semibold)).monospacedDigit().foregroundStyle(Theme.ink).lineLimit(1).minimumScaleFactor(0.7)
+            Text(label).font(Theme.sofia(11, .medium)).foregroundStyle(Theme.ink3)
+        }
+        .frame(maxWidth: .infinity).padding(.vertical, 12)
+        .background(Theme.tile, in: RoundedRectangle(cornerRadius: 14))
+        .accessibilityElement(children: .combine)
+    }
+
+    // MARK: Warnings as chips.
+
+    private var goodToKnow: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            eyebrow("Good to know")
+            ChipFlow(spacing: 8) {
+                ForEach(route.advisories, id: \.self) { AdvisoryChip(advisory: $0) }
+            }
+        }
+    }
+
+    // MARK: The score, as four small rings.
+
+    private var scoreParts: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            eyebrow("Score")
+            HStack(spacing: 0) {
+                partRing("binoculars.fill", route.parts.scenery, "Scenery")
+                if let r = route.parts.relief { partRing("mountain.2.fill", r, "Hills") }
+                partRing("road.lanes.curved.right", route.parts.bends, "Bends")
+                partRing("sparkles", route.parts.variety, "Variety")
+            }
+        }
+    }
+
+    private func partRing(_ symbol: String, _ value: Double, _ label: String) -> some View {
+        VStack(spacing: 6) {
+            ZStack {
+                Circle().stroke(Theme.mist, lineWidth: 5)
+                Circle().trim(from: 0, to: max(0.02, value / 100)).stroke(Theme.green, style: StrokeStyle(lineWidth: 5, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+                VStack(spacing: 0) {
+                    Image(systemName: symbol).font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.ink3)
+                    Text("\(Int(value))").font(Theme.sofia(15, .bold)).monospacedDigit().foregroundStyle(Theme.ink)
+                }
+            }
+            .frame(width: 58, height: 58)
+            Text(label).font(Theme.sofia(11, .medium)).foregroundStyle(Theme.ink3)
+        }
+        .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(label) \(Int(value)) out of 100")
+    }
+
+    private var rating: some View {
+        HStack(spacing: 12) {
+            eyebrow("Drove it?")
+            Spacer()
+            rateButton(up: true)
+            rateButton(up: false)
         }
     }
 
@@ -146,20 +238,49 @@ struct RouteDetailView: View {
             rated = up
             Task { await model.rate(route: route, up: up) }
         } label: {
-            Label(up ? "Loved it" : "Not great", systemImage: up ? "hand.thumbsup.fill" : "hand.thumbsdown")
-                .frame(maxWidth: .infinity)
+            Image(systemName: up ? (rated == true ? "hand.thumbsup.fill" : "hand.thumbsup") : (rated == false ? "hand.thumbsdown.fill" : "hand.thumbsdown"))
+                .font(.system(size: 17, weight: .semibold))
+                .frame(width: 46, height: 46)
+                .background(Theme.surface, in: Circle())
+                .overlay(Circle().strokeBorder(Theme.border))
         }
-        .buttonStyle(.bordered)
-        .tint(rated == up ? Theme.accent : Theme.ink3)
+        .buttonStyle(.plain)
+        .foregroundStyle(rated == up ? Theme.green : Theme.ink2)
         .disabled(rated != nil)
+        .accessibilityLabel(up ? "Loved it" : "Not great")
     }
 
-    private func section<Content: View>(_ title: String, @ViewBuilder _ content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(title.uppercased()).font(Theme.labelFont).tracking(0.8).foregroundStyle(Theme.ink3)
-            content()
+    // MARK: One action: drive. Everything else is behind "Send".
+
+    private var driveBar: some View {
+        HStack(spacing: 10) {
+            Button {
+                if let u = URL(string: route.handoff.googleMaps) { openURL(u) }
+            } label: {
+                Label("Drive", systemImage: "car.fill").font(Theme.buttonFont)
+                    .foregroundStyle(Theme.onAccent).frame(maxWidth: .infinity).frame(minHeight: 52)
+                    .background(Theme.green, in: RoundedRectangle(cornerRadius: 16))
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint("Opens Google Maps with the scenic stops")
+            Menu {
+                Button { if let u = URL(string: route.handoff.appleMaps) { openURL(u) } } label: { Label("Apple Maps", systemImage: "map") }
+                ShareLink(item: GPXFile(name: route.summary, route: route), preview: SharePreview("Scenic route GPX")) {
+                    Label("GPX file", systemImage: "square.and.arrow.up")
+                }
+            } label: {
+                Image(systemName: "square.and.arrow.up").font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(Theme.green).frame(width: 52, height: 52)
+                    .background(Theme.greenTint, in: RoundedRectangle(cornerRadius: 16))
+            }
+            .accessibilityLabel("Send to")
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, Theme.gutter).padding(.vertical, 10)
+        .background(.regularMaterial)
+    }
+
+    private func eyebrow(_ text: String) -> some View {
+        Text(text.uppercased()).font(Theme.labelFont).tracking(0.8).foregroundStyle(Theme.ink3)
     }
 }
 

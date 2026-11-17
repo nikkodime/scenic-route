@@ -2,6 +2,16 @@ import XCTest
 @testable import ScenicKit
 
 final class PolylineTests: XCTestCase {
+    func testCoordinateAtKm() {
+        // Two points 1° of latitude apart (~111 km): halfway is the midpoint; beyond the end clamps.
+        let line = [Coordinate(lat: 43, lon: 11), Coordinate(lat: 44, lon: 11)]
+        let mid = Polyline.coordinate(on: line, atKm: Polyline.km(line[0], line[1]) / 2)!
+        XCTAssertEqual(mid.lat, 43.5, accuracy: 1e-6)
+        XCTAssertEqual(Polyline.coordinate(on: line, atKm: 500)!.lat, 44, accuracy: 1e-9)
+        XCTAssertEqual(Polyline.coordinate(on: line, atKm: 0)!.lat, 43, accuracy: 1e-9)
+        XCTAssertNil(Polyline.coordinate(on: [], atKm: 1))
+    }
+
     func testGoogleReferenceValue() {
         let line = [Coordinate(lat: 38.5, lon: -120.2), Coordinate(lat: 40.7, lon: -120.95), Coordinate(lat: 43.252, lon: -126.453)]
         XCTAssertEqual(Polyline.encode(line), "_p~iF~ps|U_ulLnnqC_mqNvxq`@")

@@ -5,15 +5,31 @@ import ScenicKit
 struct ResultsView: View {
     @Environment(AppModel.self) private var model
     @State private var camera: MapCameraPosition = .automatic
+    @State private var showNotes = false
 
     var body: some View {
         @Bindable var model = model
+        let routes = model.plan?.routes ?? []
         VStack(spacing: 0) {
-            RouteMap(routes: model.plan?.routes ?? [], selectedID: model.selectedRouteID, camera: $camera)
-                .frame(maxHeight: .infinity)
-            ScrollView {
-                VStack(spacing: 12) {
-                    ForEach(Array((model.plan?.routes ?? []).enumerated()), id: \.element.id) { i, route in
+            RouteMap(routes: routes, selectedID: model.selectedRouteID, camera: $camera)
+                .frame(minHeight: 260, maxHeight: 470)
+                .overlay(alignment: .bottomLeading) {
+                    if let notes = model.plan?.warnings, !notes.isEmpty {
+                        Button { showNotes = true } label: {
+                            Label("\(notes.count)", systemImage: "info.circle.fill")
+                                .font(Theme.sofia(13, .semibold)).padding(.horizontal, 10).padding(.vertical, 6)
+                        }
+                        .buttonStyle(.plain)
+                        .background(.regularMaterial, in: Capsule())
+                        .padding(12)
+                        .accessibilityLabel(notes.joined(separator: ". "))
+                    }
+                }
+
+            // One card per route, snapping; the visible card drives the map.
+            ScrollView(.horizontal) {
+                LazyHStack(spacing: 14) {
+                    ForEach(Array(routes.enumerated()), id: \.element.id) { i, route in
                         Button {
                             model.selectedRouteID = route.id
                             model.planPath.append(.route(route))
@@ -23,23 +39,32 @@ struct ResultsView: View {
                         }
                         .buttonStyle(.plain)
                         .accessibilityIdentifier("routeCard\(i)")
-                    }
-                    ForEach(model.plan?.warnings ?? [], id: \.self) { w in
-                        Label(w, systemImage: "info.circle").font(.caption).foregroundStyle(.secondary)
-                    }
-                    if let p = model.plan {
-                        Text("Fastest way: \(Format.duration(minutes: p.fastest.minutes)), \(Format.distance(km: p.fastest.km))")
-                            .font(.caption).foregroundStyle(.secondary)
-                        Text((p.attribution + ["Suggestions only: road signs and local rules come first"]).joined(separator: " · ")).font(.caption2).foregroundStyle(.tertiary)
+                        .id(route.id)
                     }
                 }
-                .padding()
+                .scrollTargetLayout()
+                .padding(.top, 16).padding(.bottom, 12)
             }
-            .frame(maxHeight: 380)
-            .background(.bar)
+            .scrollTargetBehavior(.viewAligned)
+            .scrollPosition(id: $model.selectedRouteID)
+            .contentMargins(.horizontal, Theme.gutter, for: .scrollContent)
+            .scrollIndicators(.hidden)
+            .fixedSize(horizontal: false, vertical: true)
         }
+        .background(Theme.background)
         .navigationTitle(model.tripTitle)
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear { if model.selectedRouteID == nil { model.selectedRouteID = routes.first?.id } }
+        .sheet(isPresented: $showNotes) {
+            VStack(alignment: .leading, spacing: 14) {
+                ForEach(model.plan?.warnings ?? [], id: \.self) { Label($0, systemImage: "info.circle").font(Theme.bodyFont) }
+                if let p = model.plan {
+                    Text(p.attribution.joined(separator: " · ")).font(.caption2).foregroundStyle(Theme.ink3)
+                }
+            }
+            .padding(Theme.gutter)
+            .presentationDetents([.medium])
+        }
     }
 }
 
@@ -78,35 +103,62 @@ struct RouteMap: View {
     }
 }
 
+/// A route as a photo: its best moment leads, the stamp says how good, three icons say why.
 struct RouteCard: View {
     let route: RouteOption
     let color: Color
     let selected: Bool
 
     var body: some View {
-        HStack(spacing: 14) {
-            ScoreRing(score: route.score, color: color, solid: selected)
-            VStack(alignment: .leading, spacing: 4) {
-                Text(route.label).font(Theme.headlineFont)
-                Text(route.summary).font(.subheadline).foregroundStyle(.secondary).lineLimit(2)
-                HStack(spacing: 10) {
-                    Label(Format.duration(minutes: route.minutes), systemImage: "clock")
-                    Text(Format.extra(minutes: route.extraMinutes)).foregroundStyle(color)
-                    Text(Format.distance(km: route.km))
+        VStack(alignment: .leading, spacing: 0) {
+            MomentPhoto(candidates: route.heroCandidates)
+                .frame(width: 300, height: 168)
+                .overlay(alignment: .topTrailing) {
+                    ScoreRing(score: route.score, color: .white, size: 54, inked: false)
+                        .shadow(color: .black.opacity(0.35), radius: 6)
+                        .padding(12)
                 }
-                .font(.caption).monospacedDigit()
-                if route.advisories.contains(where: { $0.severity != "info" }) {
-                    Label(route.advisories.first { $0.severity != "info" }!.title, systemImage: "exclamationmark.triangle.fill")
-                        .font(.caption).foregroundStyle(Theme.warning)
+                .overlay(alignment: .bottomLeading) {
+                    RouteGlyph(line: route.line)
+                        .stroke(.white, style: StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round))
+                        .frame(width: 46, height: 46)
+                        .shadow(color: .black.opacity(0.5), radius: 3)
+                        .padding(12)
+                }
+                .clipped()
+
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(alignment: .firstTextBaseline) {
+                    Circle().fill(color).frame(width: 8, height: 8)
+                    Text(route.label).font(Theme.sofia(19, .semibold)).foregroundStyle(Theme.ink).lineLimit(1)
+                    Spacer(minLength: 4)
+                    ForEach(route.warnings.prefix(2), id: \.self) { a in
+                        Image(systemName: AdvisoryStyle.symbol(a)).font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(AdvisoryStyle.tint(a))
+                            .accessibilityLabel(a.title)
+                    }
+                }
+                HStack(spacing: 14) {
+                    Metric(symbol: "clock", value: Format.duration(minutes: route.minutes))
+                    if route.extraMinutes >= 1 { Metric(symbol: "plus", value: "\(Int(route.extraMinutes.rounded())) min", tint: color) }
+                    Metric(symbol: "road.lanes", value: Format.distance(km: route.km))
+                }
+                HStack(spacing: 14) {
+                    ForEach(Array(route.sceneryCounts.prefix(3).enumerated()), id: \.offset) { _, c in
+                        Metric(symbol: c.symbol, value: "\(c.count)")
+                            .accessibilityLabel("\(c.count) \(c.label)")
+                    }
                 }
             }
-            Spacer(minLength: 0)
-            Image(systemName: "chevron.right").foregroundStyle(.tertiary)
+            .padding(14)
         }
-        .padding(14)
-        .background(Theme.surface, in: RoundedRectangle(cornerRadius: Theme.corner))
-        .overlay(RoundedRectangle(cornerRadius: Theme.corner).strokeBorder(selected ? Theme.accent : Theme.border, lineWidth: selected ? 1.5 : 1))
-        .shadow(color: Theme.ink.opacity(0.06), radius: 16, y: 8)
+        .frame(width: 300)
+        .background(Theme.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .overlay(RoundedRectangle(cornerRadius: 20).strokeBorder(selected ? color : Theme.border, lineWidth: selected ? 2 : 1))
+        .shadow(color: Theme.ink.opacity(0.08), radius: 18, y: 10)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(route.label), score \(Int(route.score)), \(Format.duration(minutes: route.minutes)), \(route.summary)")
     }
 }
 
@@ -117,6 +169,8 @@ struct ScoreRing: View {
     let color: Color
     var size: CGFloat = 58
     var solid = true
+    /// Ink on paper multiplies; a white stamp over a photo must not.
+    var inked = true
 
     var body: some View {
         ZStack {
@@ -131,7 +185,7 @@ struct ScoreRing: View {
         .frame(width: size, height: size)
         .opacity(solid ? 1 : 0.8)
         .rotationEffect(.degrees(score.truncatingRemainder(dividingBy: 2) < 1 ? -6 : 4))
-        .blendMode(.multiply)
+        .blendMode(inked ? .multiply : .normal)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Scenery score \(Int(score)) out of 100")
     }

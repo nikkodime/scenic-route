@@ -1,0 +1,12 @@
+{
+  "": {
+    "swift-dependencies": "/Users/nikolaydimitrov/2. Builds/scenic-route/apps/ios/ScenicKit/.build/arm64-apple-macosx/debug/ScenicKitPackageTests.build/master.swiftdeps"
+  },
+  "/Users/nikolaydimitrov/2. Builds/scenic-route/apps/ios/ScenicKit/.build/arm64-apple-macosx/debug/ScenicKitPackageTests.derived/runner.swift": {
+    "dependencies": "/Users/nikolaydimitrov/2. Builds/scenic-route/apps/ios/ScenicKit/.build/arm64-apple-macosx/debug/ScenicKitPackageTests.build/runner.d",
+    "object": "/Users/nikolaydimitrov/2. Builds/scenic-route/apps/ios/ScenicKit/.build/arm64-apple-macosx/debug/ScenicKitPackageTests.build/runner.swift.o",
+    "swiftmodule": "/Users/nikolaydimitrov/2. Builds/scenic-route/apps/ios/ScenicKit/.build/arm64-apple-macosx/debug/ScenicKitPackageTests.build/runner~partial.swiftmodule",
+    "swift-dependencies": "/Users/nikolaydimitrov/2. Builds/scenic-route/apps/ios/ScenicKit/.build/arm64-apple-macosx/debug/ScenicKitPackageTests.build/runner.swiftdeps",
+    "diagnostics": "/Users/nikolaydimitrov/2. Builds/scenic-route/apps/ios/ScenicKit/.build/arm64-apple-macosx/debug/ScenicKitPackageTests.build/runner.dia"
+  }
+}
