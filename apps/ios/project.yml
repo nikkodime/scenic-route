@@ -44,6 +44,10 @@ targets:
     sources: [UITests]
     dependencies:
       - target: ScenicRoute
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: app.scenicroute.ios.uitests
 schemes:
   ScenicRoute:
     build:
