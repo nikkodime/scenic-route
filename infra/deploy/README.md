@@ -4,7 +4,7 @@ One `docker compose` project with four parts:
 
 | Service | What it does | Memory |
 |---|---|---|
-| `graphhopper` | Routing engine, serving a graph built in advance | about 3 GB for Italy, 1.5 GB for central Italy |
+| `graphhopper` | Routing engine, serving a graph built in advance | about 2 GB for Italy (measured), 1 GB for central Italy |
 | `api` | The Panoramica API (plans, places, trips) | about 300 MB |
 | `postgres` | Saved trips and ratings | about 100 MB |
 | `tunnel` (optional) | Cloudflare Tunnel: a free HTTPS address for the phone, with no router changes | about 30 MB |

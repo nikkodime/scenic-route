@@ -16,10 +16,10 @@ services:
     # Serve the prebuilt graph only. datareader.file is never read when the graph exists.
     command: >
       sh -c "test -f /app/gh.jar || curl -sSfL -o /app/gh.jar https://repo1.maven.org/maven2/com/graphhopper/graphhopper-web/11.0/graphhopper-web-11.0.jar;
-             exec java -Xmx${GH_XMX:-3g} -Ddw.graphhopper.graph.location=/data/graph
-             -Ddw.graphhopper.custom_models.directory=/config/custom_models
-             -Ddw.graphhopper.datareader.file=/data/unused.osm.pbf
-             -jar /app/gh.jar server /config/config.yml"
+      exec java -Xmx${GH_XMX:-3g} -Ddw.graphhopper.graph.location=/data/graph
+      -Ddw.graphhopper.custom_models.directory=/config/custom_models
+      -Ddw.graphhopper.datareader.file=/data/unused.osm.pbf
+      -jar /app/gh.jar server /config/config.yml"
     volumes:
       - ../graphhopper:/config:ro
       - ./data:/data
@@ -55,7 +55,7 @@ services:
     volumes:
       - ./data/dem:/dem:ro
     # Reachable on the home network for testing (http://<server>:8787); the tunnel serves HTTPS.
-    ports: ['8787:8787']
+    ports: ['${API_PORT:-8787}:8787']
 
   # Free HTTPS address for the phone, no router changes: Cloudflare Tunnel.
   # Create the tunnel in the Cloudflare dashboard (Zero Trust → Networks → Tunnels),
