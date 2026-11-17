@@ -36,9 +36,14 @@ final class ContractTests: XCTestCase {
     }
 
     func testPlanRequestEncodesLikeTheAPIExpects() throws {
-        let req = PlanRequest(origin: Place(lat: 43.3, lon: 11.3, label: "Siena"), destination: Place(lat: 43.07, lon: 11.67), extraMinutes: 60)
+        let req = PlanRequest(origin: Place(lat: 43.3, lon: 11.3, label: "Siena"), destination: Place(lat: 43.07, lon: 11.67), style: .mostBeautiful, interests: [.water, .quiet], vehicle: .caravan, extraMinutes: 60)
         let json = try JSONSerialization.jsonObject(with: JSONEncoder().encode(req)) as! [String: Any]
         XCTAssertEqual(json["extraMinutes"] as? Int, 60)
+        XCTAssertEqual(json["style"] as? String, "most_beautiful")
+        XCTAssertEqual(json["interests"] as? [String], ["water", "quiet"])
+        XCTAssertEqual(json["vehicle"] as? String, "caravan")
+        let noCap = try JSONSerialization.jsonObject(with: JSONEncoder().encode(PlanRequest(origin: Place(lat: 43, lon: 11), destination: Place(lat: 43.1, lon: 11.1)))) as! [String: Any]
+        XCTAssertNil(noCap["extraMinutes"], "no cap unless the driver sets one")
         XCTAssertEqual((json["prefs"] as? [String: Any])?["avoidUnpaved"] as? Bool, true)
     }
 }

@@ -20,16 +20,62 @@ struct PlanView: View {
                 .background(Theme.surface, in: RoundedRectangle(cornerRadius: Theme.corner))
                 .overlay(RoundedRectangle(cornerRadius: Theme.corner).strokeBorder(Theme.border))
 
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Text("Extra time for the views").font(Theme.headlineFont)
-                        Spacer()
-                        Text(model.extraMinutes == 0 ? "None" : "+\(Format.duration(minutes: model.extraMinutes))")
-                            .monospacedDigit().foregroundStyle(Theme.accent)
+                section("How do you want to drive?") {
+                    Picker("Style", selection: $model.style) {
+                        ForEach(RouteStyle.allCases) { Text($0.title).tag($0) }
                     }
-                    Slider(value: $model.extraMinutes, in: 0...180, step: 15)
-                        .accessibilityIdentifier("extraTimeSlider")
+                    .pickerStyle(.segmented)
+                    .accessibilityIdentifier("stylePicker")
+                    Text(model.style.blurb).font(Theme.sofia(14)).foregroundStyle(Theme.ink2)
+                }
+
+                section("What do you love?") {
+                    ChipFlow(spacing: 8) {
+                        ForEach(Interest.allCases) { i in
+                            let on = model.interests.contains(i)
+                            Button {
+                                if on { model.interests.remove(i) } else { model.interests.insert(i) }
+                            } label: {
+                                Label(i.title, systemImage: i.symbol)
+                                    .font(Theme.sofia(14, .medium))
+                                    .padding(.horizontal, 14).frame(minHeight: 36)
+                                    .foregroundStyle(on ? Theme.onAccent : Theme.ink)
+                                    .background(on ? Theme.accent : Theme.surface, in: Capsule())
+                                    .overlay(Capsule().strokeBorder(on ? Theme.accent : Theme.line))
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityAddTraits(on ? .isSelected : [])
+                            .accessibilityIdentifier("interest-\(i.rawValue)")
+                        }
+                    }
+                }
+
+                section("Vehicle") {
+                    Picker("Vehicle", selection: $model.vehicle) {
+                        ForEach(Vehicle.allCases) { Text($0.title).tag($0) }
+                    }
+                    .pickerStyle(.segmented)
+                    if model.vehicle != .car {
+                        Text("Wider roads, no gravel, no hairpin chains.").font(Theme.sofia(14)).foregroundStyle(Theme.ink2)
+                    }
+                }
+
+                VStack(spacing: 0) {
+                    HStack {
+                        Text("Time limit").font(Theme.bodyFont)
+                        Spacer()
+                        Picker("Time limit", selection: $model.timeLimit) {
+                            Text("No limit").tag(Int?.none)
+                            ForEach([15, 30, 60, 120], id: \.self) { m in
+                                Text("+\(Format.duration(minutes: Double(m)))").tag(Int?.some(m))
+                            }
+                        }
+                        .accessibilityIdentifier("timeLimit")
+                    }
+                    .padding(.vertical, 6)
+                    Divider()
                     DatePicker("Leaving", selection: $model.departAt, in: Date()..., displayedComponents: [.date, .hourAndMinute])
+                        .padding(.vertical, 6)
                 }
 
                 DisclosureGroup("Road preferences") {
@@ -73,6 +119,13 @@ struct PlanView: View {
         }
     }
 
+    private func section<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title).font(Theme.headlineFont).foregroundStyle(Theme.ink)
+            content()
+        }
+    }
+
     private var hero: some View {
         VStack(alignment: .leading, spacing: 6) {
             Image("Wordmark").resizable().scaledToFit().frame(height: 26).padding(.bottom, 10)
@@ -102,3 +155,44 @@ struct PlanView: View {
         .accessibilityIdentifier(title == "From" ? "originField" : "destinationField")
     }
 }
+
+/// Wraps chips onto as many lines as needed.
+struct ChipFlow: Layout {
+    var spacing: CGFloat = 8
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let rows = arrange(width: proposal.width ?? .infinity, subviews: subviews)
+        return CGSize(width: proposal.width ?? rows.map(\.width).max() ?? 0, height: rows.last.map { $0.y + $0.height } ?? 0)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        for row in arrange(width: bounds.width, subviews: subviews) {
+            var x = bounds.minX
+            for i in row.items {
+                let size = subviews[i].sizeThatFits(.unspecified)
+                subviews[i].place(at: CGPoint(x: x, y: bounds.minY + row.y), proposal: ProposedViewSize(size))
+                x += size.width + spacing
+            }
+        }
+    }
+
+    private struct Row { var items: [Int] = []; var y: CGFloat = 0; var width: CGFloat = 0; var height: CGFloat = 0 }
+
+    private func arrange(width: CGFloat, subviews: Subviews) -> [Row] {
+        var rows: [Row] = [Row()]
+        for i in subviews.indices {
+            let size = subviews[i].sizeThatFits(.unspecified)
+            if !rows[rows.count - 1].items.isEmpty && rows[rows.count - 1].width + spacing + size.width > width {
+                let last = rows[rows.count - 1]
+                rows.append(Row(y: last.y + last.height + spacing))
+            }
+            var r = rows[rows.count - 1]
+            r.width += (r.items.isEmpty ? 0 : spacing) + size.width
+            r.height = max(r.height, size.height)
+            r.items.append(i)
+            rows[rows.count - 1] = r
+        }
+        return rows
+    }
+}
+

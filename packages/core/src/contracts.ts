@@ -135,6 +135,10 @@ export const TripSchema = z.object({
   name: z.string().min(1).max(120),
   notes: z.string().max(5000).default(''),
   days: z.array(TripDaySchema).min(1).max(60),
+  /** How the journey was planned, so it can be re-planned the same way. */
+  style: z.enum(ROUTE_STYLES).optional(),
+  interests: z.array(z.enum(INTERESTS)).optional(),
+  vehicle: z.enum(VEHICLES).optional(),
   createdAt: Iso,
   updatedAt: Iso,
   deleted: z.boolean().default(false),

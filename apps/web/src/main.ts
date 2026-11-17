@@ -1,9 +1,9 @@
 import './theme.css';
-import { toGpx, decodePolyline, type GeocodeResult, type RouteOption, type Trip } from '@scenic/core';
+import { toGpx, decodePolyline, INTERESTS, ROUTE_STYLES, VEHICLES, type GeocodeResult, type Interest, type RouteOption, type RouteStyle, type Trip, type Vehicle } from '@scenic/core';
 import { api } from './api.ts';
 import { RouteMap } from './map.ts';
 import {
-  EXTRA_CHOICES, addDay, chosenRoute, defaultName, duration, fromTrip, newJourney, removeDay, toTrip, totals, updateDay,
+  INTEREST_LABELS, LIMIT_CHOICES, STYLE_BLURBS, STYLE_LABELS, VEHICLE_LABELS, addDay, normalize, toggleInterest, updateJourney, chosenRoute, defaultName, duration, fromTrip, newJourney, removeDay, toTrip, totals, updateDay,
   type DayPlan, type Journey,
 } from './journey.ts';
 
@@ -18,7 +18,7 @@ interface State {
 
 const uuid = () => crypto.randomUUID();
 const DRAFT_KEY = 'scenic.draft';
-const loadDraft = (): Journey | null => { try { const s = localStorage.getItem(DRAFT_KEY); return s ? JSON.parse(s) : null; } catch { return null; } };
+const loadDraft = (): Journey | null => { try { const s = localStorage.getItem(DRAFT_KEY); return s ? normalize(JSON.parse(s)) : null; } catch { return null; } };
 const saveDraft = (j: Journey) => { try { localStorage.setItem(DRAFT_KEY, JSON.stringify(j)); } catch {} };
 
 const state: State = { journey: loadDraft() ?? newJourney(uuid()), active: 0, busy: null, error: null, view: 'plan', trips: null };
@@ -69,8 +69,31 @@ function planView(): string {
       <label class="label" for="jname">Journey name</label>
       <input id="jname" class="input" data-action="name" placeholder="${esc(defaultName(j))}" value="${esc(j.name)}" />
     </div>
-    <div class="chips" role="group" aria-label="Road preferences">
-      ${chip('rentalCar', 'Rental car')}${chip('avoidUnpaved', 'No gravel')}${chip('avoidTolls', 'No tolls')}
+    <div class="field">
+      <span class="label" id="style-l">How do you want to drive?</span>
+      <div class="seg" role="group" aria-labelledby="style-l">
+        ${ROUTE_STYLES.map((s) => `<button data-action="style" data-v="${s}" aria-pressed="${j.style === s}">${STYLE_LABELS[s]}</button>`).join('')}
+      </div>
+      <span class="muted small">${STYLE_BLURBS[j.style]}</span>
+    </div>
+    <div class="field">
+      <span class="label" id="love-l">What do you love?</span>
+      <div class="chips" role="group" aria-labelledby="love-l">
+        ${INTERESTS.map((x) => `<button class="chip" data-action="interest" data-v="${x}" aria-pressed="${j.interests.includes(x)}">${INTEREST_LABELS[x]}</button>`).join('')}
+      </div>
+    </div>
+    <div class="field">
+      <span class="label" id="veh-l">Vehicle</span>
+      <div class="seg" role="group" aria-labelledby="veh-l">
+        ${VEHICLES.map((v) => `<button data-action="vehicle" data-v="${v}" aria-pressed="${j.vehicle === v}">${VEHICLE_LABELS[v]}</button>`).join('')}
+      </div>
+      ${j.vehicle !== 'car' ? '<span class="muted small">Wider roads, no gravel, no hairpin chains.</span>' : ''}
+    </div>
+    <div class="field">
+      <span class="label" id="roads-l">Roads</span>
+      <div class="chips" role="group" aria-labelledby="roads-l">
+        ${chip('rentalCar', 'Rental car')}${chip('avoidUnpaved', 'No gravel')}${chip('avoidTolls', 'No tolls')}
+      </div>
     </div>
     ${j.days.map((d, i) => dayCard(d, i)).join('')}
     <button class="btn" data-action="add-day">+ Add a day</button>
@@ -101,9 +124,9 @@ function dayCard(d: DayPlan, i: number): string {
     ${placeField(i, 'origin', 'From', d.origin?.label)}
     ${placeField(i, 'destination', 'To', d.destination?.label)}
     <div class="field">
-      <span class="label">Extra time for the views</span>
-      <div class="seg" role="group" aria-label="Extra time">
-        ${EXTRA_CHOICES.map((m) => `<button data-action="extra" data-day="${i}" data-min="${m}" aria-pressed="${d.extraMinutes === m}">${m === 0 ? '0' : m === 240 ? 'Day' : m >= 60 ? `+${m / 60} h` : `+${m}`}</button>`).join('')}
+      <span class="label">Time limit</span>
+      <div class="seg" role="group" aria-label="Time limit">
+        ${LIMIT_CHOICES.map((m) => `<button data-action="extra" data-day="${i}" data-min="${m ?? ''}" aria-pressed="${d.extraMinutes === m}">${m == null ? 'No limit' : m >= 60 ? `+${m / 60} h` : `+${m}`}</button>`).join('')}
       </div>
     </div>
     <div class="field">
@@ -133,7 +156,7 @@ function bars(r: RouteOption) {
 
 function results(d: DayPlan, i: number) {
   const routes = d.plan!.routes;
-  if (!routes.length) return `<p class="muted">No route fits that time. Try more extra time.</p>`;
+  if (!routes.length) return `<p class="muted">No route fits that time limit. Try a longer limit or no limit.</p>`;
   return `<div class="field" role="group" aria-label="Route options">
     ${routes.map((r) => `
       <button class="route" data-action="choose" data-day="${i}" data-route="${esc(r.id)}" aria-pressed="${r.id === (d.chosenRouteId ?? routes[0].id)}">
@@ -189,7 +212,8 @@ async function plan(i: number) {
   set({ busy: i, error: null, active: i });
   try {
     const res = await api.plan({
-      origin: d.origin, destination: d.destination, extraMinutes: d.extraMinutes,
+      origin: d.origin, destination: d.destination, extraMinutes: d.extraMinutes ?? undefined,
+      style: state.journey.style, interests: state.journey.interests, vehicle: state.journey.vehicle,
       departAt: d.departAt ? new Date(d.departAt).toISOString() : undefined, prefs: state.journey.prefs,
     });
     set({ busy: null, journey: updateDay(state.journey, i, { plan: res, chosenRouteId: res.routes[0]?.id ?? null }) });
@@ -229,9 +253,12 @@ panel.addEventListener('click', (ev) => {
   switch (el.dataset.action) {
     case 'pref': {
       const k = el.dataset.key as 'rentalCar' | 'avoidUnpaved' | 'avoidTolls';
-      return set({ journey: { ...j, prefs: { ...j.prefs, [k]: !j.prefs[k] }, days: j.days.map((d) => ({ ...d, plan: null, chosenRouteId: null })) } });
+      return set({ journey: updateJourney(j, { prefs: { ...j.prefs, [k]: !j.prefs[k] } }) });
     }
-    case 'extra': return set({ journey: updateDay(j, i, { extraMinutes: Number(el.dataset.min) }), active: i });
+    case 'style': return set({ journey: updateJourney(j, { style: el.dataset.v as RouteStyle }) });
+    case 'vehicle': return set({ journey: updateJourney(j, { vehicle: el.dataset.v as Vehicle }) });
+    case 'interest': return set({ journey: toggleInterest(j, el.dataset.v as Interest) });
+    case 'extra': return set({ journey: updateDay(j, i, { extraMinutes: el.dataset.min ? Number(el.dataset.min) : null }), active: i });
     case 'plan': return void plan(i);
     case 'choose': return set({ journey: { ...j, days: j.days.map((d, k) => (k === i ? { ...d, chosenRouteId: el.dataset.route! } : d)) }, active: i });
     case 'add-day': return set({ journey: addDay(j), active: j.days.length });

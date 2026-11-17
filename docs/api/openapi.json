@@ -1636,6 +1636,36 @@
             "minItems": 1,
             "maxItems": 60
           },
+          "style": {
+            "type": "string",
+            "enum": [
+              "relaxed",
+              "scenic",
+              "most_beautiful"
+            ]
+          },
+          "interests": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "views",
+                "heritage",
+                "water",
+                "mountains",
+                "countryside",
+                "quiet"
+              ]
+            }
+          },
+          "vehicle": {
+            "type": "string",
+            "enum": [
+              "car",
+              "campervan",
+              "caravan"
+            ]
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -2303,6 +2333,36 @@
                       },
                       "minItems": 1,
                       "maxItems": 60
+                    },
+                    "style": {
+                      "type": "string",
+                      "enum": [
+                        "relaxed",
+                        "scenic",
+                        "most_beautiful"
+                      ]
+                    },
+                    "interests": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "views",
+                          "heritage",
+                          "water",
+                          "mountains",
+                          "countryside",
+                          "quiet"
+                        ]
+                      }
+                    },
+                    "vehicle": {
+                      "type": "string",
+                      "enum": [
+                        "car",
+                        "campervan",
+                        "caravan"
+                      ]
                     },
                     "createdAt": {
                       "type": "string",
@@ -2983,6 +3043,36 @@
                       },
                       "minItems": 1,
                       "maxItems": 60
+                    },
+                    "style": {
+                      "type": "string",
+                      "enum": [
+                        "relaxed",
+                        "scenic",
+                        "most_beautiful"
+                      ]
+                    },
+                    "interests": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "views",
+                          "heritage",
+                          "water",
+                          "mountains",
+                          "countryside",
+                          "quiet"
+                        ]
+                      }
+                    },
+                    "vehicle": {
+                      "type": "string",
+                      "enum": [
+                        "car",
+                        "campervan",
+                        "caravan"
+                      ]
                     },
                     "createdAt": {
                       "type": "string",

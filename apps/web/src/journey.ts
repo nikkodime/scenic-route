@@ -1,11 +1,12 @@
 // Journey state: a multi-day trip where each day is planned separately. Pure functions, tested in Node.
 
-import type { Place, PlanResponse, Preferences, RouteOption, Trip } from '@scenic/core';
+import type { Interest, Place, PlanResponse, Preferences, RouteOption, RouteStyle, Trip, Vehicle } from '@scenic/core';
 
 export interface DayPlan {
   origin: Place | null;
   destination: Place | null;
-  extraMinutes: number;
+  /** Optional cap on extra minutes for this day; null lets the journey's style decide. */
+  extraMinutes: number | null;
   /** Local date-time string from <input type="datetime-local">, or '' for "now". */
   departAt: string;
   plan: PlanResponse | null;
@@ -16,20 +17,49 @@ export interface Journey {
   id: string;
   name: string;
   prefs: Preferences;
+  style: RouteStyle;
+  interests: Interest[];
+  vehicle: Vehicle;
   days: DayPlan[];
   createdAt: string;
 }
 
-export const EXTRA_CHOICES = [0, 15, 30, 60, 120, 240] as const;
+/** Time-limit choices per day; null = no limit. */
+export const LIMIT_CHOICES = [null, 15, 30, 60, 120] as const;
+
+export const STYLE_LABELS: Record<RouteStyle, string> = { relaxed: 'Relaxed', scenic: 'Scenic', most_beautiful: 'Most beautiful' };
+export const STYLE_BLURBS: Record<RouteStyle, string> = {
+  relaxed: 'Nicer roads, barely any extra time.',
+  scenic: 'The beautiful way, within reason.',
+  most_beautiful: 'Take your time; the drive is the day.',
+};
+export const INTEREST_LABELS: Record<Interest, string> = {
+  views: 'Views', heritage: 'Hill towns', water: 'Lakes & coast', mountains: 'Mountains & passes', countryside: 'Vineyards & cypresses', quiet: 'Quiet roads',
+};
+export const VEHICLE_LABELS: Record<Vehicle, string> = { car: 'Car', campervan: 'Campervan', caravan: 'Car + caravan' };
 
 export const defaultPrefs = (): Preferences => ({ rentalCar: false, avoidUnpaved: true, avoidTolls: false, avoidMotorways: true, vignettes: [] });
 
 export function newDay(origin: Place | null = null): DayPlan {
-  return { origin, destination: null, extraMinutes: 60, departAt: '', plan: null, chosenRouteId: null };
+  return { origin, destination: null, extraMinutes: null, departAt: '', plan: null, chosenRouteId: null };
 }
 
 export function newJourney(id: string, now = new Date()): Journey {
-  return { id, name: '', prefs: defaultPrefs(), days: [newDay()], createdAt: now.toISOString() };
+  return { id, name: '', prefs: defaultPrefs(), style: 'scenic', interests: [], vehicle: 'car', days: [newDay()], createdAt: now.toISOString() };
+}
+
+/** Fill in fields added since a draft or trip was saved. */
+export function normalize(j: Journey): Journey {
+  return { ...j, style: j.style ?? 'scenic', interests: j.interests ?? [], vehicle: j.vehicle ?? 'car', days: j.days.map((d) => ({ ...d, extraMinutes: d.extraMinutes ?? null })) };
+}
+
+/** Journey-wide settings (style, interests, vehicle, road prefs) invalidate every day's plan. */
+export function updateJourney(j: Journey, patch: Partial<Pick<Journey, 'style' | 'interests' | 'vehicle' | 'prefs'>>): Journey {
+  return { ...j, ...patch, days: j.days.map((d) => ({ ...d, plan: null, chosenRouteId: null })) };
+}
+
+export function toggleInterest(j: Journey, i: Interest): Journey {
+  return updateJourney(j, { interests: j.interests.includes(i) ? j.interests.filter((x) => x !== i) : [...j.interests, i] });
 }
 
 /** Next day starts where the previous one ended. */
@@ -85,12 +115,15 @@ export function toTrip(j: Journey, now = new Date()): Trip {
     createdAt: j.createdAt,
     updatedAt: now.toISOString(),
     deleted: false,
+    style: j.style,
+    interests: j.interests,
+    vehicle: j.vehicle,
     days: j.days.filter((d) => d.origin && d.destination).map((d) => ({
       date: d.departAt ? d.departAt.slice(0, 10) : undefined,
       origin: d.origin!,
       destination: d.destination!,
       stops: [],
-      extraMinutes: d.extraMinutes,
+      extraMinutes: d.extraMinutes ?? Math.round(chosenRoute(d)?.extraMinutes ?? 0),
       route: chosenRoute(d) ?? undefined,
     })),
   };
@@ -101,9 +134,12 @@ export function fromTrip(t: Trip): Journey {
     id: t.id,
     name: t.name,
     prefs: defaultPrefs(),
+    style: t.style ?? 'scenic',
+    interests: t.interests ?? [],
+    vehicle: t.vehicle ?? 'car',
     createdAt: t.createdAt,
     days: t.days.map((d) => ({
-      origin: d.origin, destination: d.destination, extraMinutes: d.extraMinutes,
+      origin: d.origin, destination: d.destination, extraMinutes: null,
       departAt: d.date ? `${d.date}T09:00` : '',
       plan: d.route ? { planId: 'saved', modelVersion: '', fastest: { km: d.route.km, minutes: d.route.minutes - d.route.extraMinutes }, routes: [d.route], warnings: [], attribution: [] } : null,
       chosenRouteId: d.route?.id ?? null,

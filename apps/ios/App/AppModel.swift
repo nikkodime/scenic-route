@@ -8,7 +8,11 @@ final class AppModel {
     // Planning input
     var origin: Place?            // nil = current location
     var destination: Place?
-    var extraMinutes: Double = 45
+    var style: RouteStyle = .scenic
+    var interests: Set<Interest> = []
+    var vehicle: Vehicle = .car
+    /// Optional cap on extra minutes; nil lets the style decide.
+    var timeLimit: Int?
     var departAt = Date()
     var prefs = Preferences()
 
@@ -63,11 +67,11 @@ final class AppModel {
                 let here = try await location.current()
                 start = Place(lat: here.lat, lon: here.lon, label: "Current location")
             }
-            let req = PlanRequest(origin: start, destination: destination, extraMinutes: Int(extraMinutes), departAt: departAt, prefs: prefs)
+            let req = PlanRequest(origin: start, destination: destination, style: style, interests: Interest.allCases.filter(interests.contains), vehicle: vehicle, extraMinutes: timeLimit, departAt: departAt, prefs: prefs)
             let res = try await api.plan(req)
             plan = res
             selectedRouteID = res.routes.first?.id
-            if res.routes.isEmpty { errorMessage = "No route fits that time. Try adding a little more time." }
+            if res.routes.isEmpty { errorMessage = "No route fits that time limit. Try a longer limit or no limit." }
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -81,7 +85,7 @@ final class AppModel {
         guard let destination else { return }
         let start = origin ?? Place(lat: route.line.first?.lat ?? 0, lon: route.line.first?.lon ?? 0, label: "Start")
         let name = "\(start.label ?? "Start") → \(destination.label ?? "Destination")"
-        let trip = Trip(name: name, days: [TripDay(origin: start, destination: destination, extraMinutes: Int(extraMinutes), route: route)])
+        let trip = Trip(name: name, days: [TripDay(origin: start, destination: destination, extraMinutes: Int(route.extraMinutes.rounded()), route: route)])
         await store.save(trip)
         trips = await store.trips
         await sync()

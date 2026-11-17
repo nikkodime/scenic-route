@@ -30,16 +30,62 @@ public struct Preferences: Codable, Hashable, Sendable {
     public init() {}
 }
 
+/// How much the driver wants scenery over speed; the server turns it into a time budget.
+public enum RouteStyle: String, Codable, CaseIterable, Sendable, Identifiable {
+    case relaxed, scenic, mostBeautiful = "most_beautiful"
+    public var id: String { rawValue }
+    public var title: String {
+        switch self { case .relaxed: "Relaxed"; case .scenic: "Scenic"; case .mostBeautiful: "Most beautiful" }
+    }
+    public var blurb: String {
+        switch self {
+        case .relaxed: "Nicer roads, barely any extra time."
+        case .scenic: "The beautiful way, within reason."
+        case .mostBeautiful: "Take your time; the drive is the day."
+        }
+    }
+}
+
+public enum Interest: String, Codable, CaseIterable, Sendable, Identifiable {
+    case views, heritage, water, mountains, countryside, quiet
+    public var id: String { rawValue }
+    public var title: String {
+        switch self {
+        case .views: "Views"; case .heritage: "Hill towns"; case .water: "Lakes & coast"
+        case .mountains: "Mountains & passes"; case .countryside: "Vineyards & cypresses"; case .quiet: "Quiet roads"
+        }
+    }
+    public var symbol: String {
+        switch self {
+        case .views: "binoculars"; case .heritage: "building.columns"; case .water: "water.waves"
+        case .mountains: "mountain.2"; case .countryside: "leaf"; case .quiet: "moon.zzz"
+        }
+    }
+}
+
+public enum Vehicle: String, Codable, CaseIterable, Sendable, Identifiable {
+    case car, campervan, caravan
+    public var id: String { rawValue }
+    public var title: String {
+        switch self { case .car: "Car"; case .campervan: "Campervan"; case .caravan: "Car + caravan" }
+    }
+}
+
 public struct PlanRequest: Codable, Sendable {
     public var origin: Place
     public var destination: Place
     public var stops: [Place]
-    public var extraMinutes: Int
+    public var style: RouteStyle
+    public var interests: [Interest]
+    public var vehicle: Vehicle
+    /// Optional cap on extra minutes; nil lets the style decide.
+    public var extraMinutes: Int?
     public var departAt: String?
     public var prefs: Preferences
     public var maxRoutes: Int
-    public init(origin: Place, destination: Place, stops: [Place] = [], extraMinutes: Int = 45, departAt: Date? = nil, prefs: Preferences = .init(), maxRoutes: Int = 3) {
+    public init(origin: Place, destination: Place, stops: [Place] = [], style: RouteStyle = .scenic, interests: [Interest] = [], vehicle: Vehicle = .car, extraMinutes: Int? = nil, departAt: Date? = nil, prefs: Preferences = .init(), maxRoutes: Int = 3) {
         self.origin = origin; self.destination = destination; self.stops = stops
+        self.style = style; self.interests = interests; self.vehicle = vehicle
         self.extraMinutes = extraMinutes; self.prefs = prefs; self.maxRoutes = maxRoutes
         self.departAt = departAt.map { ISO8601DateFormatter().string(from: $0) }
     }
@@ -138,6 +184,7 @@ public struct PlanResponse: Codable, Sendable {
     public var planId: String
     public var modelVersion: String
     public var fastest: Fastest
+    public var budgetMinutes: Double?
     public var routes: [RouteOption]
     public var warnings: [String]
     public var attribution: [String]

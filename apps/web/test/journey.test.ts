@@ -40,3 +40,22 @@ test('journey ↔ trip round-trip passes the API schema', () => {
   assert.equal(back.days[0].chosenRouteId, 'a');
   assert.equal(duration(95), '1 h 35 min');
 });
+
+test('style, interests and vehicle are journey-wide and invalidate every plan; old drafts are upgraded', async () => {
+  const { updateJourney, toggleInterest, normalize } = await import('../src/journey.ts');
+  let j = updateDay(updateDay(newJourney('00000000-0000-4000-8000-000000000003'), 0, { origin: SIENA }), 0, { destination: PIENZA });
+  const plan = { planId: 'p', modelVersion: 'm', fastest: { km: 50, minutes: 50 }, routes: [route('a', 60, 70)], warnings: [], attribution: [] };
+  j = updateDay(j, 0, { plan, chosenRouteId: 'a' });
+  assert.equal(j.style, 'scenic');
+  assert.equal(j.days[0].extraMinutes, null, 'no time limit by default');
+  assert.equal(updateJourney(j, { style: 'most_beautiful' }).days[0].plan, null);
+  j = toggleInterest(j, 'water');
+  assert.deepEqual(j.interests, ['water']);
+  assert.deepEqual(toggleInterest(j, 'water').interests, []);
+  const trip = TripSchema.parse(toTrip({ ...j, vehicle: 'caravan' }));
+  assert.equal(trip.vehicle, 'caravan');
+  assert.deepEqual(fromTrip(trip).interests, ['water']);
+  const old = normalize({ ...newJourney('00000000-0000-4000-8000-000000000004'), style: undefined, interests: undefined, vehicle: undefined } as never);
+  assert.equal(old.style, 'scenic');
+  assert.deepEqual(old.interests, []);
+});

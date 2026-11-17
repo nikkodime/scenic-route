@@ -43,6 +43,9 @@ try {
   if (shots) await page.screenshot({ path: `${shots}/web-debug.png` });
   await page.getByLabel('To', { exact: true }).fill('Amiata');
   await page.getByRole('option', { name: /Abbadia/ }).click();
+  await page.getByRole('button', { name: 'Most beautiful' }).click();
+  await page.getByRole('button', { name: 'Lakes & coast' }).click();
+  assert.equal(await page.getByRole('button', { name: 'Lakes & coast' }).getAttribute('aria-pressed'), 'true');
   await page.getByRole('button', { name: '+1 h' }).click();
   await page.getByRole('button', { name: 'Find scenic routes' }).click();
   await page.getByText('Most scenic').waitFor({ timeout: 20000 });
