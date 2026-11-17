@@ -62,7 +62,7 @@ function planView(): string {
   const t = totals(j);
   return `
     <header class="day-head">
-      <div><div class="label">Panoramica · Journey planner</div><h1>Plan the beautiful way</h1></div>
+      <div><img class="wordmark" src="${import.meta.env.BASE_URL}wordmark.svg" alt="Panoramica" width="150" height="22" /><div class="label">Journey planner</div><h1>Plan the beautiful way</h1></div>
       <button class="btn link" data-action="trips">My trips</button>
     </header>
     <div class="field">
@@ -169,7 +169,7 @@ function tripsView(): string {
   const list = state.trips;
   return `
     <header class="day-head">
-      <div><div class="label">Panoramica</div><h1>My trips</h1></div>
+      <div><img class="wordmark" src="${import.meta.env.BASE_URL}wordmark.svg" alt="Panoramica" width="150" height="22" /><h1>My trips</h1></div>
       <button class="btn link" data-action="back">Back to planner</button>
     </header>
     ${list == null ? '<p class="muted">Loading…</p>' : list.length === 0 ? '<p class="muted">No saved journeys yet.</p>' : list.map((t) => `

@@ -101,3 +101,4 @@ h2 { font: 600 20px/1.2 var(--font-ui); margin: 0; }
 .stop-marker { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--green); background: #fff; color: var(--green); font: 700 12px var(--font-ui); display: grid; place-content: center; box-shadow: 0 1px 3px rgba(23, 38, 42, .2); }
 .bar:nth-child(4) i::after { background: var(--terracotta); }
 .btn.link { white-space: nowrap; }
+.wordmark { display: block; height: 22px; width: auto; margin-bottom: 14px; }

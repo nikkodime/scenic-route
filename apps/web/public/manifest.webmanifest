@@ -1,0 +1,13 @@
+{
+  "name": "Panoramica",
+  "short_name": "Panoramica",
+  "description": "Plan the beautiful way: scenic drives and road trips across Europe.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#F5F6F3",
+  "theme_color": "#F5F6F3",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

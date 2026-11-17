@@ -75,6 +75,8 @@ struct PlanView: View {
 
     private var hero: some View {
         VStack(alignment: .leading, spacing: 6) {
+            Image("Wordmark").resizable().scaledToFit().frame(height: 26).padding(.bottom, 10)
+                .accessibilityLabel("Panoramica")
             Text("Take the beautiful way").font(Theme.displayFont).tracking(-0.8).foregroundStyle(Theme.ink)
             Text("Tell us where you're going and how much extra time you'd enjoy. We'll find the road with the views.")
                 .foregroundStyle(.secondary)
