@@ -23,6 +23,30 @@ export function parsePhoton(json: { features?: PhotonFeature[] }): GeocodeResult
 
 const cache = new TtlCache<GeocodeResult[]>(2000);
 
+/** Europe (incl. Canaries, Iceland, Cyprus, Turkey's west): minLon, minLat, maxLon, maxLat. */
+export const EUROPE_BBOX = [-25, 27, 45, 72] as const;
+const inEurope = (r: { lat: number; lon: number }) => r.lon >= EUROPE_BBOX[0] && r.lon <= EUROPE_BBOX[2] && r.lat >= EUROPE_BBOX[1] && r.lat <= EUROPE_BBOX[3];
+const SETTLEMENT = new Set(['city', 'town', 'village', 'hamlet', 'municipality', 'suburb', 'locality', 'administrative', 'island', 'peak', 'mountain_pass']);
+
+/**
+ * Drivers type town names. "Pisa" must be the city of Pisa, not a pizzeria called Pisa
+ * or a street: put European settlements whose name matches the query first.
+ */
+export function rankPlaces(results: GeocodeResult[], q: string): GeocodeResult[] {
+  const query = q.trim().toLowerCase();
+  const score = (r: GeocodeResult) => {
+    const name = r.label.split(',')[0].trim().toLowerCase();
+    let s = 0;
+    if (inEurope(r)) s += 4;
+    if (name === query) s += 3;
+    else if (name.startsWith(query)) s += 1;
+    if (r.kind && SETTLEMENT.has(r.kind)) s += 2;
+    return s;
+  };
+  const europe = results.filter(inEurope);
+  return (europe.length ? europe : results).map((r, i) => ({ r, i, s: score(r) })).sort((a, b) => b.s - a.s || a.i - b.i).map((x) => x.r);
+}
+
 export class PhotonGeocoder implements Geocoder {
   private http: Http;
   private base: string;
@@ -33,10 +57,12 @@ export class PhotonGeocoder implements Geocoder {
   search(q: string, { lang = 'en', near }: { lang?: string; near?: { lat: number; lon: number } } = {}) {
     const u = new URL(`${this.base}/api`);
     u.searchParams.set('q', q);
-    u.searchParams.set('limit', '6');
     u.searchParams.set('lang', ['en', 'de', 'fr', 'it'].includes(lang) ? lang : 'en');
-    if (near) { u.searchParams.set('lat', near.lat.toFixed(3)); u.searchParams.set('lon', near.lon.toFixed(3)); }
-    return cache.wrap(u.toString(), 24 * 3600_000, async () => parsePhoton(await this.http.json(u.toString())));
+    u.searchParams.set('limit', '10');
+    u.searchParams.set('bbox', EUROPE_BBOX.join(','));
+    // Location bias only when the device is actually in Europe (the iOS simulator defaults to California).
+    if (near && inEurope(near)) { u.searchParams.set('lat', near.lat.toFixed(3)); u.searchParams.set('lon', near.lon.toFixed(3)); u.searchParams.set('location_bias_scale', '0.3'); }
+    return cache.wrap(u.toString(), 24 * 3600_000, async () => rankPlaces(parsePhoton(await this.http.json(u.toString())), q).slice(0, 6));
   }
 }
 
@@ -51,10 +77,12 @@ export class NominatimGeocoder implements Geocoder {
     const u = new URL(`${this.base}/search`);
     u.searchParams.set('q', q);
     u.searchParams.set('format', 'jsonv2');
-    u.searchParams.set('limit', '6');
+    u.searchParams.set('limit', '10');
+    u.searchParams.set('viewbox', EUROPE_BBOX.join(','));
+    u.searchParams.set('bounded', '1');
     return cache.wrap(u.toString() + lang, 24 * 3600_000, async () => {
-      const res = await this.http.json<{ lat: string; lon: string; display_name: string; type?: string }[]>(u.toString(), { headers: { 'Accept-Language': lang } });
-      return res.map((r) => ({ lat: +r.lat, lon: +r.lon, label: r.display_name, kind: r.type }));
+      const res = await this.http.json<{ lat: string; lon: string; display_name: string; type?: string; addresstype?: string }[]>(u.toString(), { headers: { 'Accept-Language': lang } });
+      return rankPlaces(res.map((r) => ({ lat: +r.lat, lon: +r.lon, label: r.display_name, kind: r.addresstype ?? r.type })), q).slice(0, 6);
     });
   }
 }

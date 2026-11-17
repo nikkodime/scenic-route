@@ -84,3 +84,25 @@ export function candidateWaypointSets(start: LatLon, end: LatLon, spots: Spot[],
   if (usable.length >= 3) add(usable.slice(0, 3));
   return sets.slice(0, maxSets).map((set) => set.map(({ t, detour, value, ...s }) => s));
 }
+
+/**
+ * Fallback when no scenic places are known (map data server down, empty area):
+ * probe detours to either side of the direct line, so relief and bends can still
+ * pick a more interesting road than the fastest one. Returns pseudo-spots.
+ */
+export function detourProbes(start: LatLon, end: LatLon, extraMin: number): Spot[][] {
+  const direct = distKm(start, end);
+  const offsetKm = Math.min(15, budgetKm(extraMin) * 0.3, direct * 0.25);
+  if (offsetKm < 2) return [];
+  const kx = Math.cos(((start.lat + end.lat) / 2) * Math.PI / 180);
+  // Unit vector along the axis in km space, and its perpendicular.
+  const ax = (end.lon - start.lon) * 111 * kx, ay = (end.lat - start.lat) * 111;
+  const len = Math.hypot(ax, ay) || 1;
+  const px = -ay / len, py = ax / len;
+  const at = (t: number, side: number, k = 1): Spot => ({
+    lat: start.lat + (end.lat - start.lat) * t + (py * side * offsetKm * k) / 111,
+    lon: start.lon + (end.lon - start.lon) * t + (px * side * offsetKm * k) / (111 * kx),
+    weight: 0, count: 0, name: '', types: [],
+  });
+  return [[at(0.5, 1)], [at(0.5, -1)], [at(0.33, 1, 0.8), at(0.66, 1, 0.8)], [at(0.33, -1, 0.8), at(0.66, -1, 0.8)]];
+}

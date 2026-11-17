@@ -140,3 +140,14 @@ test('shipped zone files load and are found by bbox', () => {
   assert.ok(z.inBBox([43.30, 11.30, 43.34, 11.35]).some((x) => x.properties.name.includes('Siena')));
   assert.equal(z.inBBox([60, 20, 61, 21]).length, 0);
 });
+
+test('geocoder ranking: the city of Pisa beats a Pisa street and places outside Europe', async () => {
+  const { rankPlaces } = await import('../src/providers/geocode.ts');
+  const ranked = rankPlaces([
+    { lat: 37.33, lon: -122.03, label: 'Pisa Pizza, Cupertino, California', kind: 'restaurant' },
+    { lat: 43.77, lon: 11.25, label: 'Via Pisana, Firenze, Toscana, Italia', kind: 'street' },
+    { lat: 43.7167, lon: 10.4017, label: 'Pisa, Toscana, Italia', kind: 'city' },
+  ], 'Pisa');
+  assert.equal(ranked[0].label, 'Pisa, Toscana, Italia');
+  assert.ok(!ranked.some((r) => r.label.includes('California')));
+});

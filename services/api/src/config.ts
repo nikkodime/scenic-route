@@ -12,7 +12,7 @@ const Env = z.object({
   GRAPHHOPPER_URL: z.string().default('http://localhost:8989'),
   GRAPHHOPPER_PROFILE: z.string().default('car'),
   OSRM_URL: z.string().default('https://router.project-osrm.org'),
-  OVERPASS_URLS: list.default('https://overpass-api.de/api/interpreter,https://overpass.kumi.systems/api/interpreter'),
+  OVERPASS_URLS: list.default('https://overpass-api.de/api/interpreter,https://overpass.private.coffee/api/interpreter,https://maps.mail.ru/osm/tools/overpass/api/interpreter,https://overpass.kumi.systems/api/interpreter'),
   /** open-meteo (dev only: free tier is non-commercial) | none */
   ELEVATION: z.enum(['open-meteo', 'none']).default('open-meteo'),
   /** metno (production, CC BY 4.0) | open-meteo (paid plan for production) | none */

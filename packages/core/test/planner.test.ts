@@ -68,3 +68,11 @@ test('gravel routes are dropped for rental cars', async () => {
   const res = await planRoutes(req({ prefs: { rentalCar: true } }), fakeProviders({ router }));
   assert.ok(res.routes.every((r) => r.source === 'fastest'));
 });
+
+test('without any scenic places, side-road probes still offer an alternative to the fastest road', async () => {
+  const p = fakeProviders({ router: new FakeRouter(false), features: { features: async () => [] } });
+  const res = await planRoutes(req(), p);
+  assert.ok(res.routes.length >= 2, `${res.routes.length} routes`);
+  assert.ok(res.routes.some((r) => r.source === 'via_spots'));
+  for (const r of res.routes) assert.deepEqual(r.scenicStops, [], 'probe points are not shown as scenic stops');
+});

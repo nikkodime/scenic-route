@@ -4,7 +4,7 @@
 
 import { distKm, encodePolyline, paddedBBox, resample, type LatLon } from './geo.ts';
 import type { ScenicFeature } from './features.ts';
-import { candidateWaypointSets, clusterSpots, corridorBBox, type Spot } from './candidates.ts';
+import { candidateWaypointSets, clusterSpots, corridorBBox, detourProbes, type Spot } from './candidates.ts';
 import { bestStretch, describe, reliefStats, scoreRoute, SCORE_MODEL, type RouteGeometry, type ScoredRoute, type SegmentSample } from './score.ts';
 import { rankRoutes } from './rank.ts';
 import { assessConditions, weatherSamplePoints, type HourlyForecast } from './conditions.ts';
@@ -159,7 +159,9 @@ export async function planRoutes(req: PlanRequest, p: Providers, opts: PlanOptio
   const totalDirect = legLen.reduce((a, b) => a + b, 0) || 1;
   for (let i = 1; i < required.length; i++) {
     const share = req.extraMinutes * (legLen[i - 1] / totalDirect);
-    legSets.push(candidateWaypointSets(required[i - 1], required[i], spots, share, 8).slice(1));
+    const sets = candidateWaypointSets(required[i - 1], required[i], spots, share, 8).slice(1);
+    // No scenic places known for this leg: still explore side roads so hills and bends can win.
+    legSets.push(sets.length ? sets : detourProbes(required[i - 1], required[i], share));
   }
   const maxVia = Math.max(0, ...legSets.map((s) => s.length));
   for (let k = 0; k < Math.min(maxVia, 7); k++) {
@@ -226,7 +228,7 @@ export async function planRoutes(req: PlanRequest, p: Providers, opts: PlanOptio
   const routes: RouteOption[] = ranked.map((r, i) => {
     const stretch = bestStretch(r.scored.near, r.path.km);
     const conditions = assessConditions({ line: r.line, km: r.path.km, minutes: r.minutes, departure, forecasts: forecasts[i], bestStretch: stretch, timeZone: opts.timeZone });
-    const handoffPts = shapingPoints(r.line, [...req.stops, ...r.stops]);
+    const handoffPts = shapingPoints(r.line, [...req.stops, ...r.stops.filter((s) => s.count > 0)]);
     return {
       id: `${planId}-${i + 1}`,
       rank: i + 1,
@@ -241,7 +243,7 @@ export async function planRoutes(req: PlanRequest, p: Providers, opts: PlanOptio
       polyline: encodePolyline(r.line, 5),
       bbox: paddedBBox(r.line, 0),
       highlights: r.scored.highlights,
-      scenicStops: r.stops.map((s) => ({ lat: s.lat, lon: s.lon, name: s.name, types: s.types })),
+      scenicStops: r.stops.filter((s) => s.count > 0).map((s) => ({ lat: s.lat, lon: s.lon, name: s.name, types: s.types })),
       bestStretch: stretch,
       conditions,
       advisories: r.advisories,

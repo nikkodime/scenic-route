@@ -95,8 +95,10 @@ async function mapLimit(items, limit, fn) {
 async function plan(start, end, extraMin) {
   status('Looking for viewpoints, hill towns, lakes and coast along the way…');
   const bbox = corridorBBox(start, end, extraMin);
-  const [osm, direct] = await Promise.all([overpass(overpassQuery(bbox)), osrmRoute([start, end])]);
-  const features = parseFeatures(osm);
+  // A busy map-data server must not stop the plan: fall back to roads and hills only.
+  const [osm, direct] = await Promise.all([overpass(overpassQuery(bbox)).catch(() => null), osrmRoute([start, end])]);
+  const features = osm ? parseFeatures(osm) : [];
+  if (!osm) status('The scenic-places server is busy, so routes are scored on hills and bends only.');
   const spots = clusterSpots(features);
 
   const sets = candidateWaypointSets(start, end, spots, extraMin);

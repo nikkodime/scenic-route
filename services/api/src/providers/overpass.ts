@@ -27,7 +27,7 @@ export class OverpassFeatures implements FeatureSource {
         try {
           const json = await this.http.json(url, {
             method: 'POST', body: 'data=' + encodeURIComponent(overpassQuery(b)),
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, timeoutMs: 60000, retries: 0,
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, timeoutMs: 25000, retries: 0,
           });
           return parseOverpass(json);
         } catch (e) { last = e; }
