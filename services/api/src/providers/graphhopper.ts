@@ -4,6 +4,9 @@ import type { LatLon, RoutedPath, Router, RouteOptions, Zone } from '@scenic/cor
 import type { Http } from '../http.ts';
 import { distKm } from '@scenic/core';
 
+/** A posted limit of 100–130 km/h means a dual carriageway or motorway (missing limits come back as null or Infinity). */
+export const isFastLimit = (v: unknown) => typeof v === 'number' && v >= 100 && v <= 140;
+
 const UNPAVED = ['UNPAVED', 'COMPACTED', 'FINE_GRAVEL', 'GRAVEL', 'GROUND', 'DIRT', 'GRASS', 'SAND'];
 
 /** Priority multipliers per scenic strength (custom models with LM can only lower priority, so we push big roads down). */
@@ -50,6 +53,8 @@ export function customModel(opts: RouteOptions): CustomModel {
   if (opts.profile === 'scenic') {
     const strength = Math.max(1, Math.min(3, opts.strength ?? 1));
     for (const [cls, m] of Object.entries(STRENGTH[strength])) priority.push({ if: `road_class == ${cls}`, multiply_by: String(m) });
+    // Superstrade tagged as primary: as unwelcome as a trunk road at this strength.
+    priority.push({ if: 'max_speed >= 100 && max_speed <= 140 && road_class != MOTORWAY && road_class != TRUNK', multiply_by: String(STRENGTH[strength].TRUNK) });
     distance_influence = [0, 40, 20, 10][strength];
   }
   return { priority, distance_influence, ...(areas.length ? { areas: { type: 'FeatureCollection', features: areas } } : {}) };
@@ -79,7 +84,18 @@ export function parseGhPath(path: GhPath): RoutedPath {
   const sumWhere = (key: string, pred: (v: string) => boolean) =>
     (path.details?.[key] ?? []).reduce((s, [a, b, v]) => (pred(up(v)) ? s + segKm(a, b) : s), 0);
 
-  const motorwayKm = sumWhere('road_class', (v) => v === 'MOTORWAY' || v === 'TRUNK');
+  // Fast roads: motorways and trunks, plus Italian superstrade and other dual carriageways that OSM often tags
+  // as primary with a 100–130 km/h limit (Firenze–Siena, FI-PI-LI, E45). They are never the scenic road.
+  const fastKm = (from: number, to: number) => {
+    // Union of the two interval sets, so a trunk with a 110 limit isn't counted twice.
+    const marks = new Uint8Array(Math.max(0, to - from));
+    for (const [a, b, v] of path.details?.road_class ?? []) if (up(v) === 'MOTORWAY' || up(v) === 'TRUNK') for (let i = Math.max(a, from); i < Math.min(b, to); i++) marks[i - from] = 1;
+    for (const [a, b, v] of path.details?.max_speed ?? []) if (isFastLimit(v)) for (let i = Math.max(a, from); i < Math.min(b, to); i++) marks[i - from] = 1;
+    let s = 0;
+    for (let i = 0; i < marks.length; i++) if (marks[i]) s += distKm(line[from + i], line[from + i + 1]);
+    return s;
+  };
+  const motorwayKm = fastKm(0, line.length - 1);
   const unpavedKm = sumWhere('surface', (v) => UNPAVED.includes(v)) + sumWhere('road_class', (v) => v === 'TRACK');
   const tollKm = sumWhere('toll', (v) => v === 'ALL');
   const ferryKm = sumWhere('road_environment', (v) => v === 'FERRY');
@@ -122,7 +138,7 @@ export class GraphHopperRouter implements Router {
       points_encoded: false,
       instructions: false,
       calc_points: true,
-      details: ['road_class', 'surface', 'toll', 'country', 'road_environment', 'urban_density'],
+      details: ['road_class', 'surface', 'toll', 'country', 'road_environment', 'urban_density', 'max_speed'],
       custom_model: cm,
       'ch.disable': true,
       ...(alternatives ? { algorithm: 'alternative_route', 'alternative_route.max_paths': 3, 'alternative_route.max_weight_factor': 1.6, 'alternative_route.max_share_factor': 0.7, 'ch.disable': true } : {}),

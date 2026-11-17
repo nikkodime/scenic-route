@@ -56,7 +56,7 @@ test('GraphHopper router posts the right body and reads the path', async () => {
   assert.equal(path.km, 1);
   assert.deepEqual(sent.points[0], [SIENA.lon, SIENA.lat]);
   assert.equal(sent['ch.disable'], true);
-  assert.ok(sent.details.includes('country'));
+  assert.ok(sent.details.includes('country') && sent.details.includes('max_speed'));
   assert.deepEqual(await r.alternatives([SIENA, SIENA, SIENA], { profile: 'fastest', prefs }), []);
 });
 
@@ -273,4 +273,21 @@ test('custom model: caravans keep off service roads and narrow lanes; cars are u
   assert.ok(caravan.priority.some((p) => p.if === 'road_class == UNCLASSIFIED'));
   const car = customModel({ profile: 'scenic', strength: 1, prefs, vehicle: 'car' });
   assert.ok(!car.priority.some((p) => p.if === 'road_class == UNCLASSIFIED'));
+});
+
+test('superstrade count as fast roads: a primary road posted at 110 is penalised like a trunk', () => {
+  const coords: [number, number][] = [];
+  for (let i = 0; i <= 10; i++) coords.push([11 + i * 0.1, 43]);
+  // Firenze–Siena: tagged primary, limit 110 on most of it; a trunk stretch overlaps a 110 stretch (counted once).
+  const p = parseGhPath({
+    distance: 81000, time: 3600000, points: { coordinates: coords },
+    details: {
+      road_class: [[0, 2, 'TRUNK'], [2, 10, 'PRIMARY']],
+      max_speed: [[0, 6, 110], [6, 8, 90], [8, 10, Infinity as unknown as number]],
+    },
+  });
+  assert.ok(Math.abs(p.motorwayKm! - 6 * 8.13) < 1, `${p.motorwayKm}`);
+  const cm = customModel({ profile: 'scenic', strength: 2, prefs });
+  assert.ok(cm.priority.some((x) => x.if?.startsWith('max_speed >= 100') && x.multiply_by === '0.3'));
+  assert.ok(!customModel({ profile: 'fastest', prefs }).priority.some((x) => x.if?.startsWith('max_speed')));
 });

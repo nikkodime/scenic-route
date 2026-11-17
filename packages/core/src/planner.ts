@@ -157,8 +157,9 @@ async function pool<T, R>(items: T[], limit: number, fn: (item: T, index: number
 }
 
 function labelFor(r: Evaluated, best: Evaluated, fastestMinutes: number): string {
-  if (r === best) return 'Most scenic';
+  // The fastest road is never called scenic, even when nothing better fits the time.
   if (r.source === 'fastest') return 'Fastest';
+  if (r === best) return 'Most scenic';
   if (r.minutes - fastestMinutes < 10) return 'Scenic and quick';
   if (r.scored.score >= best.scored.score - 5) return 'Also beautiful';
   return 'Balanced';
@@ -311,6 +312,8 @@ export async function planRoutes(req: PlanRequest, p: Providers, opts: PlanOptio
 
   // The start and finish towns by name too ("Siena, Tuscany" -> "siena"), wherever OSM puts their node.
   const endNames = [req.origin.label, req.destination.label].flatMap((l) => (l ? [l.split(',')[0].trim().toLowerCase()] : []));
+  if (best && best.source === 'fastest' && best.path.km > 0 && (best.path.motorwayKm ?? 0) / best.path.km > 0.5)
+    warnings.push('No quieter road fits your time, so the fastest road leads. Allow more time or try "Most beautiful".');
   const routes: RouteOption[] = ranked.map((r, i) => {
     const stretch = bestStretch(r.scored.near, r.path.km);
     const conditions = assessConditions({ line: r.line, km: r.path.km, minutes: r.minutes, departure, forecasts: forecasts[i], bestStretch: stretch, timeZone: opts.timeZone });
