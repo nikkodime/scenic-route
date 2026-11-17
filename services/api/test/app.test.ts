@@ -27,7 +27,7 @@ for (const [name, makeStore] of stores) {
   let store: Store;
   before(async () => {
     store = await makeStore();
-    app = await buildApp({ config, providers: fakeProviders(), geocoder, store, appleKeys });
+    app = await buildApp({ config, providers: fakeProviders(), geocoder, store, appleKeys, photos: { near: async (lat, lon) => [{ url: 'https://upload.wikimedia.org/x.jpg', width: 800, height: 533, title: `View ${lat},${lon}`, author: 'A', license: 'CC BY 4.0', source: 'https://commons.wikimedia.org/wiki/File:x' }] } });
   });
   after(async () => { await app.close(); await store.close(); });
 
@@ -58,6 +58,13 @@ for (const [name, makeStore] of stores) {
     assert.ok(r.json().destinations[0].name);
     const none = await app.inject({ method: 'POST', url: '/v1/explore', payload: { origin: SIENA, maxMinutes: 20 } });
     assert.equal(none.statusCode, 422);
+  });
+
+  test(`[${name}] photos of a place, with credits`, async () => {
+    const r = await app.inject('/v1/photos?lat=43.07&lon=11.67&name=Pienza');
+    assert.equal(r.statusCode, 200);
+    assert.equal(r.json().photos[0].license, 'CC BY 4.0');
+    assert.equal((await app.inject('/v1/photos?lat=300&lon=0')).statusCode, 400);
   });
 
   test(`[${name}] geocode validates and answers`, async () => {

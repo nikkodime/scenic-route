@@ -291,3 +291,31 @@ test('superstrade count as fast roads: a primary road posted at 110 is penalised
   assert.ok(cm.priority.some((x) => x.if?.startsWith('max_speed >= 100') && x.multiply_by === '0.3'));
   assert.ok(!customModel({ profile: 'fastest', prefs }).priority.some((x) => x.if?.startsWith('max_speed')));
 });
+
+test('Commons photos: landscape views with credits; maps, coats of arms and portraits are dropped', async () => {
+  const { parseCommons, CommonsPhotos } = await import('../src/providers/photos.ts');
+  const page = (index: number, title: string, w: number, h: number, license = 'CC BY-SA 4.0', mime = 'image/jpeg') => ({
+    title: `File:${title}.jpg`, index,
+    imageinfo: [{ thumburl: `https://upload.wikimedia.org/thumb/${index}.jpg`, thumbwidth: 800, thumbheight: Math.round((800 * h) / w), width: w, height: h, mime,
+      descriptionurl: `https://commons.wikimedia.org/wiki/File:${index}`, extmetadata: { Artist: { value: '<a href="//x">Jane Doe</a>' }, LicenseShortName: { value: license } } }],
+  });
+  const json = { query: { pages: {
+    a: page(1, 'Val d Orcia panorama', 4000, 2600),
+    b: page(2, 'Mappa di Pienza', 3000, 2000),
+    c: page(3, 'Stemma Pienza', 2000, 1200),
+    d: page(4, 'Pienza duomo facade', 2000, 3000),
+    e: page(5, 'Pienza from the south', 3000, 2000),
+    f: page(6, 'Unlicensed view', 3000, 2000, 'All rights reserved'),
+    g: page(7, 'Tiny view', 600, 400),
+  } } };
+  const photos = parseCommons(json, 'Pienza');
+  assert.deepEqual(photos.map((p) => p.title), ['Pienza from the south', 'Val d Orcia panorama']);
+  assert.equal(photos[0].author, 'Jane Doe');
+  assert.equal(photos[0].license, 'CC BY-SA 4.0');
+  let calls = 0;
+  const fetch = (async () => { calls++; return new Response(JSON.stringify(json), { status: 200 }); }) as typeof globalThis.fetch;
+  const src = new CommonsPhotos(makeHttp({ userAgent: 't', fetch }));
+  assert.equal((await src.near(43.0766, 11.6787, { name: 'Pienza', limit: 1 })).length, 1);
+  await src.near(43.0766, 11.6787, { name: 'Pienza' });
+  assert.equal(calls, 1, 'cached');
+});

@@ -11,6 +11,7 @@ import {
 import type { Config } from './config.ts';
 import type { Geocoder } from './providers/geocode.ts';
 import type { Store } from './store/store.ts';
+import type { PhotoSource } from './providers/photos.ts';
 import { signToken, verifyAppleToken, verifyToken } from './auth.ts';
 
 export interface AppDeps {
@@ -18,6 +19,7 @@ export interface AppDeps {
   providers: Providers;
   geocoder: Geocoder;
   store: Store;
+  photos?: PhotoSource;
   appleKeys?: JWTVerifyGetKey;
   logger?: boolean;
 }
@@ -81,6 +83,20 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   app.post('/v1/explore', { config: { rateLimit: { max: 20, timeWindow: '1 minute' } } }, async (req) => {
     const body = ExploreRequestSchema.parse(req.body);
     return exploreFrom(body, providers, { log: (msg, extra) => req.log.warn({ extra: String(extra) }, msg) });
+  });
+
+  // Photos of a place (Wikimedia Commons). Each carries author and licence: show the credit with the photo.
+  app.get('/v1/photos', { config: { rateLimit: { max: 120, timeWindow: '1 minute' } } }, async (req, reply) => {
+    const q = z.object({ lat: z.coerce.number().min(-90).max(90), lon: z.coerce.number().min(-180).max(180), name: z.string().max(120).optional(), radius: z.coerce.number().int().min(100).max(5000).optional(), limit: z.coerce.number().int().min(1).max(10).optional() }).parse(req.query);
+    if (!deps.photos) return { photos: [] };
+    try {
+      const photos = await deps.photos.near(q.lat, q.lon, { name: q.name, radiusM: q.radius, limit: q.limit });
+      reply.header('Cache-Control', 'public, max-age=86400');
+      return { photos };
+    } catch (e) {
+      req.log.warn({ extra: String(e) }, 'photos failed');
+      return { photos: [] };
+    }
   });
 
   app.get('/v1/regions', async () => ({ regions: REGIONS }));

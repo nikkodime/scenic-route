@@ -104,6 +104,18 @@ public final class APIClient: Sendable {
         try await request("POST", "v1/plan", body: req)
     }
 
+    public func explore(_ req: ExploreRequest) async throws -> ExploreResponse {
+        try await request("POST", "v1/explore", body: req)
+    }
+
+    public func photos(lat: Double, lon: Double, name: String? = nil, limit: Int = 4) async throws -> [Photo] {
+        struct R: Decodable { let photos: [Photo] }
+        var q = [URLQueryItem(name: "lat", value: String(lat)), URLQueryItem(name: "lon", value: String(lon)), URLQueryItem(name: "limit", value: String(limit))]
+        if let name { q.append(URLQueryItem(name: "name", value: name)) }
+        let r: R = try await request("GET", "v1/photos", query: q)
+        return r.photos
+    }
+
     public func geocode(_ q: String, near: Coordinate? = nil) async throws -> [Place] {
         struct R: Decodable { let results: [Place] }
         var query = [URLQueryItem(name: "q", value: q)]

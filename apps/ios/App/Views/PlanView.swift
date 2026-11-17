@@ -12,13 +12,38 @@ struct PlanView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 hero
+                Picker("Mode", selection: $model.mode) {
+                    ForEach(PlanMode.allCases) { Text($0.title).tag($0) }
+                }
+                .pickerStyle(.segmented)
+                .accessibilityIdentifier("modePicker")
+
                 VStack(spacing: 0) {
                     placeRow(icon: "location.fill", title: "From", value: model.origin?.label ?? "Current location") { picking = .origin }
-                    Divider().padding(.leading, 44)
-                    placeRow(icon: "flag.checkered", title: "To", value: model.destination?.label ?? "Where to?") { picking = .destination }
+                    if model.mode == .go {
+                        Divider().padding(.leading, 44)
+                        placeRow(icon: "flag.checkered", title: "To", value: model.destination?.label ?? "Where to?") { picking = .destination }
+                    }
                 }
                 .background(Theme.surface, in: RoundedRectangle(cornerRadius: Theme.corner))
                 .overlay(RoundedRectangle(cornerRadius: Theme.corner).strokeBorder(Theme.border))
+
+                if model.mode == .explore {
+                    section("How long a drive?") {
+                        Picker("Drive time", selection: $model.exploreMinutes) {
+                            Text("1 h").tag(60)
+                            Text("2 h").tag(120)
+                            Text("Half a day").tag(240)
+                        }
+                        .pickerStyle(.segmented)
+                        .accessibilityIdentifier("explorePicker")
+                        Toggle("Come back to the start", isOn: $model.roundTrip)
+                            .tint(Theme.accent)
+                            .accessibilityIdentifier("roundTrip")
+                        Text(model.roundTrip ? "A loop: out one road, back another, within that time." : "Places you can reach within that time, by a beautiful road.")
+                            .font(Theme.sofia(14)).foregroundStyle(Theme.ink2)
+                    }
+                }
 
                 section("How do you want to drive?") {
                     Picker("Style", selection: $model.style) {
@@ -61,6 +86,7 @@ struct PlanView: View {
                 }
 
                 VStack(spacing: 0) {
+                    if model.mode == .go {
                     HStack {
                         Text("Time limit").font(Theme.bodyFont)
                         Spacer()
@@ -74,6 +100,7 @@ struct PlanView: View {
                     }
                     .padding(.vertical, 6)
                     Divider()
+                    }
                     DatePicker("Leaving", selection: $model.departAt, in: Date()..., displayedComponents: [.date, .hourAndMinute])
                         .padding(.vertical, 6)
                 }
@@ -89,23 +116,33 @@ struct PlanView: View {
                     Label(error, systemImage: "exclamationmark.triangle").foregroundStyle(.red).font(.callout)
                 }
 
-                Button {
-                    Task {
-                        await model.runPlan()
-                        if model.plan?.routes.isEmpty == false { model.planPath = [.results] }
+                if model.mode == .go {
+                    Button {
+                        Task {
+                            await model.runPlan()
+                            if model.plan?.routes.isEmpty == false { model.planPath = [.results] }
+                        }
+                    } label: {
+                        primaryLabel(busy: model.isPlanning, busyText: "Finding beautiful roads…", text: "Find scenic routes")
                     }
-                } label: {
-                    HStack {
-                        if model.isPlanning { ProgressView().tint(.white) }
-                        Text(model.isPlanning ? "Finding beautiful roads…" : "Find scenic routes").font(Theme.buttonFont)
+                    .buttonStyle(.borderedProminent)
+                    .buttonBorderShape(.roundedRectangle(radius: Theme.controlCorner))
+                    .disabled(!model.canPlan)
+                    .accessibilityIdentifier("planButton")
+                } else {
+                    Button {
+                        Task {
+                            await model.runExplore()
+                            if model.explore?.destinations.isEmpty == false { model.planPath = [.explore] }
+                        }
+                    } label: {
+                        primaryLabel(busy: model.isExploring, busyText: "Looking around…", text: "Show scenic places")
                     }
-                    .foregroundStyle(Theme.onAccent)
-                    .frame(maxWidth: .infinity).frame(minHeight: 52)
+                    .buttonStyle(.borderedProminent)
+                    .buttonBorderShape(.roundedRectangle(radius: Theme.controlCorner))
+                    .disabled(!model.canExplore)
+                    .accessibilityIdentifier("exploreButton")
                 }
-                .buttonStyle(.borderedProminent)
-                .buttonBorderShape(.roundedRectangle(radius: Theme.controlCorner))
-                .disabled(!model.canPlan)
-                .accessibilityIdentifier("planButton")
             }
             .padding()
         }
@@ -114,9 +151,18 @@ struct PlanView: View {
         .navigationBarTitleDisplayMode(.inline)
         .sheet(item: $picking) { field in
             PlaceSearchView(title: field == .origin ? "Start" : "Destination", allowCurrentLocation: field == .origin) { place in
-                if field == .origin { model.origin = place } else { model.destination = place }
+                if field == .origin { model.origin = place } else { model.destination = place; model.loopVia = nil }
             }
         }
+    }
+
+    private func primaryLabel(busy: Bool, busyText: String, text: String) -> some View {
+        HStack {
+            if busy { ProgressView().tint(.white) }
+            Text(busy ? busyText : text).font(Theme.buttonFont)
+        }
+        .foregroundStyle(Theme.onAccent)
+        .frame(maxWidth: .infinity).frame(minHeight: 52)
     }
 
     private func section<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
@@ -131,7 +177,7 @@ struct PlanView: View {
             Image("Wordmark").resizable().scaledToFit().frame(height: 26).padding(.bottom, 10)
                 .accessibilityLabel("Panoramica")
             Text("Take the beautiful way").font(Theme.displayFont).tracking(-0.8).foregroundStyle(Theme.ink)
-            Text("Tell us where you're going and what you love. We'll find the road with the views.")
+            Text(model.mode == .go ? "Tell us where you're going and what you love. We'll find the road with the views." : "Not sure where to go? See the most beautiful places within a drive.")
                 .foregroundStyle(.secondary)
         }
         .padding(.top, 8)

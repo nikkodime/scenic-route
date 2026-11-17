@@ -203,7 +203,7 @@ test('explore: scenic places within the drive time, spread out, each with a road
   ExploreResponseSchema.parse(res);
   assert.ok(res.destinations.length >= 1);
   for (const d of res.destinations) {
-    assert.ok(d.minutes <= 90 * 1.25 + 1 && d.fastestMinutes <= 90 * 1.1 + 1, `${d.name} ${d.minutes}`);
+    assert.ok(d.minutes <= 90 && d.fastestMinutes <= 90 * 0.85 + 1, `${d.name} ${d.minutes}`);
     assert.ok(d.straightKm >= 6);
     assert.ok(d.sunset);
   }
@@ -211,7 +211,10 @@ test('explore: scenic places within the drive time, spread out, each with a road
   assert.equal(new Set(names).size, names.length, 'no place twice');
   // Round trip: reach is about half.
   const loop = await exploreFrom(ExploreRequestSchema.parse({ origin: SIENA, maxMinutes: 150, mode: 'round_trip' }), fakeProviders());
-  for (const d of loop.destinations) assert.ok(d.fastestMinutes <= 150 * 0.45 * 1.1 + 1);
+  for (const d of loop.destinations) {
+    assert.ok(d.minutes <= 150, `loop ${d.minutes}`);
+    assert.ok(d.km > 2 * d.straightKm, 'the loop goes there and back');
+  }
   await assert.rejects(exploreFrom(ExploreRequestSchema.parse({ origin: SIENA, maxMinutes: 30 }), fakeProviders()), /No scenic places/);
 });
 
@@ -223,4 +226,13 @@ test('round trips prefer coming back another way', async () => {
   assert.ok(retraced(wigglyLine([a, b, side, a]), a) < 0.2);
   const res = await planRoutes(req({ destination: SIENA, stops: [PIENZA], extraMinutes: undefined }), fakeProviders());
   assert.ok(res.routes.length >= 1);
+});
+
+test('explore puts the places you love first; famous places outweigh hamlets', async () => {
+  const { destinationCandidates, featureWeight } = await import('../src/index.ts');
+  const f = (id: string, lat: number, lon: number, type: 'village' | 'lake', weight: number, name: string) => ({ id, lat, lon, type, weight, name });
+  const feats = [f('a', 43.5, 11.3, 'village', 5, 'Greve'), f('b', 43.1, 12.1, 'lake', 3, 'Lago Trasimeno')];
+  assert.equal(destinationCandidates(SIENA, feats, 80)[0].label, 'Greve');
+  assert.equal(destinationCandidates(SIENA, feats, 80, 10, new Set(['water']))[0].label, 'Lago Trasimeno');
+  assert.ok(featureWeight('village', { place: 'village', wikipedia: 'it:Fiesole' }) > featureWeight('village', { place: 'hamlet' }) * 3);
 });

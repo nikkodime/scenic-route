@@ -72,7 +72,7 @@ export function overpassQuery(bbox: BBox): string {
   node["natural"="peak"](${b});
   nwr["historic"~"^(castle|fort|tower)$"](${b});
   nwr["historic"~"^(monastery|church|abbey)$"](${b});
-  node["place"~"^(village|hamlet)$"](${b});
+  node["place"~"^(town|village|hamlet)$"](${b});
   nwr["natural"="beach"](${b});
   way["natural"="water"]["water"~"^(lake|reservoir)$"](${b});
   way["natural"="coastline"](${b});
@@ -100,7 +100,7 @@ export function classify(tags: Record<string, string> | undefined): FeatureType 
   if (tags.landuse === 'vineyard') return 'vineyard';
   if (tags.natural === 'tree_row') return 'cypress';
   if (tags.scenic === 'yes' && tags.highway) return 'scenic_road';
-  if (tags.place === 'village' || tags.place === 'hamlet') {
+  if (tags.place === 'town' || tags.place === 'village' || tags.place === 'hamlet') {
     return parseFloat(tags.ele) >= 250 ? 'hilltop_village' : 'village';
   }
   if (tags.tourism === 'attraction') return 'attraction';
@@ -116,6 +116,19 @@ interface OsmElement {
   tags?: Record<string, string>;
 }
 
+/**
+ * Weight of one OSM element: the type's weight, adjusted. Places with a Wikipedia article are the ones people
+ * travel to (Fiesole, Monteriggioni), so they count more; hamlets count less; peaks by height.
+ */
+export function featureWeight(type: FeatureType, tags: Record<string, string> = {}): number {
+  let w = FEATURE_WEIGHTS[type];
+  if (type === 'peak' && tags.ele) w += Math.min(2.5, parseFloat(tags.ele) / 600 || 0);
+  if (tags.place === 'hamlet') w *= 0.5;
+  if (tags.place === 'town') w *= 1.5;
+  if (tags.wikipedia || tags.wikidata) w += type === 'village' || type === 'hilltop_village' ? 1.5 : 1;
+  return Math.round(w * 100) / 100;
+}
+
 /** Overpass JSON → scenic features. */
 export function parseOverpass(json: { elements?: OsmElement[] } | null | undefined): ScenicFeature[] {
   const out: ScenicFeature[] = [];
@@ -125,8 +138,7 @@ export function parseOverpass(json: { elements?: OsmElement[] } | null | undefin
     const lat = el.lat ?? el.center?.lat;
     const lon = el.lon ?? el.center?.lon;
     if (lat == null || lon == null) continue;
-    let weight = FEATURE_WEIGHTS[type];
-    if (type === 'peak' && el.tags?.ele) weight += Math.min(2.5, parseFloat(el.tags.ele) / 600 || 0);
+    const weight = featureWeight(type, el.tags);
     out.push({ id: `${el.type}/${el.id}`, lat, lon, type, weight, name: el.tags?.name || '' });
   }
   return out;

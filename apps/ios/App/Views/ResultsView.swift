@@ -38,7 +38,7 @@ struct ResultsView: View {
             .frame(maxHeight: 380)
             .background(.bar)
         }
-        .navigationTitle(model.destination?.label?.components(separatedBy: ",").first ?? "Routes")
+        .navigationTitle(model.tripTitle)
         .navigationBarTitleDisplayMode(.inline)
     }
 }

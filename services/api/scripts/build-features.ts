@@ -12,13 +12,13 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createInterface } from 'node:readline';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { classify, FEATURE_WEIGHTS, type BBox, type ScenicFeature } from '@scenic/core';
+import { classify, featureWeight, type BBox, type ScenicFeature } from '@scenic/core';
 
 /** osmium tags-filter expressions matching the Overpass query in @scenic/core overpassQuery. */
 export const OSMIUM_FILTERS = [
   'n/tourism=viewpoint', 'n/mountain_pass=yes', 'n/natural=peak',
   'nwr/historic=castle,fort,tower,monastery,church,abbey',
-  'n/place=village,hamlet', 'nwr/natural=beach', 'wr/natural=water', 'w/natural=coastline',
+  'n/place=town,village,hamlet', 'nwr/natural=beach', 'wr/natural=water', 'w/natural=coastline',
   'n/waterway=waterfall', 'w/landuse=vineyard', 'w/natural=tree_row', 'w/scenic=yes', 'n/tourism=attraction',
 ];
 
@@ -84,8 +84,7 @@ export function toScenicFeature(f: GeoFeature): ScenicFeature | null {
     const num = Number(m[2]);
     id = m[1] === 'n' ? `node/${num}` : m[1] === 'w' ? `way/${num}` : num % 2 ? `relation/${(num - 1) / 2}` : `way/${num / 2}`;
   }
-  let weight = FEATURE_WEIGHTS[type];
-  if (type === 'peak' && tags.ele) weight += Math.min(2.5, parseFloat(tags.ele) / 600 || 0);
+  const weight = featureWeight(type, tags);
   return { id, lat: Math.round(c.lat * 1e5) / 1e5, lon: Math.round(c.lon * 1e5) / 1e5, type, weight, name: tags.name || '' };
 }
 

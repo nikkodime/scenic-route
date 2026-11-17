@@ -28,6 +28,7 @@ struct RootView: View {
             NavigationStack(path: $model.planPath) {
                 PlanView().navigationDestination(for: PlanScreen.self) { screen in
                     switch screen {
+                    case .explore: ExploreView()
                     case .results: ResultsView()
                     case .route(let route): RouteDetailView(route: route).onAppear { model.selectedRouteID = route.id }
                     }

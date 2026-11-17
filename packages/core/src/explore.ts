@@ -10,7 +10,7 @@ import { applyInterests, PlanError, type PlanOptions, type Providers, type Route
 import type { ExploreRequest, ExploreResponse, ExploreDestination } from './contracts.ts';
 
 /** Straight-line km a drive of this many minutes usually covers on country roads. */
-export const reachKm = (minutes: number) => minutes * 0.65;
+export const reachKm = (minutes: number) => minutes * 0.8;
 
 /** Places worth driving to: a named place, preferably a town, plus what's around it. */
 const DESTINATION_TYPES = new Set<FeatureType>(['hilltop_village', 'village', 'viewpoint', 'lake', 'beach', 'castle', 'heritage', 'mountain_pass', 'waterfall', 'coast', 'peak']);
@@ -24,8 +24,10 @@ function nameFor(spot: Spot, features: ScenicFeature[]): string {
 }
 
 /** Pick spread-out candidate places between minKm and maxKm from the origin, strongest first. */
-export function destinationCandidates(origin: LatLon, features: ScenicFeature[], maxKm: number, max = 10): (Spot & { label: string })[] {
-  const spots = clusterSpots(features, 2.5);
+export function destinationCandidates(origin: LatLon, features: ScenicFeature[], maxKm: number, max = 10, prefer: Set<string> = new Set()): (Spot & { label: string })[] {
+  // Places of the families the driver loves come first; within each group, the richest first.
+  const loved = (s: Spot) => s.types.some((t) => prefer.has(FEATURE_FAMILY[t]));
+  const spots = clusterSpots(features, 2.5).sort((a, b) => Number(loved(b)) - Number(loved(a)) || b.weight - a.weight);
   const minKm = Math.max(6, maxKm * 0.15);
   const gapKm = Math.max(6, maxKm * 0.2);
   const out: (Spot & { label: string })[] = [];
@@ -60,8 +62,8 @@ export async function exploreFrom(req: ExploreRequest, p: Providers, opts: PlanO
   const now = opts.now ?? new Date();
   const departure = req.departAt ? new Date(req.departAt) : now;
   const roundTrip = req.mode === 'round_trip';
-  // Time to get there: the whole budget one way; for a loop, a bit under half (the way back is longer).
-  const outMinutes = roundTrip ? req.maxMinutes * 0.45 : req.maxMinutes;
+  // Time to get there: the whole budget one way; for a loop, about half.
+  const outMinutes = roundTrip ? req.maxMinutes * 0.5 : req.maxMinutes;
   const maxKm = reachKm(outMinutes);
   const warnings: string[] = [];
 
@@ -73,21 +75,35 @@ export async function exploreFrom(req: ExploreRequest, p: Providers, opts: PlanO
     throw new PlanError('Scenic places could not be loaded right now. Try again in a minute.', 503);
   }
   const loved = applyInterests(features, req.interests);
-  const candidates = destinationCandidates(req.origin, loved, maxKm, 10);
+  const prefer = new Set<string>(req.interests.filter((i) => i !== 'quiet'));
+  const candidates = destinationCandidates(req.origin, loved, maxKm, 12, prefer);
   if (!candidates.length) throw new PlanError('No scenic places found within that time yet. Try a longer drive.');
 
   const base = { prefs: { ...req.prefs, avoidUnpaved: req.prefs.avoidUnpaved || req.vehicle !== 'car' }, vehicle: req.vehicle };
+  const join = (a: RoutedPath, b: RoutedPath): RoutedPath => ({
+    line: [...a.line, ...b.line.slice(1)], km: a.km + b.km, minutes: a.minutes + b.minutes,
+    motorwayKm: (a.motorwayKm ?? 0) + (b.motorwayKm ?? 0), urbanKm: (a.urbanKm ?? 0) + (b.urbanKm ?? 0), unpavedKm: (a.unpavedKm ?? 0) + (b.unpavedKm ?? 0),
+  });
+  const scenicOr = async (pts: LatLon[], strength: number, fallback: RoutedPath) => {
+    if (!p.router.supportsScenic) return fallback;
+    try { return await p.router.route(pts, { ...base, profile: 'scenic', strength }); } catch (e) { log('scenic leg failed', e); return fallback; }
+  };
   const routed = await pool(candidates, opts.concurrency ?? 4, async (c) => {
-    const fastest = await p.router.route([req.origin, c], { ...base, profile: 'fastest' });
-    if (fastest.minutes > outMinutes * 1.1) return null;
-    let scenic: RoutedPath = fastest;
-    if (p.router.supportsScenic) {
-      try {
-        const s = await p.router.route([req.origin, c], { ...base, profile: 'scenic', strength: 2 });
-        if (s.minutes <= outMinutes * 1.25) scenic = s;
-      } catch (e) { log('scenic leg failed', e); }
+    // The drive time is a promise: the fastest way must fit with room to spare, the scenic way must fit.
+    const fastOut = await p.router.route([req.origin, c], { ...base, profile: 'fastest' });
+    if (fastOut.minutes > outMinutes * 0.85) return null;
+    if (!roundTrip) {
+      const s = await scenicOr([req.origin, c], 2, fastOut);
+      return { c, fastest: fastOut, scenic: s.minutes <= req.maxMinutes ? s : fastOut };
     }
-    return { c, fastest, scenic };
+    // A loop: out by the most scenic road, back by a gentler scenic one (usually different), all within the time.
+    const fastBack = await p.router.route([c, req.origin], { ...base, profile: 'fastest' });
+    const fastest = join(fastOut, fastBack);
+    if (fastest.minutes > req.maxMinutes * 0.85) return null;
+    const out = await scenicOr([req.origin, c], 3, fastOut);
+    const back = await scenicOr([c, req.origin], 1, fastBack);
+    for (const loop of [join(out, back), join(out, fastBack), join(fastOut, back)]) if (loop.minutes <= req.maxMinutes) return { c, fastest, scenic: loop };
+    return { c, fastest, scenic: fastest };
   });
   const ok = routed.filter((x): x is NonNullable<typeof x> => !!x);
   if (!ok.length) throw new PlanError('No scenic places can be reached within that time. Try a longer drive.');
@@ -108,7 +124,8 @@ export async function exploreFrom(req: ExploreRequest, p: Providers, opts: PlanO
   const scored = ok.map((r, i) => {
     const s = scoreRoute({ route: r.scenic, features, relief: elevs ? reliefStats(elevs[i]) : null, quiet });
     // The place matters as much as the road there: a great town at the end of a fine road leads.
-    const value = 0.65 * s.score + 35 * Math.sqrt(r.c.weight / maxWeight);
+    const matches = r.c.types.some((t) => prefer.has(FEATURE_FAMILY[t]));
+    const value = 0.65 * s.score + 35 * Math.sqrt(r.c.weight / maxWeight) + (matches ? 15 : 0);
     return { ...r, s, value };
   });
   scored.sort((a, b) => b.value - a.value);

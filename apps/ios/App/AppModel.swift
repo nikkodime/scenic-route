@@ -15,6 +15,17 @@ final class AppModel {
     var timeLimit: Int?
     var departAt = Date()
     var prefs = Preferences()
+    /// Go somewhere specific, or explore what's around.
+    var mode: PlanMode = .go
+    /// Explore: how long a drive (one way, or the whole loop).
+    var exploreMinutes = 120
+    var roundTrip = false
+    /// A round trip goes out to this place and back to the start.
+    var loopVia: Place?
+
+    // Explore output
+    var explore: ExploreResponse?
+    var isExploring = false
 
     // Planning output
     var plan: PlanResponse?
@@ -24,6 +35,9 @@ final class AppModel {
     /// The Plan tab's navigation stack. One path, destinations declared at the root:
     /// value links inside a view pushed with isPresented did not reliably push on iOS 26.
     var planPath: [PlanScreen] = []
+
+    // Photos of places, by "lat,lon"
+    var photoCache: [String: [Photo]] = [:]
 
     // Trips
     var trips: [Trip] = []
@@ -55,6 +69,46 @@ final class AppModel {
     }
 
     var canPlan: Bool { destination != nil && !isPlanning }
+    var canExplore: Bool { !isExploring && !isPlanning }
+
+    /// What the results screen is about: "Pienza", or "Loop via Pienza".
+    var tripTitle: String {
+        if let loopVia { return "Loop via \(loopVia.label?.components(separatedBy: ",").first ?? "")" }
+        return destination?.label?.components(separatedBy: ",").first ?? "Routes"
+    }
+
+    private func startPlace() async throws -> Place {
+        if let origin { return origin }
+        let here = try await location.current()
+        return Place(lat: here.lat, lon: here.lon, label: "Current location")
+    }
+
+    func runExplore() async {
+        isExploring = true
+        errorMessage = nil
+        defer { isExploring = false }
+        do {
+            let start = try await startPlace()
+            let req = ExploreRequest(origin: start, maxMinutes: exploreMinutes, mode: roundTrip ? .roundTrip : .oneWay, interests: Interest.allCases.filter(interests.contains), vehicle: vehicle, departAt: departAt, prefs: prefs)
+            explore = try await api.explore(req)
+            if explore?.destinations.isEmpty != false { errorMessage = "No scenic places found within that time. Try a longer drive." }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    /// Plan the scenic routes to a place picked in Explore (or a loop through it).
+    func plan(to place: ExploreDestination) async {
+        let start = explore?.origin ?? origin
+        if roundTrip, let start {
+            destination = start
+            loopVia = place.place
+        } else {
+            destination = place.place
+            loopVia = nil
+        }
+        await runPlan()
+    }
 
     func runPlan() async {
         guard let destination else { return }
@@ -62,12 +116,8 @@ final class AppModel {
         errorMessage = nil
         defer { isPlanning = false }
         do {
-            let start: Place
-            if let origin { start = origin } else {
-                let here = try await location.current()
-                start = Place(lat: here.lat, lon: here.lon, label: "Current location")
-            }
-            let req = PlanRequest(origin: start, destination: destination, style: style, interests: Interest.allCases.filter(interests.contains), vehicle: vehicle, extraMinutes: timeLimit, departAt: departAt, prefs: prefs)
+            let start = try await startPlace()
+            let req = PlanRequest(origin: start, destination: loopVia == nil ? destination : start, stops: loopVia.map { [$0] } ?? [], style: style, interests: Interest.allCases.filter(interests.contains), vehicle: vehicle, extraMinutes: timeLimit, departAt: departAt, prefs: prefs)
             let res = try await api.plan(req)
             plan = res
             selectedRouteID = res.routes.first?.id
@@ -77,6 +127,14 @@ final class AppModel {
         }
     }
 
+    func photos(lat: Double, lon: Double, name: String?) async -> [Photo] {
+        let key = String(format: "%.3f,%.3f", lat, lon)
+        if let hit = photoCache[key] { return hit }
+        let got = (try? await api.photos(lat: lat, lon: lon, name: name)) ?? []
+        photoCache[key] = got
+        return got
+    }
+
     func search(_ q: String) async -> [Place] {
         (try? await api.geocode(q, near: origin?.coordinate ?? location.last)) ?? []
     }
@@ -84,8 +142,8 @@ final class AppModel {
     func save(route: RouteOption) async {
         guard let destination else { return }
         let start = origin ?? Place(lat: route.line.first?.lat ?? 0, lon: route.line.first?.lon ?? 0, label: "Start")
-        let name = "\(start.label ?? "Start") → \(destination.label ?? "Destination")"
-        let trip = Trip(name: name, days: [TripDay(origin: start, destination: destination, extraMinutes: Int(route.extraMinutes.rounded()), route: route)])
+        let name = loopVia.map { "\(start.label ?? "Start") loop via \($0.label ?? "")" } ?? "\(start.label ?? "Start") → \(destination.label ?? "Destination")"
+        let trip = Trip(name: name, days: [TripDay(origin: start, destination: destination, stops: loopVia.map { [$0] } ?? [], extraMinutes: Int(route.extraMinutes.rounded()), route: route)])
         await store.save(trip)
         trips = await store.trips
         await sync()
@@ -116,7 +174,14 @@ final class AppModel {
     }
 }
 
+enum PlanMode: String, CaseIterable, Identifiable {
+    case go, explore
+    var id: String { rawValue }
+    var title: String { self == .go ? "Go somewhere" : "Explore nearby" }
+}
+
 enum PlanScreen: Hashable {
+    case explore
     case results
     case route(RouteOption)
 }

@@ -12,11 +12,12 @@ import { HgtElevation } from './providers/dem.ts';
 import { MetNoWeather, OpenMeteoWeather } from './providers/weather.ts';
 import { FallbackGeocoder, NominatimGeocoder, PhotonGeocoder, type Geocoder } from './providers/geocode.ts';
 import { loadZones } from './providers/zones.ts';
+import { CommonsPhotos, type PhotoSource } from './providers/photos.ts';
 import { MemoryStore } from './store/memory.ts';
 import { PgStore } from './store/postgres.ts';
 import type { Store } from './store/store.ts';
 
-export function makeProviders(c: Config): { providers: Providers; geocoder: Geocoder } {
+export function makeProviders(c: Config): { providers: Providers; geocoder: Geocoder; photos?: PhotoSource } {
   const http = makeHttp({ userAgent: c.USER_AGENT });
   const zones = loadZones(c.ZONES_DIR);
   const shipped = FileFeatures.load(c.FEATURES_DIR);
@@ -30,6 +31,7 @@ export function makeProviders(c: Config): { providers: Providers; geocoder: Geoc
       weather: c.WEATHER === 'metno' ? new MetNoWeather(http) : c.WEATHER === 'open-meteo' ? new OpenMeteoWeather(http, c.OPEN_METEO_API_KEY) : undefined,
       zones: (b) => zones.inBBox(b),
     },
+    photos: c.PHOTOS === 'commons' ? new CommonsPhotos(http) : undefined,
     geocoder: c.GEOCODER === 'photon' ? new FallbackGeocoder(new PhotonGeocoder(http, c.PHOTON_URL), new NominatimGeocoder(http, c.NOMINATIM_URL)) : new NominatimGeocoder(http, c.NOMINATIM_URL),
   };
 }

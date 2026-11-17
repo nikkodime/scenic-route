@@ -3,9 +3,9 @@ import { buildApp } from './app.ts';
 import { makeProviders, makeStore } from './wiring.ts';
 
 const config = loadConfig();
-const { providers, geocoder } = makeProviders(config);
+const { providers, geocoder, photos } = makeProviders(config);
 const store = await makeStore(config);
-const app = await buildApp({ config, providers, geocoder, store, logger: true });
+const app = await buildApp({ config, providers, geocoder, store, photos, logger: true });
 
 const shutdown = async () => {
   await app.close();

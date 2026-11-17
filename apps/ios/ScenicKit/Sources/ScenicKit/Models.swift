@@ -190,6 +190,70 @@ public struct PlanResponse: Codable, Sendable {
     public var attribution: [String]
 }
 
+/// "Where can I go from here?"
+public enum ExploreMode: String, Codable, CaseIterable, Sendable, Identifiable {
+    case oneWay = "one_way", roundTrip = "round_trip"
+    public var id: String { rawValue }
+}
+
+public struct ExploreRequest: Codable, Sendable {
+    public var origin: Place
+    public var maxMinutes: Int
+    public var mode: ExploreMode
+    public var interests: [Interest]
+    public var vehicle: Vehicle
+    public var departAt: String?
+    public var prefs: Preferences
+    public init(origin: Place, maxMinutes: Int, mode: ExploreMode, interests: [Interest] = [], vehicle: Vehicle = .car, departAt: Date? = nil, prefs: Preferences = .init()) {
+        self.origin = origin; self.maxMinutes = maxMinutes; self.mode = mode; self.interests = interests
+        self.vehicle = vehicle; self.prefs = prefs
+        self.departAt = departAt.map { ISO8601DateFormatter().string(from: $0) }
+    }
+}
+
+public struct ExploreDestination: Codable, Hashable, Sendable, Identifiable {
+    public var name: String
+    public var lat: Double
+    public var lon: Double
+    public var types: [String]
+    public var families: [String]
+    public var places: Int
+    public var score: Double
+    public var summary: String
+    public var km: Double
+    public var minutes: Double
+    public var fastestMinutes: Double
+    public var straightKm: Double
+    public var highlights: [Highlight]
+    public var polyline: String
+    public var sunset: String?
+    public var id: String { "\(lat),\(lon)" }
+    public var place: Place { Place(lat: lat, lon: lon, label: name) }
+    public var line: [Coordinate] { Polyline.decode(polyline) }
+}
+
+public struct ExploreResponse: Codable, Sendable {
+    public var origin: Place
+    public var mode: ExploreMode
+    public var maxMinutes: Double
+    public var destinations: [ExploreDestination]
+    public var warnings: [String]
+    public var attribution: [String]
+}
+
+/// An openly licensed photo of a place (Wikimedia Commons). Always show the credit.
+public struct Photo: Codable, Hashable, Sendable, Identifiable {
+    public var url: String
+    public var width: Double
+    public var height: Double
+    public var title: String
+    public var author: String
+    public var license: String
+    public var source: String
+    public var id: String { url }
+    public var credit: String { "\(author) · \(license)" }
+}
+
 public struct TripDay: Codable, Hashable, Sendable {
     public var date: String?
     public var origin: Place

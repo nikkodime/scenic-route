@@ -207,6 +207,8 @@ export function scoreRoute({ route, features, relief = null, segments = null, qu
       // old-town gate several km in).
       .filter((f) => f.name && f.weight >= 2.5 && /^[\p{Lu}\p{N}]/u.test(f.name) && f.atKm > 1.5 && f.atKm < km - 1.5)
       .filter((f) => distKm(f, route.line[0]) > 2.5 && distKm(f, route.line[route.line.length - 1]) > 2.5)
+      // Motorway infrastructure that OSM tags like a pass ("Valico autostradale", "Casello") is not a sight.
+      .filter((f) => !/autostrad|motorway|autobahn|autoroute|casello|svincolo|area di servizio/i.test(f.name))
       .sort((a, b) => b.weight - a.weight)
       .slice(0, 6)
       .sort((a, b) => a.atKm - b.atKm)

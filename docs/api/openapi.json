@@ -3701,6 +3701,80 @@
         }
       }
     },
+    "/v1/photos": {
+      "get": {
+        "operationId": "photos",
+        "parameters": [
+          {
+            "name": "lat",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "lon",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Openly licensed photos near a place; show author and licence with each",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "photos": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "url": {
+                            "type": "string"
+                          },
+                          "width": {
+                            "type": "number"
+                          },
+                          "height": {
+                            "type": "number"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "author": {
+                            "type": "string"
+                          },
+                          "license": {
+                            "type": "string"
+                          },
+                          "source": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/plan": {
       "post": {
         "operationId": "plan",

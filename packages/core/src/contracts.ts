@@ -140,7 +140,7 @@ export const ExploreDestinationSchema = LatLonSchema.extend({
   score: z.number(),
   summary: z.string(),
   km: z.number(),
-  /** By the scenic road. */
+  /** By the scenic road; for a round trip, the whole loop (km too). */
   minutes: z.number(),
   fastestMinutes: z.number(),
   straightKm: z.number(),
