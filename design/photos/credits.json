@@ -1,0 +1,115 @@
+{
+  "note": "Wikimedia Commons photos for the Siena → Montalcino demo route. Credit the author and licence wherever a photo is shown.",
+  "photos": [
+    {
+      "file": "crete-senesi-asciano.jpg",
+      "subject": "Crete Senesi clay hills near Asciano",
+      "title": "Crete senesi - Asciano (Siena).jpg",
+      "author": "Anna.Massini",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Crete_senesi_-_Asciano_(Siena).jpg",
+      "width": 1200,
+      "height": 900
+    },
+    {
+      "file": "crete-senesi-autumn.jpg",
+      "subject": "Crete Senesi in autumn",
+      "title": "Autunno sulle Crete senesi Toscana.jpg",
+      "author": "Repuli",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Autunno_sulle_Crete_senesi_Toscana.jpg",
+      "width": 1200,
+      "height": 776
+    },
+    {
+      "file": "monte-oliveto-maggiore.jpg",
+      "subject": "Abbey of Monte Oliveto Maggiore",
+      "title": "Monte oliveto maggiore, abbazia 01.JPG",
+      "author": "Sailko",
+      "license": "CC BY 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Monte_oliveto_maggiore,_abbazia_01.JPG",
+      "width": 1200,
+      "height": 889
+    },
+    {
+      "file": "asciano.jpg",
+      "subject": "Asciano",
+      "title": "AscianoPanorama.JPG",
+      "author": "LigaDue",
+      "license": "CC BY 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:AscianoPanorama.JPG",
+      "width": 1200,
+      "height": 800
+    },
+    {
+      "file": "vitaleta-chapel.jpg",
+      "subject": "Vitaleta chapel and cypresses near San Quirico d'Orcia",
+      "title": "Cappella della Madonna di Vitaleta Panorama.jpg",
+      "author": "Costaetrusca",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Cappella_della_Madonna_di_Vitaleta_Panorama.jpg",
+      "width": 1200,
+      "height": 699
+    },
+    {
+      "file": "val-dorcia-sunset.jpg",
+      "subject": "Val d'Orcia at sunset",
+      "title": "Val d'Orcia Sunset (52607473379).jpg",
+      "author": "kuhnmi",
+      "license": "CC BY 2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Val_d%27Orcia_Sunset_(52607473379).jpg",
+      "width": 1200,
+      "height": 445
+    },
+    {
+      "file": "val-dorcia-from-pienza.jpg",
+      "subject": "Val d'Orcia at sunset from Pienza",
+      "title": "Tramonto sulla Val d'Orcia da Pienza - Patrimonio Unesco.jpg",
+      "author": "Anna.Massini",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Tramonto_sulla_Val_d%27Orcia_da_Pienza_-_Patrimonio_Unesco.jpg",
+      "width": 1200,
+      "height": 685
+    },
+    {
+      "file": "montalcino.jpg",
+      "subject": "Montalcino",
+      "title": "Montalcino-Skyline-2012.JPG",
+      "author": "Bjørn Christian Tørrissen",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Montalcino-Skyline-2012.JPG",
+      "width": 1200,
+      "height": 421
+    },
+    {
+      "file": "crete-from-monte-oliveto.jpg",
+      "subject": "Crete Senesi seen from Monte Oliveto, towards Asciano",
+      "title": "Wle 2023 - Panorama dal Monte Oliveto e Crete di Asciano - Siena.jpg",
+      "author": "Anna.Massini",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "source": "https://commons.wikimedia.org/wiki/File:Wle_2023_-_Panorama_dal_Monte_Oliveto_e_Crete_di_Asciano_-_Siena.jpg",
+      "width": 1200,
+      "height": 900
+    },
+    {
+      "file": "sp438-lauretana.jpg",
+      "subject": "Ridge road SP438 (Strada Lauretana) near Asciano",
+      "title": "SP 438 - Asciano, Siena, Italy - October 18, 2020.jpg",
+      "author": "Giorgio Galeotti",
+      "license": "CC BY 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+      "source": "https://commons.wikimedia.org/wiki/File:SP_438_-_Asciano,_Siena,_Italy_-_October_18,_2020.jpg",
+      "width": 1200,
+      "height": 985
+    }
+  ]
+}
