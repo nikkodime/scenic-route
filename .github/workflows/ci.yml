@@ -1,0 +1,69 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  node:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env: { POSTGRES_USER: scenic, POSTGRES_PASSWORD: scenic, POSTGRES_DB: scenic_test }
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U scenic" --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+        env: { DATABASE_URL: 'postgres://scenic:scenic@localhost:5432/scenic_test' }
+      - name: OpenAPI spec is up to date
+        run: npm run openapi && git diff --exit-code docs/api/openapi.json
+      - name: Web planner builds and passes the browser test
+        run: |
+          npm i --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+          npm run test:e2e
+
+  graphhopper:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 21 }
+      - run: npm ci
+      - name: Start GraphHopper on the synthetic test network
+        run: |
+          curl -sSfL -o gh.jar https://repo1.maven.org/maven2/com/graphhopper/graphhopper-web/11.0/graphhopper-web-11.0.jar
+          python3 infra/graphhopper/test/make-tiny-osm.py
+          java -Xmx1g \
+            -Ddw.graphhopper.datareader.file=infra/graphhopper/test/tiny-tuscany.osm \
+            -Ddw.graphhopper.graph.location=/tmp/gh-test \
+            -Ddw.graphhopper.custom_models.directory=infra/graphhopper/custom_models \
+            -Ddw.graphhopper.prepare.min_network_size=0 \
+            -jar gh.jar server infra/graphhopper/config.yml > gh.log 2>&1 &
+          for i in $(seq 1 60); do curl -sf localhost:8989/health && break; sleep 2; done
+      - run: npm run test:gh
+        env: { GH_URL: 'http://localhost:8989' }
+
+  ios:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: ScenicKit unit tests
+        working-directory: apps/ios/ScenicKit
+        run: swift test
+      - name: Build the app for the simulator
+        working-directory: apps/ios
+        run: |
+          brew install xcodegen
+          xcodegen
+          xcodebuild -project ScenicRoute.xcodeproj -scheme ScenicRoute -destination 'generic/platform=iOS Simulator' build CODE_SIGNING_ALLOWED=NO | tail -20
