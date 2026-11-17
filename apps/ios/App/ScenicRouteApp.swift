@@ -10,6 +10,7 @@ struct ScenicRouteApp: App {
             RootView()
                 .environment(model)
                 .tint(Theme.accent)
+                .preferredColorScheme(.dark)
                 .task { await model.start() }
         }
     }

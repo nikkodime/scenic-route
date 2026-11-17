@@ -59,14 +59,14 @@ struct RouteMap: View {
                 ForEach(r.scenicStops, id: \.self) { s in
                     Annotation(s.name.isEmpty ? "Scenic spot" : s.name, coordinate: CLLocationCoordinate2D(latitude: s.lat, longitude: s.lon)) {
                         Image(systemName: "camera.fill").font(.caption2).padding(6)
-                            .background(Theme.accent, in: Circle()).foregroundStyle(.white)
+                            .background(Theme.graphite, in: RoundedRectangle(cornerRadius: 6)).overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Theme.sandglow, lineWidth: 2)).foregroundStyle(Theme.sandglow)
                     }
                 }
                 if let first = r.line.first {
-                    Marker("Start", systemImage: "car.fill", coordinate: CLLocationCoordinate2D(latitude: first.lat, longitude: first.lon)).tint(Theme.cypress)
+                    Marker("Start", systemImage: "car.fill", coordinate: CLLocationCoordinate2D(latitude: first.lat, longitude: first.lon)).tint(Theme.basalt)
                 }
                 if let last = r.line.last {
-                    Marker("Arrive", systemImage: "flag.checkered", coordinate: CLLocationCoordinate2D(latitude: last.lat, longitude: last.lon)).tint(Theme.cypress)
+                    Marker("Arrive", systemImage: "flag.checkered", coordinate: CLLocationCoordinate2D(latitude: last.lat, longitude: last.lon)).tint(Theme.basalt)
                 }
             }
         }
@@ -82,7 +82,7 @@ struct RouteCard: View {
 
     var body: some View {
         HStack(spacing: 14) {
-            ScoreRing(score: route.score, color: color)
+            ScoreRing(score: route.score, color: color, solid: selected)
             VStack(alignment: .leading, spacing: 4) {
                 Text(route.label).font(Theme.headlineFont)
                 Text(route.summary).font(.subheadline).foregroundStyle(.secondary).lineLimit(2)
@@ -94,31 +94,34 @@ struct RouteCard: View {
                 .font(.caption).monospacedDigit()
                 if route.advisories.contains(where: { $0.severity != "info" }) {
                     Label(route.advisories.first { $0.severity != "info" }!.title, systemImage: "exclamationmark.triangle.fill")
-                        .font(.caption).foregroundStyle(.orange)
+                        .font(.caption).foregroundStyle(Theme.ember)
                 }
             }
             Spacer(minLength: 0)
             Image(systemName: "chevron.right").foregroundStyle(.tertiary)
         }
         .padding(14)
-        .background(.background, in: RoundedRectangle(cornerRadius: Theme.corner))
-        .overlay(RoundedRectangle(cornerRadius: Theme.corner).strokeBorder(selected ? color : .clear, lineWidth: 2))
-        .shadow(color: .black.opacity(0.06), radius: 6, y: 2)
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: Theme.corner))
+        .overlay(RoundedRectangle(cornerRadius: Theme.corner).strokeBorder(selected ? color : Theme.border, lineWidth: selected ? 2 : 1))
     }
 }
 
+/// Score plate from the design system: solid sandglow for the chosen route, outline for alternatives.
 struct ScoreRing: View {
     let score: Double
     let color: Color
     var size: CGFloat = 54
+    var solid = true
 
     var body: some View {
-        ZStack {
-            Circle().stroke(color.opacity(0.18), lineWidth: 6)
-            Circle().trim(from: 0, to: score / 100).stroke(color, style: StrokeStyle(lineWidth: 6, lineCap: .round)).rotationEffect(.degrees(-90))
-            Text("\(Int(score))").font(.system(size: size * 0.33, weight: .bold, design: .rounded)).monospacedDigit()
+        VStack(spacing: 0) {
+            Text("\(Int(score))").font(.system(size: size * 0.5, weight: .heavy).width(.condensed)).monospacedDigit()
+            Text("SCENIC").font(.system(size: max(8, size * 0.14), weight: .bold, design: .monospaced)).tracking(1)
         }
-        .frame(width: size, height: size)
+        .foregroundStyle(solid ? Theme.onAccent : Theme.sandglow)
+        .frame(width: size * 1.07, height: size)
+        .background(solid ? Theme.sandglow : .clear, in: RoundedRectangle(cornerRadius: 6))
+        .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Theme.sandglow, lineWidth: solid ? 0 : 2))
         .accessibilityLabel("Scenery score \(Int(score)) out of 100")
     }
 }

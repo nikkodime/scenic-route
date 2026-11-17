@@ -18,8 +18,8 @@ struct PlanView: View {
                     Divider().padding(.leading, 44)
                     placeRow(icon: "flag.checkered", title: "To", value: model.destination?.label ?? "Where to?") { picking = .destination }
                 }
-                .background(.background, in: RoundedRectangle(cornerRadius: Theme.corner))
-                .overlay(RoundedRectangle(cornerRadius: Theme.corner).strokeBorder(.quaternary))
+                .background(Theme.surface, in: RoundedRectangle(cornerRadius: Theme.corner))
+                .overlay(RoundedRectangle(cornerRadius: Theme.corner).strokeBorder(Theme.border))
 
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
@@ -52,18 +52,19 @@ struct PlanView: View {
                 } label: {
                     HStack {
                         if model.isPlanning { ProgressView().tint(.white) }
-                        Text(model.isPlanning ? "Finding beautiful roads…" : "Find scenic routes").bold()
+                        Text(model.isPlanning ? "FINDING BEAUTIFUL ROADS…" : "FIND SCENIC ROUTES").font(Theme.titleFont.weight(.heavy))
                     }
-                    .frame(maxWidth: .infinity).padding(.vertical, 14)
+                    .foregroundStyle(Theme.onAccent)
+                    .frame(maxWidth: .infinity).frame(minHeight: 52)
                 }
                 .buttonStyle(.borderedProminent)
-                .buttonBorderShape(.capsule)
+                .buttonBorderShape(.roundedRectangle(radius: Theme.controlCorner))
                 .disabled(!model.canPlan)
                 .accessibilityIdentifier("planButton")
             }
             .padding()
         }
-        .background(Theme.sand.opacity(0.35))
+        .background(Theme.background)
         .navigationTitle("Scenic Route")
         .navigationBarTitleDisplayMode(.inline)
         .sheet(item: $picking) { field in
@@ -76,7 +77,7 @@ struct PlanView: View {
 
     private var hero: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Take the beautiful way").font(.system(.largeTitle, design: .serif).weight(.bold))
+            Text("TAKE THE BEAUTIFUL WAY").font(Theme.displayFont)
             Text("Tell us where you're going and how much extra time you'd enjoy. We'll find the road with the views.")
                 .foregroundStyle(.secondary)
         }
@@ -88,7 +89,7 @@ struct PlanView: View {
             HStack(spacing: 14) {
                 Image(systemName: icon).frame(width: 22).foregroundStyle(Theme.accent)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(title).font(.caption).foregroundStyle(.secondary)
+                    Text(title.uppercased()).font(Theme.labelFont).tracking(1.2).foregroundStyle(Theme.ash)
                     Text(value).foregroundStyle(.primary).lineLimit(1)
                 }
                 Spacer()

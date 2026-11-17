@@ -40,7 +40,7 @@ struct RouteDetailView: View {
                                 }
                             } icon: {
                                 Image(systemName: a.severity == "info" ? "info.circle" : "exclamationmark.triangle.fill")
-                                    .foregroundStyle(a.severity == "info" ? Theme.sky : .orange)
+                                    .foregroundStyle(a.severity == "info" ? Theme.ice : Theme.ember)
                             }
                         }
                     }
@@ -93,7 +93,8 @@ struct RouteDetailView: View {
             Button {
                 if let u = URL(string: route.handoff.googleMaps) { openURL(u) }
             } label: {
-                Label("Drive with Google Maps", systemImage: "car.fill").frame(maxWidth: .infinity).padding(.vertical, 10)
+                Label("DRIVE WITH GOOGLE MAPS", systemImage: "car.fill").font(Theme.titleFont.weight(.heavy))
+                    .foregroundStyle(Theme.onAccent).frame(maxWidth: .infinity).frame(minHeight: 52)
             }
             .buttonStyle(.borderedProminent)
             HStack {
@@ -148,13 +149,13 @@ struct RouteDetailView: View {
                 .frame(maxWidth: .infinity)
         }
         .buttonStyle(.bordered)
-        .tint(rated == up ? Theme.accent : .secondary)
+        .tint(rated == up ? Theme.accent : Theme.ash)
         .disabled(rated != nil)
     }
 
     private func section<Content: View>(_ title: String, @ViewBuilder _ content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(title).font(Theme.headlineFont)
+            Text(title.uppercased()).font(Theme.labelFont).tracking(1.4).foregroundStyle(Theme.ash)
             content()
         }
         .frame(maxWidth: .infinity, alignment: .leading)
