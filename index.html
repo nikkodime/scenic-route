@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1f5f4a">
+  <title>Scenic Route</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="map" aria-label="Map"></div>
+
+  <section id="panel" class="panel">
+    <div class="grab" aria-hidden="true"></div>
+    <form id="plan" autocomplete="off">
+      <label class="field">
+        <span>From</span>
+        <input id="from" placeholder="My location" enterkeyhint="next">
+        <button type="button" id="locate" class="icon" title="Use my location" aria-label="Use my location">◎</button>
+      </label>
+      <label class="field">
+        <span>To</span>
+        <input id="to" placeholder="e.g. Montalcino" required enterkeyhint="search">
+      </label>
+      <ul id="suggest" class="suggest" hidden></ul>
+
+      <fieldset class="budget">
+        <legend>Extra time I'm happy to spend</legend>
+        <div class="chips" role="radiogroup">
+          <label><input type="radio" name="extra" value="15"><span>+15 min</span></label>
+          <label><input type="radio" name="extra" value="30" checked><span>+30 min</span></label>
+          <label><input type="radio" name="extra" value="60"><span>+1 h</span></label>
+          <label><input type="radio" name="extra" value="120"><span>+2 h</span></label>
+        </div>
+      </fieldset>
+
+      <button id="go" class="primary" type="submit">Find the scenic route</button>
+    </form>
+
+    <p id="status" class="status" role="status" aria-live="polite"></p>
+    <div id="results" class="results"></div>
+
+    <details class="ratings">
+      <summary>My drive ratings (<span id="ratingCount">0</span>)</summary>
+      <p>Ratings stay on this phone. Tap below to copy them and send them over so we can tune the scoring.</p>
+      <button type="button" id="copyRatings">Copy ratings</button>
+    </details>
+  </section>
+
+  <script src="vendor/leaflet/leaflet.js"></script>
+  <script type="module" src="src/app.js"></script>
+</body>
+</html>
