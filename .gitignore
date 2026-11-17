@@ -7,3 +7,4 @@ infra/data/dem/
 **/.build/
 apps/ios/build/
 apps/ios/ScenicRoute.xcodeproj/
+apps/ios/App/Info.plist
