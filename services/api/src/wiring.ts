@@ -9,7 +9,7 @@ import { OverpassFeatures } from './providers/overpass.ts';
 import { FileFeatures, LayeredFeatures } from './providers/features-file.ts';
 import { OpenMeteoElevation } from './providers/elevation.ts';
 import { MetNoWeather, OpenMeteoWeather } from './providers/weather.ts';
-import { NominatimGeocoder, PhotonGeocoder, type Geocoder } from './providers/geocode.ts';
+import { FallbackGeocoder, NominatimGeocoder, PhotonGeocoder, type Geocoder } from './providers/geocode.ts';
 import { loadZones } from './providers/zones.ts';
 import { MemoryStore } from './store/memory.ts';
 import { PgStore } from './store/postgres.ts';
@@ -27,7 +27,7 @@ export function makeProviders(c: Config): { providers: Providers; geocoder: Geoc
       weather: c.WEATHER === 'metno' ? new MetNoWeather(http) : c.WEATHER === 'open-meteo' ? new OpenMeteoWeather(http, c.OPEN_METEO_API_KEY) : undefined,
       zones: (b) => zones.inBBox(b),
     },
-    geocoder: c.GEOCODER === 'photon' ? new PhotonGeocoder(http, c.PHOTON_URL) : new NominatimGeocoder(http, c.NOMINATIM_URL),
+    geocoder: c.GEOCODER === 'photon' ? new FallbackGeocoder(new PhotonGeocoder(http, c.PHOTON_URL), new NominatimGeocoder(http, c.NOMINATIM_URL)) : new NominatimGeocoder(http, c.NOMINATIM_URL),
   };
 }
 

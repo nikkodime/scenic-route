@@ -90,3 +90,22 @@ export class NominatimGeocoder implements Geocoder {
     });
   }
 }
+
+/** Try each geocoder in turn; the public Photon instance sometimes refuses connections for a while. */
+export class FallbackGeocoder implements Geocoder {
+  private geocoders: Geocoder[];
+  constructor(...geocoders: Geocoder[]) {
+    this.geocoders = geocoders;
+  }
+  async search(q: string, opts: { lang?: string; near?: { lat: number; lon: number } } = {}) {
+    let last: unknown;
+    for (const g of this.geocoders) {
+      try {
+        return await g.search(q, opts);
+      } catch (e) {
+        last = e;
+      }
+    }
+    throw last;
+  }
+}

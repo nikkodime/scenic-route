@@ -207,3 +207,12 @@ test('osmium GeoJSON features become the same scenic places as Overpass gives', 
   assert.deepEqual(center(row.coordinates), { lat: 43.05, lon: 11.1 });
   assert.equal(f('n9', { type: 'Point', coordinates: [11.5, 43.1] }, { place: 'village', ele: '420' })?.type, 'hilltop_village');
 });
+
+test('geocoder falls back when the first one fails', async () => {
+  const { FallbackGeocoder } = await import('../src/providers/geocode.ts');
+  const down = { search: async () => { throw new Error('ECONNREFUSED'); } };
+  const up = { search: async () => [{ lat: 43.84, lon: 10.5, label: 'Lucca, Tuscany, Italy', kind: 'city' }] };
+  const g = new FallbackGeocoder(down, up);
+  assert.equal((await g.search('Lucca'))[0].label, 'Lucca, Tuscany, Italy');
+  await assert.rejects(new FallbackGeocoder(down, down).search('Lucca'));
+});
