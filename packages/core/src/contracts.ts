@@ -56,6 +56,8 @@ export const ScorePartsSchema = z.object({
   variety: z.number(),
   motorwayPct: z.number(),
   urbanPct: z.number(),
+  /** Light on the day (weather and sun), 0–100; null when no forecast. */
+  light: z.number().nullable().optional(),
 });
 
 export const AdvisorySchema = z.object({
@@ -96,9 +98,11 @@ export const RouteOptionSchema = z.object({
   /** Google encoded polyline, precision 5. */
   polyline: z.string(),
   bbox: z.tuple([z.number(), z.number(), z.number(), z.number()]),
-  highlights: z.array(z.object({ name: z.string(), type: FeatureTypeSchema, atKm: z.number() })),
+  highlights: z.array(z.object({ name: z.string(), type: FeatureTypeSchema, atKm: z.number(), lat: z.number().optional(), lon: z.number().optional() })),
   scenicStops: z.array(LatLonSchema.extend({ name: z.string(), types: z.array(FeatureTypeSchema) })),
   bestStretch: z.object({ fromKm: z.number(), toKm: z.number() }).nullable(),
+  /** Elevation profile in metres, evenly spaced along the route (about 48 samples). */
+  elevation: z.array(z.number()).optional(),
   conditions: ConditionsSchema.nullable(),
   advisories: z.array(AdvisorySchema),
   handoff: z.object({ googleMaps: z.string(), appleMaps: z.string() }),
@@ -144,7 +148,7 @@ export const ExploreDestinationSchema = LatLonSchema.extend({
   minutes: z.number(),
   fastestMinutes: z.number(),
   straightKm: z.number(),
-  highlights: z.array(z.object({ name: z.string(), type: FeatureTypeSchema, atKm: z.number() })),
+  highlights: z.array(z.object({ name: z.string(), type: FeatureTypeSchema, atKm: z.number(), lat: z.number().optional(), lon: z.number().optional() })),
   polyline: z.string(),
   sunset: z.string().nullable(),
 });

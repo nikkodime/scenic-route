@@ -125,8 +125,26 @@ interface Candidate {
   stops: Spot[];
 }
 
+/** Weather and sun verdict as a 0–100 "light" score. */
+const LIGHT = { great: 95, good: 75, mixed: 45, poor: 15 } as const;
+
+/** About 48 evenly spaced heights, gaps filled from neighbours; nothing when unknown. */
+function profile(e: (number | null)[] | null): number[] | undefined {
+  if (!e) return undefined;
+  const known = e.map((v, i) => [i, v] as const).filter((x): x is readonly [number, number] => Number.isFinite(x[1]));
+  if (known.length < 2) return undefined;
+  const n = Math.min(48, e.length);
+  return Array.from({ length: n }, (_, k) => {
+    const at = (k / (n - 1)) * (e.length - 1);
+    const near = known.reduce((b, x) => (Math.abs(x[0] - at) < Math.abs(b[0] - at) ? x : b));
+    return Math.round(near[1]);
+  });
+}
+
 interface Evaluated extends Candidate {
   minutes: number;
+  /** Elevations sampled along the line, when known. */
+  elev: (number | null)[] | null;
   line: LatLon[];
   scored: ScoredRoute;
   /** Score with the driver's interests boosted; used to choose, not shown. */
@@ -284,7 +302,7 @@ export async function planRoutes(req: PlanRequest, p: Providers, opts: PlanOptio
     });
     // A round trip that comes back the same way is half a drive: count it down.
     const loopFit = isLoop ? fit * (1 - 0.6 * retraced(c.path.line, req.origin)) : fit;
-    return { ...c, minutes: c.path.minutes, line: c.path.line, scored, fit: loopFit, advisories };
+    return { ...c, minutes: c.path.minutes, line: c.path.line, elev: elevs ? elevs[ci] : null, scored, fit: loopFit, advisories };
   })).flatMap((r) => (r.status === 'fulfilled' ? [r.value] : []));
   if (p.elevation && reliefMissing(evaluated)) warnings.push('Elevation was unavailable; hill scores are estimated.');
 
@@ -331,7 +349,7 @@ export async function planRoutes(req: PlanRequest, p: Providers, opts: PlanOptio
       label: labelFor(r, best!, fastestMinutes),
       source: r.source,
       score: r.scored.score,
-      parts: r.scored.parts,
+      parts: { ...r.scored.parts, light: conditions ? LIGHT[conditions.verdict] : null },
       summary: describe(r.scored),
       km: Math.round(r.path.km * 10) / 10,
       minutes: Math.round(r.minutes),
@@ -341,6 +359,7 @@ export async function planRoutes(req: PlanRequest, p: Providers, opts: PlanOptio
       highlights: r.scored.highlights.filter((h) => !endNames.includes(h.name.toLowerCase())),
       scenicStops: r.stops.filter((s) => s.count > 0).map((s) => ({ lat: s.lat, lon: s.lon, name: s.name, types: s.types })),
       bestStretch: stretch,
+      elevation: profile(r.elev),
       conditions,
       advisories: r.advisories,
       handoff: {

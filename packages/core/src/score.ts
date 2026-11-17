@@ -69,7 +69,7 @@ export interface ScoreParts {
 export interface ScoredRoute {
   score: number;
   parts: ScoreParts;
-  highlights: { name: string; type: FeatureType; atKm: number }[];
+  highlights: { name: string; type: FeatureType; atKm: number; lat: number; lon: number }[];
   byType: Partial<Record<FeatureType, number>>;
   near: NearFeature[];
   modelVersion: string;
@@ -202,7 +202,7 @@ export function scoreRoute({ route, features, relief = null, segments = null, qu
     },
     // Highlights are places along the way: not the start or finish town, and only real names
     // (OSM sometimes has notes like "view from cafe terrace" in the name tag).
-    highlights: near
+    highlights: spreadAlong(near
       // The start and finish towns: 1.5 km along the road, and 2.5 km as the crow flies (a ring road can pass the
       // old-town gate several km in).
       .filter((f) => f.name && f.weight >= 2.5 && /^[\p{Lu}\p{N}]/u.test(f.name) && f.atKm > 1.5 && f.atKm < km - 1.5)
@@ -210,13 +210,24 @@ export function scoreRoute({ route, features, relief = null, segments = null, qu
       // Motorway infrastructure that OSM tags like a pass ("Valico autostradale", "Casello") is not a sight.
       .filter((f) => !/autostrad|motorway|autobahn|autoroute|casello|svincolo|area di servizio/i.test(f.name))
       .sort((a, b) => b.weight - a.weight)
-      .slice(0, 6)
-      .sort((a, b) => a.atKm - b.atKm)
-      .map((f) => ({ name: f.name, type: f.type, atKm: Math.round(f.atKm * 10) / 10 })),
+      .filter((f, k, all) => all.findIndex((o) => o.name === f.name) === k), km)
+      .map((f) => ({ name: f.name, type: f.type, atKm: Math.round(f.atKm * 10) / 10, lat: Math.round(f.lat * 1e5) / 1e5, lon: Math.round(f.lon * 1e5) / 1e5 })),
     byType,
     near,
     modelVersion: M.version,
   };
+}
+
+/**
+ * Up to six highlights spread along the drive (the best place in each stretch, not six around one town),
+ * topped up to three when the scenery is all in one place. Input best first; output in driving order.
+ */
+export function spreadAlong<T extends { atKm: number }>(best: T[], km: number): T[] {
+  const gap = Math.max(2, km / 15);
+  const spread: T[] = [];
+  for (const f of best) if (spread.length < 6 && !spread.some((o) => Math.abs(o.atKm - f.atKm) < gap)) spread.push(f);
+  for (const f of best) if (spread.length < 3 && !spread.includes(f)) spread.push(f);
+  return spread.sort((a, b) => a.atKm - b.atKm);
 }
 
 /** One plain line about a route's character, e.g. "3 hill towns, 2 viewpoints, cypress avenue". */

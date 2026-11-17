@@ -52,7 +52,7 @@ function gridIndex(features: ScenicFeature[], cellDeg = 0.05) {
  */
 export function destinationCandidates(origin: LatLon, features: ScenicFeature[], maxKm: number, max = 10, prefer: Set<string> = new Set()): DestinationCandidate[] {
   const near = gridIndex(features);
-  const minKm = Math.max(5, maxKm * 0.06);
+  const minKm = Math.max(3.5, maxKm * 0.035);
   const gapKm = Math.max(5, maxKm * 0.12);
   const named = features.filter((f) => DESTINATION_TYPES.has(f.type) && f.name && /^[\p{Lu}\p{N}]/u.test(f.name) && f.weight >= 1.5);
   const ranked: (DestinationCandidate & { fame: number; loved: boolean })[] = [];
@@ -63,13 +63,16 @@ export function destinationCandidates(origin: LatLon, features: ScenicFeature[],
     const sights = around.reduce((s, g) => s + (g !== f && SIGHTS.has(g.type) ? g.weight : 0), 0);
     let fame: number;
     let at: LatLon = f;
-    if (TOWNS.has(f.type)) fame = f.weight + 1.2 * Math.sqrt(sights);
+    // A hamlet next to a villa is not a destination: sights count in proportion to the town's own standing.
+    // A hamlet on the edge of a bigger town would borrow its sights: the town speaks for the spot.
+    if (TOWNS.has(f.type) && around.some((g) => g !== f && TOWNS.has(g.type) && g.name && g.weight > f.weight)) continue;
+    if (TOWNS.has(f.type)) fame = f.weight + 1.2 * Math.sqrt(sights) * Math.min(1, f.weight / 2.5);
     // A palace or fortress among dozens of sights is a city centre (Siena, Lucca): limited traffic zones,
     // not a scenic drive. Towns carry their own castles.
     else if (sights > 60 || (SIGHTS.has(f.type) && around.some((g) => TOWNS.has(g.type) && g.name && distKm(f, g) < 1.2))) continue;
     else if (f.type === 'lake') {
       // Drive to the best town on the shore, but call it by the lake's name. Small ponds aren't trips.
-      if (f.weight < 3.5) continue;
+      if (f.weight < 3.5 || /cassa d|espansione|vasca|laminazione|depurat|invaso|discarica|cava\b/i.test(f.name)) continue;
       const shore = near(f, 12).filter((g) => TOWNS.has(g.type) && g.name).sort((x, y) => y.weight - x.weight || distKm(f, x) - distKm(f, y))[0];
       if (shore) at = shore;
       fame = f.weight * 1.6;
@@ -124,7 +127,7 @@ export async function exploreFrom(req: ExploreRequest, p: Providers, opts: PlanO
   }
   const loved = applyInterests(features, req.interests);
   const prefer = new Set<string>(req.interests.filter((i) => i !== 'quiet'));
-  const candidates = destinationCandidates(req.origin, loved, maxKm, 11, prefer);
+  const candidates = destinationCandidates(req.origin, loved, maxKm, 16, prefer);
   if (!candidates.length) throw new PlanError('No scenic places found within that time yet. Try a longer drive.');
 
   const base = { prefs: { ...req.prefs, avoidUnpaved: req.prefs.avoidUnpaved || req.vehicle !== 'car' }, vehicle: req.vehicle };
@@ -140,7 +143,7 @@ export async function exploreFrom(req: ExploreRequest, p: Providers, opts: PlanO
   // (scenic searches are the expensive part).
   const reachable = (await pool(candidates, opts.concurrency ?? 6, async (c) => {
     const fastOut = await p.router.route([req.origin, c], { ...base, profile: 'fastest' });
-    return fastOut.minutes > outMinutes * 0.85 ? null : { c, fastOut };
+    return fastOut.minutes > outMinutes * 0.92 ? null : { c, fastOut };
   })).filter((x): x is NonNullable<typeof x> => !!x).slice(0, 8);
   const routed = await pool(reachable, opts.concurrency ?? 4, async ({ c, fastOut }) => {
     // The drive time is a promise: the fastest way must fit with room to spare, the scenic way must fit.
@@ -151,7 +154,7 @@ export async function exploreFrom(req: ExploreRequest, p: Providers, opts: PlanO
     // A loop: out by the most scenic road, back by a gentler scenic one (usually different), all within the time.
     const fastBack = await p.router.route([c, req.origin], { ...base, profile: 'fastest' });
     const fastest = join(fastOut, fastBack);
-    if (fastest.minutes > req.maxMinutes * 0.85) return null;
+    if (fastest.minutes > req.maxMinutes * 0.92) return null;
     const out = await scenicOr([req.origin, c], 3, fastOut);
     const back = await scenicOr([c, req.origin], 1, fastBack);
     for (const loop of [join(out, back), join(out, fastBack), join(fastOut, back)]) if (loop.minutes <= req.maxMinutes) return { c, fastest, scenic: loop };
