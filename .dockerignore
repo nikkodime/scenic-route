@@ -1,0 +1,8 @@
+**/node_modules
+.git
+apps/ios
+apps/web/dist
+infra/data/dem
+infra/data/osm
+infra/data/features/.cache
+infra/deploy/data
