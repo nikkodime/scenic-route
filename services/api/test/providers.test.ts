@@ -164,3 +164,27 @@ test('geocoder ranking: the city of Pisa beats a Pisa street and places outside 
   ], 'Firenze');
   assert.equal(firenze[0].label, 'Florence, Tuscany, Italy');
 });
+
+test('shipped features answer covered corridors; Overpass only outside, with a fallback', async () => {
+  const { FileFeatures, LayeredFeatures } = await import('../src/providers/features-file.ts');
+  const { tiles } = await import('../scripts/fetch-features.ts');
+  const local = new FileFeatures([{
+    region: 'test', bbox: [43, 11, 44, 12], fetchedAt: '2026-11-17T00:00:00Z', attribution: 'OSM',
+    features: [
+      { id: 'n/1', lat: 43.5, lon: 11.5, type: 'viewpoint', weight: 5, name: 'Belvedere' },
+      { id: 'n/2', lat: 43.95, lon: 11.95, type: 'hilltop_village', weight: 2, name: 'Borgo' },
+      { id: 'n/1', lat: 43.5, lon: 11.5, type: 'viewpoint', weight: 5, name: 'Belvedere' },
+    ],
+  }]);
+  assert.equal(local.inBBox([43.4, 11.4, 43.6, 11.6]).length, 1);
+  assert.equal(local.inBBox([43, 11, 44, 12]).length, 2, 'duplicates across tiles are dropped');
+  let calls = 0;
+  const remote = { features: async () => { calls++; throw new Error('timeout'); } };
+  const layered = new LayeredFeatures(local, remote);
+  assert.equal((await layered.features([43.4, 11.4, 43.6, 11.6])).length, 1);
+  assert.equal(calls, 0, 'covered corridor never calls Overpass');
+  assert.equal((await layered.features([43.9, 11.9, 44.2, 12.2])).length, 1, 'falls back to shipped places');
+  assert.equal(calls, 1);
+  await assert.rejects(layered.features([50, 5, 51, 6]), /timeout/);
+  assert.equal(tiles([42.2, 9.6, 44.5, 12.4]).length, 10 * 12);
+});

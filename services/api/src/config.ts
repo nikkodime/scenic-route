@@ -24,6 +24,10 @@ const Env = z.object({
   PHOTON_URL: z.string().default('https://photon.komoot.io'),
   NOMINATIM_URL: z.string().default('https://nominatim.openstreetmap.org'),
   ZONES_DIR: z.string().default(fileURLToPath(new URL('../../../infra/data/zones/', import.meta.url))),
+  /** Scenic places shipped with the server (scripts/fetch-features.ts). Overpass is only asked outside these regions. */
+  FEATURES_DIR: z.string().default(fileURLToPath(new URL('../../../infra/data/features/', import.meta.url))),
+  /** live Overpass outside the shipped regions | none (shipped files only) */
+  OVERPASS: z.enum(['live', 'none']).default('live'),
   DATABASE_URL: z.string().optional(),
   JWT_SECRET: z.string().min(16).default('dev-only-secret-change-me-please'),
   APPLE_BUNDLE_IDS: list.default('app.scenicroute.ios'),

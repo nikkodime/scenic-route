@@ -6,6 +6,7 @@ import { makeHttp } from './http.ts';
 import { GraphHopperRouter } from './providers/graphhopper.ts';
 import { OsrmRouter } from './providers/osrm.ts';
 import { OverpassFeatures } from './providers/overpass.ts';
+import { FileFeatures, LayeredFeatures } from './providers/features-file.ts';
 import { OpenMeteoElevation } from './providers/elevation.ts';
 import { MetNoWeather, OpenMeteoWeather } from './providers/weather.ts';
 import { NominatimGeocoder, PhotonGeocoder, type Geocoder } from './providers/geocode.ts';
@@ -17,10 +18,11 @@ import type { Store } from './store/store.ts';
 export function makeProviders(c: Config): { providers: Providers; geocoder: Geocoder } {
   const http = makeHttp({ userAgent: c.USER_AGENT });
   const zones = loadZones(c.ZONES_DIR);
+  const shipped = FileFeatures.load(c.FEATURES_DIR);
   return {
     providers: {
       router: c.ROUTER === 'graphhopper' ? new GraphHopperRouter(http, c.GRAPHHOPPER_URL, c.GRAPHHOPPER_PROFILE) : new OsrmRouter(http, c.OSRM_URL),
-      features: new OverpassFeatures(http, c.OVERPASS_URLS),
+      features: new LayeredFeatures(shipped, c.OVERPASS === 'live' ? new OverpassFeatures(http, c.OVERPASS_URLS) : undefined),
       elevation: c.ELEVATION === 'open-meteo' ? new OpenMeteoElevation(http, c.OPEN_METEO_API_KEY) : undefined,
       weather: c.WEATHER === 'metno' ? new MetNoWeather(http) : c.WEATHER === 'open-meteo' ? new OpenMeteoWeather(http, c.OPEN_METEO_API_KEY) : undefined,
       zones: (b) => zones.inBBox(b),
