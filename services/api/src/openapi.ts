@@ -4,7 +4,7 @@ import { zodToJsonSchema } from 'zod-to-json-schema';
 import * as C from '@scenic/core/contracts';
 
 const schemas = {
-  PlanRequest: C.PlanRequestSchema, PlanResponse: C.PlanResponseSchema, RouteOption: C.RouteOptionSchema,
+  PlanRequest: C.PlanRequestSchema, PlanResponse: C.PlanResponseSchema, ExploreRequest: C.ExploreRequestSchema, ExploreResponse: C.ExploreResponseSchema, ExploreDestination: C.ExploreDestinationSchema, RouteOption: C.RouteOptionSchema,
   GeocodeResult: C.GeocodeResultSchema, Trip: C.TripSchema, Rating: C.RatingSchema,
   SyncRequest: C.SyncRequestSchema, SyncResponse: C.SyncResponseSchema,
 };
@@ -21,6 +21,7 @@ const doc = {
   servers: [{ url: 'http://localhost:8787' }],
   components: { schemas: components, securitySchemes: { bearer: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' } } },
   paths: {
+    '/v1/explore': { post: { operationId: 'explore', requestBody: json('ExploreRequest'), responses: { 200: { description: 'Scenic places within a drive time', ...json('ExploreResponse') }, 400: { description: 'Invalid request' }, 422: { description: 'Nothing reachable' } } } },
     '/v1/plan': { post: { operationId: 'plan', requestBody: json('PlanRequest'), responses: { 200: { description: 'Ranked routes', ...json('PlanResponse') }, 400: { description: 'Invalid request' }, 422: { description: 'No route' } } } },
     '/v1/geocode': { get: { operationId: 'geocode', parameters: [{ name: 'q', in: 'query', required: true, schema: { type: 'string' } }, { name: 'lang', in: 'query', schema: { type: 'string' } }, { name: 'lat', in: 'query', schema: { type: 'number' } }, { name: 'lon', in: 'query', schema: { type: 'number' } }], responses: { 200: { description: 'Places', content: { 'application/json': { schema: { type: 'object', properties: { results: { type: 'array', items: ref('GeocodeResult') } } } } } } } } },
     '/v1/auth/anonymous': { post: { operationId: 'authAnonymous', responses: { 200: { description: 'Token', content: { 'application/json': { schema: { type: 'object', properties: { userId: { type: 'string' }, token: { type: 'string' } } } } } } } } },

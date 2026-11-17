@@ -653,6 +653,449 @@
         ],
         "additionalProperties": false
       },
+      "ExploreRequest": {
+        "type": "object",
+        "properties": {
+          "origin": {
+            "type": "object",
+            "properties": {
+              "lat": {
+                "type": "number",
+                "minimum": -90,
+                "maximum": 90
+              },
+              "lon": {
+                "type": "number",
+                "minimum": -180,
+                "maximum": 180
+              },
+              "label": {
+                "type": "string",
+                "maxLength": 300
+              }
+            },
+            "required": [
+              "lat",
+              "lon"
+            ],
+            "additionalProperties": false
+          },
+          "maxMinutes": {
+            "type": "integer",
+            "minimum": 20,
+            "maximum": 480,
+            "default": 90
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "one_way",
+              "round_trip"
+            ],
+            "default": "one_way"
+          },
+          "interests": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "views",
+                "heritage",
+                "water",
+                "mountains",
+                "countryside",
+                "quiet"
+              ]
+            },
+            "maxItems": 6,
+            "default": []
+          },
+          "vehicle": {
+            "type": "string",
+            "enum": [
+              "car",
+              "campervan",
+              "caravan"
+            ],
+            "default": "car"
+          },
+          "departAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "prefs": {
+            "type": "object",
+            "properties": {
+              "rentalCar": {
+                "type": "boolean",
+                "default": false
+              },
+              "avoidUnpaved": {
+                "type": "boolean",
+                "default": true
+              },
+              "avoidTolls": {
+                "type": "boolean",
+                "default": false
+              },
+              "avoidMotorways": {
+                "type": "boolean",
+                "default": true
+              },
+              "vignettes": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 2,
+                  "maxLength": 2
+                },
+                "default": []
+              }
+            },
+            "additionalProperties": false,
+            "default": {}
+          },
+          "maxResults": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10,
+            "default": 6
+          }
+        },
+        "required": [
+          "origin"
+        ],
+        "additionalProperties": false
+      },
+      "ExploreResponse": {
+        "type": "object",
+        "properties": {
+          "origin": {
+            "type": "object",
+            "properties": {
+              "lat": {
+                "type": "number",
+                "minimum": -90,
+                "maximum": 90
+              },
+              "lon": {
+                "type": "number",
+                "minimum": -180,
+                "maximum": 180
+              },
+              "label": {
+                "type": "string",
+                "maxLength": 300
+              }
+            },
+            "required": [
+              "lat",
+              "lon"
+            ],
+            "additionalProperties": false
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "one_way",
+              "round_trip"
+            ]
+          },
+          "maxMinutes": {
+            "type": "number"
+          },
+          "destinations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "lat": {
+                  "type": "number",
+                  "minimum": -90,
+                  "maximum": 90
+                },
+                "lon": {
+                  "type": "number",
+                  "minimum": -180,
+                  "maximum": 180
+                },
+                "name": {
+                  "type": "string"
+                },
+                "types": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "viewpoint",
+                      "mountain_pass",
+                      "peak",
+                      "castle",
+                      "hilltop_village",
+                      "village",
+                      "heritage",
+                      "beach",
+                      "lake",
+                      "coast",
+                      "waterfall",
+                      "vineyard",
+                      "cypress",
+                      "scenic_road",
+                      "attraction"
+                    ]
+                  }
+                },
+                "families": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "places": {
+                  "type": "integer"
+                },
+                "score": {
+                  "type": "number"
+                },
+                "summary": {
+                  "type": "string"
+                },
+                "km": {
+                  "type": "number"
+                },
+                "minutes": {
+                  "type": "number"
+                },
+                "fastestMinutes": {
+                  "type": "number"
+                },
+                "straightKm": {
+                  "type": "number"
+                },
+                "highlights": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "viewpoint",
+                          "mountain_pass",
+                          "peak",
+                          "castle",
+                          "hilltop_village",
+                          "village",
+                          "heritage",
+                          "beach",
+                          "lake",
+                          "coast",
+                          "waterfall",
+                          "vineyard",
+                          "cypress",
+                          "scenic_road",
+                          "attraction"
+                        ]
+                      },
+                      "atKm": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "name",
+                      "type",
+                      "atKm"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "polyline": {
+                  "type": "string"
+                },
+                "sunset": {
+                  "type": "string",
+                  "nullable": true
+                }
+              },
+              "required": [
+                "lat",
+                "lon",
+                "name",
+                "types",
+                "families",
+                "places",
+                "score",
+                "summary",
+                "km",
+                "minutes",
+                "fastestMinutes",
+                "straightKm",
+                "highlights",
+                "polyline",
+                "sunset"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "attribution": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "origin",
+          "mode",
+          "maxMinutes",
+          "destinations",
+          "warnings",
+          "attribution"
+        ],
+        "additionalProperties": false
+      },
+      "ExploreDestination": {
+        "type": "object",
+        "properties": {
+          "lat": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "lon": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "name": {
+            "type": "string"
+          },
+          "types": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "viewpoint",
+                "mountain_pass",
+                "peak",
+                "castle",
+                "hilltop_village",
+                "village",
+                "heritage",
+                "beach",
+                "lake",
+                "coast",
+                "waterfall",
+                "vineyard",
+                "cypress",
+                "scenic_road",
+                "attraction"
+              ]
+            }
+          },
+          "families": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "places": {
+            "type": "integer"
+          },
+          "score": {
+            "type": "number"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "km": {
+            "type": "number"
+          },
+          "minutes": {
+            "type": "number"
+          },
+          "fastestMinutes": {
+            "type": "number"
+          },
+          "straightKm": {
+            "type": "number"
+          },
+          "highlights": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "viewpoint",
+                    "mountain_pass",
+                    "peak",
+                    "castle",
+                    "hilltop_village",
+                    "village",
+                    "heritage",
+                    "beach",
+                    "lake",
+                    "coast",
+                    "waterfall",
+                    "vineyard",
+                    "cypress",
+                    "scenic_road",
+                    "attraction"
+                  ]
+                },
+                "atKm": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "name",
+                "type",
+                "atKm"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "polyline": {
+            "type": "string"
+          },
+          "sunset": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "lat",
+          "lon",
+          "name",
+          "types",
+          "families",
+          "places",
+          "score",
+          "summary",
+          "km",
+          "minutes",
+          "fastestMinutes",
+          "straightKm",
+          "highlights",
+          "polyline",
+          "sunset"
+        ],
+        "additionalProperties": false
+      },
       "RouteOption": {
         "type": "object",
         "properties": {
@@ -3226,6 +3669,38 @@
     }
   },
   "paths": {
+    "/v1/explore": {
+      "post": {
+        "operationId": "explore",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExploreRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Scenic places within a drive time",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExploreResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "422": {
+            "description": "Nothing reachable"
+          }
+        }
+      }
+    },
     "/v1/plan": {
       "post": {
         "operationId": "plan",

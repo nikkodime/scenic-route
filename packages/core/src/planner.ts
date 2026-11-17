@@ -6,7 +6,7 @@ import { distKm, encodePolyline, paddedBBox, pointInGeometry, resample, type Lat
 import { FEATURE_FAMILY, type ScenicFeature } from './features.ts';
 import { candidateWaypointSets, clusterSpots, corridorBBox, detourProbes, type Spot } from './candidates.ts';
 import { bestStretch, describe, reliefStats, scoreRoute, SCORE_MODEL, type RouteGeometry, type ScoredRoute, type SegmentSample } from './score.ts';
-import { rankRoutes } from './rank.ts';
+import { rankRoutes, retraced } from './rank.ts';
 import { assessConditions, weatherSamplePoints, type HourlyForecast } from './conditions.ts';
 import { isBlocked, routeAdvisories, type Advisory, type Zone } from './advisories.ts';
 import { appleMapsUrl, googleMapsUrl, shapingPoints } from './exports.ts';
@@ -174,6 +174,8 @@ export async function planRoutes(req: PlanRequest, p: Providers, opts: PlanOptio
   // Under 200 m end to end there is no drive to plan; say so instead of returning a 0 km "route".
   if (required.slice(1).every((pt, i) => distKm(required[i], pt) < 0.2)) throw new PlanError('Start and destination are the same place.');
   const departure = req.departAt ? new Date(req.departAt) : now;
+  // Back to where you started, through at least one stop: a round trip.
+  const isLoop = req.stops.length > 0 && distKm(req.origin, req.destination) < 0.5;
 
   const style = STYLES[req.style];
   const rules = vehicleRules(req.vehicle, req.prefs, style.strengths);
@@ -277,7 +279,9 @@ export async function planRoutes(req: PlanRequest, p: Providers, opts: PlanOptio
       line: c.path.line, unpavedKm: c.path.unpavedKm, tollKm: c.path.tollKm, ferryKm: c.path.ferryKm,
       motorwayKmByCountry: c.path.motorwayKmByCountry, zones, date: departure, prefs: rules.prefs,
     });
-    return { ...c, minutes: c.path.minutes, line: c.path.line, scored, fit, advisories };
+    // A round trip that comes back the same way is half a drive: count it down.
+    const loopFit = isLoop ? fit * (1 - 0.6 * retraced(c.path.line, req.origin)) : fit;
+    return { ...c, minutes: c.path.minutes, line: c.path.line, scored, fit: loopFit, advisories };
   })).flatMap((r) => (r.status === 'fulfilled' ? [r.value] : []));
   if (p.elevation && reliefMissing(evaluated)) warnings.push('Elevation was unavailable; hill scores are estimated.');
 

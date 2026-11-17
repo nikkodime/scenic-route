@@ -195,3 +195,32 @@ test('"Most beautiful" prefers a long day full of scenery; "Scenic" and "Relaxed
   assert.ok(a('relaxed') > b('relaxed'));
   assert.ok(a('scenic') - 0.15 * 0 > b('scenic') - 0.15 * 40, 'not worth 40 minutes on Scenic');
 });
+
+test('explore: scenic places within the drive time, spread out, each with a road there', async () => {
+  const { exploreFrom, ExploreRequestSchema, ExploreResponseSchema } = await import('../src/index.ts');
+  const p = fakeProviders();
+  const res = await exploreFrom(ExploreRequestSchema.parse({ origin: SIENA, maxMinutes: 90, departAt: '2026-06-01T07:00:00Z' }), p);
+  ExploreResponseSchema.parse(res);
+  assert.ok(res.destinations.length >= 1);
+  for (const d of res.destinations) {
+    assert.ok(d.minutes <= 90 * 1.25 + 1 && d.fastestMinutes <= 90 * 1.1 + 1, `${d.name} ${d.minutes}`);
+    assert.ok(d.straightKm >= 6);
+    assert.ok(d.sunset);
+  }
+  const names = res.destinations.map((d) => d.name);
+  assert.equal(new Set(names).size, names.length, 'no place twice');
+  // Round trip: reach is about half.
+  const loop = await exploreFrom(ExploreRequestSchema.parse({ origin: SIENA, maxMinutes: 150, mode: 'round_trip' }), fakeProviders());
+  for (const d of loop.destinations) assert.ok(d.fastestMinutes <= 150 * 0.45 * 1.1 + 1);
+  await assert.rejects(exploreFrom(ExploreRequestSchema.parse({ origin: SIENA, maxMinutes: 30 }), fakeProviders()), /No scenic places/);
+});
+
+test('round trips prefer coming back another way', async () => {
+  const { retraced } = await import('../src/index.ts');
+  const a = { lat: 43.3, lon: 11.3 }, b = { lat: 43.0, lon: 11.6 }, side = { lat: 43.25, lon: 11.6 };
+  const { wigglyLine } = await import('./fixtures.ts');
+  assert.ok(retraced(wigglyLine([a, b, a]), a) > 0.8);
+  assert.ok(retraced(wigglyLine([a, b, side, a]), a) < 0.2);
+  const res = await planRoutes(req({ destination: SIENA, stops: [PIENZA], extraMinutes: undefined }), fakeProviders());
+  assert.ok(res.routes.length >= 1);
+});

@@ -52,6 +52,14 @@ for (const [name, makeStore] of stores) {
     assert.ok(bad.json().issues.some((i: { path: string }) => i.path === 'origin.lat'));
   });
 
+  test(`[${name}] explore lists scenic places within a drive time; too short is a 422`, async () => {
+    const r = await app.inject({ method: 'POST', url: '/v1/explore', payload: { origin: SIENA, maxMinutes: 90 } });
+    assert.equal(r.statusCode, 200, r.body);
+    assert.ok(r.json().destinations[0].name);
+    const none = await app.inject({ method: 'POST', url: '/v1/explore', payload: { origin: SIENA, maxMinutes: 20 } });
+    assert.equal(none.statusCode, 422);
+  });
+
   test(`[${name}] geocode validates and answers`, async () => {
     assert.equal((await app.inject('/v1/geocode?q=P')).statusCode, 400);
     const r = await app.inject('/v1/geocode?q=Pienza&lat=43.3&lon=11.3');

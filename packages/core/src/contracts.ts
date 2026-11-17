@@ -116,6 +116,48 @@ export const PlanResponseSchema = z.object({
   attribution: z.array(z.string()),
 });
 
+/** "Where can I go from here?" */
+export const EXPLORE_MODES = ['one_way', 'round_trip'] as const;
+export const ExploreRequestSchema = z.object({
+  origin: PlaceSchema,
+  /** Drive time: one way, or the whole loop for a round trip. */
+  maxMinutes: z.number().int().min(20).max(480).default(90),
+  mode: z.enum(EXPLORE_MODES).default('one_way'),
+  interests: z.array(z.enum(INTERESTS)).max(INTERESTS.length).default([]),
+  vehicle: z.enum(VEHICLES).default('car'),
+  departAt: z.string().datetime({ offset: true }).optional(),
+  prefs: PreferencesSchema.default({}),
+  maxResults: z.number().int().min(1).max(10).default(6),
+});
+
+export const ExploreDestinationSchema = LatLonSchema.extend({
+  name: z.string(),
+  types: z.array(FeatureTypeSchema),
+  families: z.array(z.string()),
+  /** Scenic places clustered here. */
+  places: z.number().int(),
+  /** Beauty of the scenic road there, 0–100. */
+  score: z.number(),
+  summary: z.string(),
+  km: z.number(),
+  /** By the scenic road. */
+  minutes: z.number(),
+  fastestMinutes: z.number(),
+  straightKm: z.number(),
+  highlights: z.array(z.object({ name: z.string(), type: FeatureTypeSchema, atKm: z.number() })),
+  polyline: z.string(),
+  sunset: z.string().nullable(),
+});
+
+export const ExploreResponseSchema = z.object({
+  origin: PlaceSchema,
+  mode: z.enum(EXPLORE_MODES),
+  maxMinutes: z.number(),
+  destinations: z.array(ExploreDestinationSchema),
+  warnings: z.array(z.string()),
+  attribution: z.array(z.string()),
+});
+
 export const GeocodeResultSchema = PlaceSchema.extend({ label: z.string(), kind: z.string().optional() });
 
 const Uuid = z.string().uuid();
@@ -186,3 +228,7 @@ export type TripDay = z.infer<typeof TripDaySchema>;
 export type Rating = z.infer<typeof RatingSchema>;
 export type SyncRequest = z.infer<typeof SyncRequestSchema>;
 export type SyncResponse = z.infer<typeof SyncResponseSchema>;
+
+export type ExploreRequest = z.infer<typeof ExploreRequestSchema>;
+export type ExploreDestination = z.infer<typeof ExploreDestinationSchema>;
+export type ExploreResponse = z.infer<typeof ExploreResponseSchema>;

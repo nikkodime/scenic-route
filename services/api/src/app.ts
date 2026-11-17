@@ -6,7 +6,7 @@ import rateLimit from '@fastify/rate-limit';
 import { ZodError, z } from 'zod';
 import type { JWTVerifyGetKey } from 'jose';
 import {
-  PlanError, PlanRequestSchema, RatingSchema, SyncRequestSchema, TripSchema, planRoutes, type Providers,
+  PlanError, PlanRequestSchema, ExploreRequestSchema, exploreFrom, RatingSchema, SyncRequestSchema, TripSchema, planRoutes, type Providers,
 } from '@scenic/core';
 import type { Config } from './config.ts';
 import type { Geocoder } from './providers/geocode.ts';
@@ -76,6 +76,11 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   app.post('/v1/plan', { config: { rateLimit: { max: 30, timeWindow: '1 minute' } } }, async (req) => {
     const body = PlanRequestSchema.parse(req.body);
     return planRoutes(body, providers, { timeZone: config.TIME_ZONE, log: (msg, extra) => req.log.warn({ extra: String(extra) }, msg) });
+  });
+
+  app.post('/v1/explore', { config: { rateLimit: { max: 20, timeWindow: '1 minute' } } }, async (req) => {
+    const body = ExploreRequestSchema.parse(req.body);
+    return exploreFrom(body, providers, { log: (msg, extra) => req.log.warn({ extra: String(extra) }, msg) });
   });
 
   app.get('/v1/regions', async () => ({ regions: REGIONS }));
