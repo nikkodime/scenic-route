@@ -3,6 +3,7 @@ import { toGpx, decodePolyline, INTERESTS, ROUTE_STYLES, VEHICLES, type GeocodeR
 import { api } from './api.ts';
 import type { ExploreDestination, ExploreResponse, Place } from '@scenic/core';
 import { RouteMap } from './map.ts';
+import { icon } from './icons.ts';
 import {
   INTEREST_LABELS, LIMIT_CHOICES, STYLE_BLURBS, STYLE_LABELS, VEHICLE_LABELS, addDay, normalize, toggleInterest, updateJourney, chosenRoute, defaultName, duration, fromTrip, newJourney, removeDay, toTrip, totals, updateDay,
   type DayPlan, type Journey,
@@ -19,8 +20,7 @@ interface State {
 }
 
 /** Drive-time choices for Explore. */
-const EXPLORE_TIMES: [number, string][] = [[60, '1 h'], [120, '2 h'], [240, 'Half a day']];
-const FAMILY_ICON: Record<string, string> = { views: '◉', mountains: '▲', heritage: '⌂', water: '≈', countryside: '❦', roads: '∿' };
+const EXPLORE_TIMES: [number, string][] = [[60, '1 h'], [120, '2 h'], [240, 'Half day']];
 
 const uuid = () => crypto.randomUUID();
 const DRAFT_KEY = 'scenic.draft';
@@ -66,8 +66,10 @@ function toast(msg: string) {
 // ---------- rendering ----------
 
 function render() {
+  const open = panel.querySelector('details.prefs')?.hasAttribute('open');
   panel.innerHTML = state.view === 'trips' ? tripsView() : state.view === 'explore' ? exploreView() : planView();
-  if (state.view === 'explore') loadPhotos();
+  if (open) panel.querySelector('details.prefs')?.setAttribute('open', '');
+  loadPhotos();
 }
 
 function modeSwitch(): string {
@@ -77,53 +79,94 @@ function modeSwitch(): string {
   </div>`;
 }
 
+const SHORT_INTEREST: Record<Interest, string> = { views: 'Views', heritage: 'Villages', water: 'Water', mountains: 'Mountains', countryside: 'Vineyards', quiet: 'Quiet roads' };
+const STYLE_CREDIT: Record<RouteStyle, string> = { relaxed: '© Repuli · CC BY-SA 4.0', scenic: '© Costaetrusca · CC BY-SA 4.0', most_beautiful: '© kuhnmi · CC BY 2.0' };
+const VEHICLE_ICON: Record<Vehicle, string> = { car: 'car', campervan: 'campervan', caravan: 'caravan' };
+const hhmm = (iso?: string | null) => (iso ? new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '');
+
+function header(title: string): string {
+  return `<header class="day-head">
+      <div><img class="wordmark" src="${import.meta.env.BASE_URL}wordmark.svg" alt="Panoramica" width="150" height="22" /><h1>${title}</h1></div>
+      <button class="btn link" data-action="trips">My trips</button>
+    </header>`;
+}
+
+function styleTiles(): string {
+  const j = state.journey;
+  return `<div class="cap" id="style-l">Style</div>
+    <div class="styles" role="group" aria-labelledby="style-l">
+      ${ROUTE_STYLES.map((s) => `<button class="style-tile" data-action="style" data-v="${s}" aria-pressed="${j.style === s}" aria-label="${STYLE_LABELS[s]}" title="${esc(STYLE_BLURBS[s])}">
+        <img src="${import.meta.env.BASE_URL}styles/${s}.jpg" alt="" />
+        <span class="name">${STYLE_LABELS[s]}</span><span class="credit">${STYLE_CREDIT[s]}</span>
+        ${j.style === s ? `<span class="tick">${icon('check', 13)}</span>` : ''}
+      </button>`).join('')}
+    </div>`;
+}
+
+function interestTiles(): string {
+  const j = state.journey;
+  return `<div class="cap" id="love-l">I'd love</div>
+    <div class="tiles" role="group" aria-labelledby="love-l">
+      ${INTERESTS.map((x) => `<button class="tile" data-action="interest" data-v="${x}" aria-pressed="${j.interests.includes(x)}" aria-label="${INTEREST_LABELS[x]}">${icon(x)}<span>${SHORT_INTEREST[x]}</span></button>`).join('')}
+    </div>`;
+}
+
+function vehicleRow(): string {
+  const j = state.journey;
+  return `<div class="vrow" role="group" aria-label="Vehicle and roads">
+      ${VEHICLES.map((v) => `<button class="vbtn" data-action="vehicle" data-v="${v}" aria-pressed="${j.vehicle === v}" aria-label="${VEHICLE_LABELS[v]}" title="${VEHICLE_LABELS[v]}">${icon(VEHICLE_ICON[v], 24)}</button>`).join('')}
+      <details class="prefs"><summary class="vbtn" aria-label="Road preferences" title="Road preferences">${icon('settings')}</summary>
+        <div class="prefs-pop">${chip('rentalCar', 'Rental car')}${chip('avoidUnpaved', 'No gravel')}${chip('avoidTolls', 'No tolls')}</div>
+      </details>
+    </div>`;
+}
+
 function exploreView(): string {
   const x = state.explore;
-  const j = state.journey;
   const res = x.result;
   return `
-    <header class="day-head">
-      <div><img class="wordmark" src="${import.meta.env.BASE_URL}wordmark.svg" alt="Panoramica" width="150" height="22" /><h1>Where to, from here?</h1></div>
-      <button class="btn link" data-action="trips">My trips</button>
-    </header>
+    ${header('Nearby')}
     ${modeSwitch()}
-    <div class="field">
-      <label class="label" for="explore-1">From</label>
-      <input id="explore-1" class="input" autocomplete="off" data-action="place" data-day="-1" data-field="explore" value="${esc(x.origin?.label)}" placeholder="Town or address" />
-      <div class="suggest" hidden data-suggest="explore-1" role="listbox"></div>
-    </div>
-    <div class="field">
-      <span class="label" id="time-l">Drive</span>
-      <div class="seg" role="group" aria-labelledby="time-l">
-        ${EXPLORE_TIMES.map(([m, t]) => `<button data-action="explore-time" data-v="${m}" aria-pressed="${x.minutes === m}">${t}</button>`).join('')}
-      </div>
-      <div class="chips"><button class="chip" data-action="explore-loop" aria-pressed="${x.roundTrip}">↻ Come back to the start</button></div>
-    </div>
-    <div class="field">
-      <span class="label" id="love-x">What do you love?</span>
-      <div class="chips" role="group" aria-labelledby="love-x">
-        ${INTERESTS.map((i) => `<button class="chip" data-action="interest" data-v="${i}" aria-pressed="${j.interests.includes(i)}">${INTEREST_LABELS[i]}</button>`).join('')}
+    <div class="places-box">
+      <div class="prow">
+        <span class="pdot"></span>
+        <label class="sr" for="explore-1">From</label>
+        <input id="explore-1" class="pinput" autocomplete="off" data-action="place" data-day="-1" data-field="explore" value="${esc(x.origin?.label)}" placeholder="Start" />
+        <div class="suggest" hidden data-suggest="explore-1" role="listbox"></div>
       </div>
     </div>
-    <button class="btn primary" data-action="explore" ${x.origin && !x.busy ? '' : 'disabled'}>${x.busy ? 'Looking around…' : 'Show scenic places'}</button>
+    <div class="tiles four" role="group" aria-label="Drive">
+      ${EXPLORE_TIMES.map(([m, t]) => `<button class="tile" data-action="explore-time" data-v="${m}" aria-pressed="${x.minutes === m}">${icon('clock')}<span>${t}</span></button>`).join('')}
+      <button class="tile" data-action="explore-loop" aria-pressed="${x.roundTrip}" aria-label="Loop: come back to the start">${icon('loop')}<span>Loop</span></button>
+    </div>
+    ${interestTiles()}
+    ${vehicleRow()}
+    <button class="btn primary" data-action="explore" ${x.origin && !x.busy ? '' : 'disabled'}>${x.busy ? '<span class="spin"></span>' : `Find places ${icon('chevron', 16)}`}</button>
     ${state.error ? `<p class="error" role="alert">${esc(state.error)}</p>` : ''}
     ${res ? `<div class="places">${res.destinations.map((d, k) => placeCard(d, k)).join('')}</div>
       <p class="attribution">${esc([...res.attribution, 'Photos: Wikimedia Commons'].join(' · '))}</p>` : ''}`;
 }
 
+function photoSlot(lat: number, lon: number, name: string, fallback: string, cls = 'photo'): string {
+  return `<div class="${cls}" data-photo="${lat},${lon}" data-name="${esc(name)}"><span class="ph-icon">${icon(fallback, 36)}</span></div>`;
+}
+
 function placeCard(d: ExploreDestination, k: number): string {
-  const sunset = d.sunset ? new Date(d.sunset).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+  const sunset = hhmm(d.sunset);
   return `<button class="place" data-action="pick-place" data-k="${k}" aria-label="${esc(d.name)}, ${duration(d.minutes)}, score ${Math.round(d.score)}">
-    <div class="photo" data-photo="${d.lat},${d.lon}" data-name="${esc(d.name)}"><span class="ph-icon">${FAMILY_ICON[d.families[0]] ?? '◉'}</span></div>
-    <div class="place-over">
-      <div class="plate light"><b>${Math.round(d.score)}</b><span>SCENIC</span></div>
+    <div class="ph-wrap">
+      ${photoSlot(d.lat, d.lon, d.name, d.families[0] ?? 'views')}
+      <span class="glass chip-n"><b>${k + 1}</b>${d.families.slice(0, 3).map((f) => icon(f, 14)).join('')}</span>
+      <span class="stamp"><b>${Math.round(d.score)}</b><i>SCENIC</i></span>
+    </div>
+    <div class="body">
       <h3>${esc(d.name)}</h3>
-      <div class="place-meta"><span>🚗 ${duration(d.minutes)}</span>${sunset ? `<span>☀︎ ${sunset}</span>` : ''}<span>${d.families.slice(0, 3).map((f) => FAMILY_ICON[f] ?? '').join(' ')}</span></div>
+      <div class="statrow"><span>${icon('clock', 15)}${duration(d.minutes)}</span><span>${icon('dist', 15)}${Math.round(d.km)} km</span>${sunset ? `<span class="sun">${icon('sunset', 15)}${sunset}</span>` : ''}</div>
     </div>
   </button>`;
 }
 
-/** Fill photo slots lazily; each photo carries its credit. */
+/** Fill photo slots lazily; each photo carries its credit, bottom-right, linked to its source. */
 function loadPhotos() {
   panel.querySelectorAll<HTMLElement>('[data-photo]:not([data-loaded])').forEach((el) => {
     el.dataset.loaded = '1';
@@ -131,8 +174,9 @@ function loadPhotos() {
     api.photos(lat, lon, el.dataset.name).then((ps) => {
       const p = ps[0];
       if (!p) return;
-      el.innerHTML = `<img src="${esc(p.url)}" alt="${esc(p.title)}" loading="lazy" /><a class="credit" href="${esc(p.source)}" target="_blank" rel="noopener">${esc(p.author)} · ${esc(p.license)}</a>`;
-    });
+      // Inside a card (a button) the credit can't be a link, so it opens its source on click instead.
+      el.innerHTML = `<img src="${esc(p.url)}" alt="${esc(p.title)}" loading="lazy" /><span class="credit" role="link" tabindex="0" data-src="${esc(p.source)}">© ${esc(p.author)} · ${esc(p.license)}</span>`;
+    }).catch(() => {});
   });
 }
 
@@ -140,50 +184,18 @@ function planView(): string {
   const j = state.journey;
   const t = totals(j);
   return `
-    <header class="day-head">
-      <div><img class="wordmark" src="${import.meta.env.BASE_URL}wordmark.svg" alt="Panoramica" width="150" height="22" /><div class="label">Journey planner</div><h1>Plan the beautiful way</h1></div>
-      <button class="btn link" data-action="trips">My trips</button>
-    </header>
+    ${header('Where to?')}
     ${modeSwitch()}
-    <div class="field">
-      <label class="label" for="jname">Journey name</label>
-      <input id="jname" class="input" data-action="name" placeholder="${esc(defaultName(j))}" value="${esc(j.name)}" />
-    </div>
-    <div class="field">
-      <span class="label" id="style-l">How do you want to drive?</span>
-      <div class="seg" role="group" aria-labelledby="style-l">
-        ${ROUTE_STYLES.map((s) => `<button data-action="style" data-v="${s}" aria-pressed="${j.style === s}">${STYLE_LABELS[s]}</button>`).join('')}
-      </div>
-      <span class="muted small">${STYLE_BLURBS[j.style]}</span>
-    </div>
-    <div class="field">
-      <span class="label" id="love-l">What do you love?</span>
-      <div class="chips" role="group" aria-labelledby="love-l">
-        ${INTERESTS.map((x) => `<button class="chip" data-action="interest" data-v="${x}" aria-pressed="${j.interests.includes(x)}">${INTEREST_LABELS[x]}</button>`).join('')}
-      </div>
-    </div>
-    <div class="field">
-      <span class="label" id="veh-l">Vehicle</span>
-      <div class="seg" role="group" aria-labelledby="veh-l">
-        ${VEHICLES.map((v) => `<button data-action="vehicle" data-v="${v}" aria-pressed="${j.vehicle === v}">${VEHICLE_LABELS[v]}</button>`).join('')}
-      </div>
-      ${j.vehicle !== 'car' ? '<span class="muted small">Wider roads, no gravel, no hairpin chains.</span>' : ''}
-    </div>
-    <div class="field">
-      <span class="label" id="roads-l">Roads</span>
-      <div class="chips" role="group" aria-labelledby="roads-l">
-        ${chip('rentalCar', 'Rental car')}${chip('avoidUnpaved', 'No gravel')}${chip('avoidTolls', 'No tolls')}
-      </div>
-    </div>
+    ${styleTiles()}
+    ${interestTiles()}
+    ${vehicleRow()}
     ${j.days.map((d, i) => dayCard(d, i)).join('')}
-    <button class="btn" data-action="add-day">+ Add a day</button>
+    <button class="btn ghost" data-action="add-day">${icon('plus', 16)} Add a day</button>
     ${state.error ? `<p class="error" role="alert">${esc(state.error)}</p>` : ''}
-    <div class="card">
-      <div class="stats">${t.days} day${t.days === 1 ? '' : 's'} · ${t.planned} planned · ${t.km} km · ${duration(t.minutes)} driving</div>
-      <div class="row">
-        <button class="btn primary" data-action="save" ${t.planned ? '' : 'disabled'}>Save journey</button>
-      </div>
-      <p class="muted small">Saved journeys open in the iPhone app after you sign in with the same Apple ID (coming with Sign in with Apple on the web).</p>
+    <div class="card totals">
+      <input id="jname" class="input" aria-label="Journey name" data-action="name" placeholder="${esc(defaultName(j))}" value="${esc(j.name)}" />
+      <div class="statrow"><span>${t.days} ${t.days === 1 ? 'day' : 'days'}</span><span>${icon('dist', 15)}${t.km} km</span><span>${icon('clock', 15)}${duration(t.minutes)}</span></div>
+      <button class="btn primary" data-action="save" ${t.planned ? '' : 'disabled'}>Save journey</button>
     </div>
     <p class="attribution">${esc(j.days.find((d) => d.plan)?.plan?.attribution.join(' · ') ?? '© OpenStreetMap contributors')} · Suggestions only: road signs and local rules come first.</p>`;
 }
@@ -195,72 +207,82 @@ function chip(key: 'rentalCar' | 'avoidUnpaved' | 'avoidTolls', label: string) {
 function dayCard(d: DayPlan, i: number): string {
   const busy = state.busy === i;
   const r = chosenRoute(d);
+  const many = state.journey.days.length > 1;
   return `
-  <section class="card" data-day="${i}" aria-label="Day ${i + 1}">
-    <div class="day-head">
-      <h2>Day ${i + 1}</h2>
-      ${state.journey.days.length > 1 ? `<button class="btn link" data-action="remove-day" data-day="${i}">Remove</button>` : ''}
+  <section class="day" data-day="${i}" aria-label="Day ${i + 1}">
+    ${many ? `<div class="day-head"><div class="cap">Day ${i + 1}</div><button class="btn link" data-action="remove-day" data-day="${i}">Remove</button></div>` : ''}
+    <div class="places-box">
+      ${placeField(i, 'origin', 'From', d.origin?.label)}
+      ${placeField(i, 'destination', 'To', d.destination?.label)}
     </div>
-    ${placeField(i, 'origin', 'From', d.origin?.label)}
-    ${placeField(i, 'destination', 'To', d.destination?.label)}
-    <div class="field">
-      <span class="label">Time limit</span>
-      <div class="seg" role="group" aria-label="Time limit">
-        ${LIMIT_CHOICES.map((m) => `<button data-action="extra" data-day="${i}" data-min="${m ?? ''}" aria-pressed="${d.extraMinutes === m}">${m == null ? 'No limit' : m >= 60 ? `+${m / 60} h` : `+${m}`}</button>`).join('')}
+    <div class="when">
+      <label class="when-item">${icon('clock', 16)}<span class="sr">Leaving</span><input id="dep${i}" class="input bare" type="datetime-local" data-action="depart" data-day="${i}" value="${esc(d.departAt)}" /></label>
+      <div class="seg small" role="group" aria-label="Time limit">
+        ${LIMIT_CHOICES.map((m) => `<button data-action="extra" data-day="${i}" data-min="${m ?? ''}" aria-pressed="${d.extraMinutes === m}" ${m == null ? 'aria-label="No limit"' : ''}>${m == null ? 'Any' : m >= 60 ? `+${m / 60} h` : `+${m}`}</button>`).join('')}
       </div>
     </div>
-    <div class="field">
-      <label class="label" for="dep${i}">Leaving</label>
-      <input id="dep${i}" class="input" type="datetime-local" data-action="depart" data-day="${i}" value="${esc(d.departAt)}" />
-    </div>
-    <button class="btn primary" data-action="plan" data-day="${i}" ${d.origin && d.destination && !busy ? '' : 'disabled'}>${busy ? 'Finding beautiful roads…' : d.plan ? 'Plan again' : 'Find scenic routes'}</button>
+    <button class="btn primary" data-action="plan" data-day="${i}" ${d.origin && d.destination && !busy ? '' : 'disabled'}>${busy ? '<span class="spin"></span>' : `${d.plan ? 'Plan again' : 'Show routes'} ${icon('chevron', 16)}`}</button>
     ${d.plan ? results(d, i) : ''}
     ${r ? detail(r) : ''}
   </section>`;
 }
 
 function placeField(i: number, field: 'origin' | 'destination', label: string, value?: string) {
-  return `<div class="field">
-    <label class="label" for="${field}${i}">${label}</label>
-    <input id="${field}${i}" class="input" autocomplete="off" data-action="place" data-day="${i}" data-field="${field}" value="${esc(value)}" placeholder="${field === 'origin' ? 'Start: town or address' : 'Where to?'}" />
+  return `<div class="prow">
+    <span class="pdot ${field === 'destination' ? 'to' : ''}"></span>
+    <label class="sr" for="${field}${i}">${label}</label>
+    <input id="${field}${i}" class="pinput" autocomplete="off" data-action="place" data-day="${i}" data-field="${field}" value="${esc(value)}" placeholder="${field === 'origin' ? 'Start' : 'Where to?'}" />
     <div class="suggest" hidden data-suggest="${field}${i}" role="listbox"></div>
   </div>`;
 }
 
-function bars(r: RouteOption) {
-  const light = r.conditions ? { great: 100, good: 75, mixed: 45, poor: 15 }[r.conditions.verdict] : 60;
-  const quiet = Math.max(0, 100 - r.parts.motorwayPct - r.parts.urbanPct);
-  const items: [string, number][] = [['Views', r.parts.views ?? r.parts.scenery], ['Bends', r.parts.bends], ['Hills', r.parts.relief ?? 0], ['Light', light], ['Quiet', quiet]];
-  return `<div class="bars">${items.map(([k, v]) => `<div class="bar"><i style="--v:${Math.round(v)}%"></i><span>${k}</span></div>`).join('')}</div>`;
+/** Views, hills, bends, light: icon + number, never adjectives. */
+function scoreRow(r: RouteOption) {
+  const light = r.conditions ? { great: 100, good: 75, mixed: 45, poor: 15 }[r.conditions.verdict] : null;
+  const items: [string, string, number | null][] = [['views', 'Views', r.parts.views ?? r.parts.scenery], ['hills', 'Hills', r.parts.relief ?? 0], ['bends', 'Bends', r.parts.bends], ['sunset', 'Light', light]];
+  return `<div class="scores">${items.filter(([, , v]) => v != null).map(([ic, k, v]) => `<span class="${ic === 'sunset' ? 'sun' : ''}" title="${k}" aria-label="${k} ${Math.round(v!)}">${icon(ic, 16)}<b>${Math.round(v!)}</b></span>`).join('')}</div>`;
+}
+
+function routePhotoAt(r: RouteOption): { lat: number; lon: number; name: string } {
+  const s = r.scenicStops[0];
+  if (s) return { lat: s.lat, lon: s.lon, name: s.name };
+  const line = decodePolyline(r.polyline);
+  const m = line[Math.floor(line.length / 2)] ?? { lat: 0, lon: 0 };
+  return { lat: m.lat, lon: m.lon, name: '' };
 }
 
 function results(d: DayPlan, i: number) {
   const routes = d.plan!.routes;
-  if (!routes.length) return `<p class="muted">No route fits that time limit. Try a longer limit or no limit.</p>`;
-  return `<div class="field" role="group" aria-label="Route options">
-    ${routes.map((r) => `
+  if (!routes.length) return `<p class="muted">No route fits that time. Try “Any”.</p>`;
+  return `<div class="routes" role="group" aria-label="Route options">
+    ${routes.map((r, k) => {
+      const at = routePhotoAt(r);
+      return `
       <button class="route" data-action="choose" data-day="${i}" data-route="${esc(r.id)}" aria-pressed="${r.id === (d.chosenRouteId ?? routes[0].id)}">
-        <div class="plate"><b>${Math.round(r.score)}</b><span>SCENIC</span></div>
-        <div>
-          <div style="font:600 18px var(--font-ui)">${esc(r.label)}</div>
-          <div class="muted small">${esc(r.summary)}</div>
-          <div class="stats">${duration(r.minutes)} · ${Math.round(r.km)} km · ${r.extraMinutes < 1 ? 'no extra' : `+${duration(r.extraMinutes)}`}</div>
-          ${bars(r)}
+        <div class="ph-wrap">
+          ${photoSlot(at.lat, at.lon, at.name, 'views')}
+          <span class="glass chip-n"><i class="swatch s${k % 3}"></i><b>${k + 1}</b></span>
+          <span class="stamp"><b>${Math.round(r.score)}</b><i>SCENIC</i></span>
+          ${r.scenicStops.length > 1 ? `<span class="thumbs">${r.scenicStops.slice(0, 3).map((s) => photoSlot(s.lat, s.lon, s.name, 'views', 'thumb')).join('')}</span>` : ''}
         </div>
-      </button>`).join('')}
+        <div class="body">
+          <h3>${esc(r.label)}</h3>
+          <div class="statrow"><span>${icon('clock', 15)}${duration(r.minutes)}</span>${r.extraMinutes >= 1 ? `<span class="extra">+${duration(r.extraMinutes)}</span>` : ''}<span>${icon('dist', 15)}${Math.round(r.km)} km</span></div>
+          ${scoreRow(r)}
+        </div>
+      </button>`;
+    }).join('')}
     ${d.plan!.warnings.map((w) => `<p class="note muted small">ⓘ ${esc(w)}</p>`).join('')}
-    <p class="stats">Fastest: ${duration(d.plan!.fastest.minutes)} · ${Math.round(d.plan!.fastest.km)} km</p>
   </div>`;
 }
 
 function detail(r: RouteOption) {
   const c = r.conditions;
-  const time = (iso?: string | null) => (iso ? new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '–');
   return `<div class="field">
-    ${c ? `<div class="stats">Arrive ${time(c.arrival)} · Sunset ${time(c.sunset)}</div>` : ''}
+    ${c ? `<div class="statrow"><span>${icon('clock', 15)}${hhmm(c.arrival)}</span><span class="sun">${icon('sunset', 15)}${hhmm(c.sunset)}</span></div>` : ''}
     ${(c?.notes ?? []).map((n) => `<p class="note ${/fog|rain|dark|hidden|Low sun/i.test(n) ? 'warn' : /Clear|Golden/.test(n) ? 'good' : 'weather'}">${esc(n)}</p>`).join('')}
     ${r.advisories.map((a) => `<p class="note ${a.severity === 'info' ? 'weather' : 'warn'}"><b>${esc(a.title)}.</b> ${esc(a.detail)}</p>`).join('')}
-    ${r.highlights.length ? `<div class="label">Along the way</div><ul class="small" style="margin:0;padding-left:18px">${r.highlights.map((h) => `<li>km ${Math.round(h.atKm)}: ${esc(h.name)}</li>`).join('')}</ul>` : ''}
+    ${r.scenicStops.length ? `<div class="strip">${r.scenicStops.map((s, k) => `<div class="hl">${photoSlot(s.lat, s.lon, s.name, 'views', 'hl-photo')}<span class="badge">${k + 1}</span><b>${esc(s.name)}</b></div>`).join('')}</div>` : ''}
     <div class="row">
       <a class="btn" style="display:grid;place-content:center;text-decoration:none" href="${esc(r.handoff.googleMaps)}" target="_blank" rel="noopener">Google Maps</a>
       <button class="btn" data-action="gpx" data-route="${esc(r.id)}">GPX</button>
@@ -338,6 +360,8 @@ function download(name: string, text: string) {
 }
 
 panel.addEventListener('click', (ev) => {
+  const credit = (ev.target as HTMLElement).closest<HTMLElement>('.credit[data-src]');
+  if (credit) { ev.stopPropagation(); window.open(credit.dataset.src, '_blank', 'noopener'); return; }
   const el = (ev.target as HTMLElement).closest<HTMLElement>('[data-action]');
   if (!el) return;
   const i = Number(el.dataset.day ?? state.active);

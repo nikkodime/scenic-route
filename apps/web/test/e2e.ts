@@ -16,6 +16,8 @@ const PLACES: Record<string, { lat: number; lon: number; label: string }> = {
 const api = await buildApp({
   config: { JWT_SECRET: 'e2e-secret-e2e-secret', CORS_ORIGINS: [], APPLE_BUNDLE_IDS: [], TIME_ZONE: 'Europe/Rome', LOG_LEVEL: 'silent' },
   providers: fakeProviders(),
+  // Photos from the app's own style images, so cards render with real pictures and credits offline.
+  photos: { near: async (lat: number) => { const f = ['relaxed', 'scenic', 'most_beautiful'][Math.abs(Math.round(lat * 100)) % 3]; return [{ url: `http://localhost:4179/styles/${f}.jpg`, width: 800, height: 450, title: 'View', author: 'Test Author', license: 'CC BY 4.0', source: 'https://commons.wikimedia.org/' }]; } },
   geocoder: { search: async (q) => Object.entries(PLACES).filter(([k]) => q.toLowerCase().startsWith(k.slice(0, 3))).map(([, p]) => p) },
   store: new MemoryStore(),
 });
@@ -47,19 +49,20 @@ try {
   await page.getByRole('button', { name: 'Lakes & coast' }).click();
   assert.equal(await page.getByRole('button', { name: 'Lakes & coast' }).getAttribute('aria-pressed'), 'true');
   await page.getByRole('button', { name: '+1 h' }).click();
-  await page.getByRole('button', { name: 'Find scenic routes' }).click();
+  await page.getByRole('button', { name: 'Show routes' }).click();
   await page.getByText('Most scenic').waitFor({ timeout: 20000 });
   const options = await page.locator('.route').count();
   assert.ok(options >= 2, `expected route options, got ${options}`);
   assert.equal(await page.locator('.route[aria-pressed="true"]').count(), 1);
   if (shots) await page.screenshot({ path: `${shots}/web-planner.png` });
+  if (shots) { await page.locator('.routes').scrollIntoViewIfNeeded(); await page.screenshot({ path: `${shots}/web-routes.png` }); }
 
   // Second option becomes the chosen one
   await page.locator('.route').nth(1).click();
   assert.equal(await page.locator('.route').nth(1).getAttribute('aria-pressed'), 'true');
 
   // Multi-day: day 2 starts at day 1's destination
-  await page.getByRole('button', { name: '+ Add a day' }).click();
+  await page.getByRole('button', { name: 'Add a day' }).click();
   assert.match(await page.locator('#origin1').inputValue(), /Abbadia/);
 
   // Save and see it in My trips
@@ -80,8 +83,8 @@ try {
   await page.getByLabel('From', { exact: true }).fill('Siena');
   await page.getByRole('option', { name: /Siena/ }).click();
   await page.getByRole('button', { name: '2 h' }).click();
-  await page.getByRole('button', { name: /Come back to the start/ }).click();
-  await page.getByRole('button', { name: 'Show scenic places' }).click();
+  await page.getByRole('button', { name: /Loop/ }).click();
+  await page.getByRole('button', { name: 'Find places' }).click();
   await page.locator('.place').first().waitFor({ timeout: 20000 });
   if (shots) await page.screenshot({ path: `${shots}/web-explore.png`, fullPage: false });
   await page.locator('.place').first().click();
