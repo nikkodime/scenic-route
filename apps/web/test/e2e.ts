@@ -75,6 +75,19 @@ try {
   await page.getByText('Most scenic').first().waitFor();
   if (shots) await page.screenshot({ path: `${shots}/web-phone.png`, fullPage: false });
 
+  // Explore nearby: places within a drive, then plan a loop through one
+  await page.getByRole('button', { name: 'Explore nearby' }).click();
+  await page.getByLabel('From', { exact: true }).fill('Siena');
+  await page.getByRole('option', { name: /Siena/ }).click();
+  await page.getByRole('button', { name: '2 h' }).click();
+  await page.getByRole('button', { name: /Come back to the start/ }).click();
+  await page.getByRole('button', { name: 'Show scenic places' }).click();
+  await page.locator('.place').first().waitFor({ timeout: 20000 });
+  if (shots) await page.screenshot({ path: `${shots}/web-explore.png`, fullPage: false });
+  await page.locator('.place').first().click();
+  await page.locator('.route').first().waitFor({ timeout: 20000 });
+  assert.match(await page.locator('#jname').getAttribute('placeholder') ?? '', /loop via/);
+
   assert.deepEqual(errors, []);
   console.log('web e2e: ok');
 } finally {

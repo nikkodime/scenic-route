@@ -11,6 +11,8 @@ export interface DayPlan {
   departAt: string;
   plan: PlanResponse | null;
   chosenRouteId: string | null;
+  /** A loop: out to these places and back to the start (origin = destination). */
+  stops?: Place[];
 }
 
 export interface Journey {
@@ -76,7 +78,7 @@ export function removeDay(j: Journey, i: number): Journey {
 export function updateDay(j: Journey, i: number, patch: Partial<DayPlan>): Journey {
   const days = j.days.map((d, k) => (k === i ? { ...d, ...patch } : d));
   // Changing where or when invalidates that day's plan.
-  if ('origin' in patch || 'destination' in patch || 'extraMinutes' in patch || 'departAt' in patch) days[i] = { ...days[i], plan: null, chosenRouteId: null };
+  if ('origin' in patch || 'destination' in patch || 'extraMinutes' in patch || 'departAt' in patch || 'stops' in patch) days[i] = { ...days[i], plan: null, chosenRouteId: null };
   // Keep the chain connected: a new destination becomes the next day's start if it was linked.
   if ('destination' in patch && days[i + 1] && (days[i + 1].origin == null || samePlace(days[i + 1].origin, j.days[i].destination)))
     days[i + 1] = { ...days[i + 1], origin: patch.destination ?? null, plan: null, chosenRouteId: null };
@@ -102,6 +104,8 @@ export function totals(j: Journey): { km: number; minutes: number; days: number;
 
 export function defaultName(j: Journey): string {
   const first = j.days[0]?.origin?.label?.split(',')[0];
+  const via = j.days.length === 1 ? j.days[0].stops?.[0]?.label?.split(',')[0] : undefined;
+  if (first && via) return `${first} loop via ${via}`;
   const last = [...j.days].reverse().find((d) => d.destination)?.destination?.label?.split(',')[0];
   return first && last ? `${first} to ${last}` : 'Scenic journey';
 }
@@ -122,7 +126,7 @@ export function toTrip(j: Journey, now = new Date()): Trip {
       date: d.departAt ? d.departAt.slice(0, 10) : undefined,
       origin: d.origin!,
       destination: d.destination!,
-      stops: [],
+      stops: d.stops ?? [],
       extraMinutes: d.extraMinutes ?? Math.round(chosenRoute(d)?.extraMinutes ?? 0),
       route: chosenRoute(d) ?? undefined,
     })),
@@ -139,7 +143,7 @@ export function fromTrip(t: Trip): Journey {
     vehicle: t.vehicle ?? 'car',
     createdAt: t.createdAt,
     days: t.days.map((d) => ({
-      origin: d.origin, destination: d.destination, extraMinutes: null,
+      origin: d.origin, destination: d.destination, stops: d.stops ?? [], extraMinutes: null,
       departAt: d.date ? `${d.date}T09:00` : '',
       plan: d.route ? { planId: 'saved', modelVersion: '', fastest: { km: d.route.km, minutes: d.route.minutes - d.route.extraMinutes }, routes: [d.route], warnings: [], attribution: [] } : null,
       chosenRouteId: d.route?.id ?? null,

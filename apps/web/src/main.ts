@@ -1,6 +1,7 @@
 import './theme.css';
 import { toGpx, decodePolyline, INTERESTS, ROUTE_STYLES, VEHICLES, type GeocodeResult, type Interest, type RouteOption, type RouteStyle, type Trip, type Vehicle } from '@scenic/core';
 import { api } from './api.ts';
+import type { ExploreDestination, ExploreResponse, Place } from '@scenic/core';
 import { RouteMap } from './map.ts';
 import {
   INTEREST_LABELS, LIMIT_CHOICES, STYLE_BLURBS, STYLE_LABELS, VEHICLE_LABELS, addDay, normalize, toggleInterest, updateJourney, chosenRoute, defaultName, duration, fromTrip, newJourney, removeDay, toTrip, totals, updateDay,
@@ -12,16 +13,21 @@ interface State {
   active: number;
   busy: number | null;
   error: string | null;
-  view: 'plan' | 'trips';
+  view: 'plan' | 'explore' | 'trips';
   trips: Trip[] | null;
+  explore: { origin: Place | null; minutes: number; roundTrip: boolean; result: ExploreResponse | null; busy: boolean };
 }
+
+/** Drive-time choices for Explore. */
+const EXPLORE_TIMES: [number, string][] = [[60, '1 h'], [120, '2 h'], [240, 'Half a day']];
+const FAMILY_ICON: Record<string, string> = { views: '◉', mountains: '▲', heritage: '⌂', water: '≈', countryside: '❦', roads: '∿' };
 
 const uuid = () => crypto.randomUUID();
 const DRAFT_KEY = 'scenic.draft';
 const loadDraft = (): Journey | null => { try { const s = localStorage.getItem(DRAFT_KEY); return s ? normalize(JSON.parse(s)) : null; } catch { return null; } };
 const saveDraft = (j: Journey) => { try { localStorage.setItem(DRAFT_KEY, JSON.stringify(j)); } catch {} };
 
-const state: State = { journey: loadDraft() ?? newJourney(uuid()), active: 0, busy: null, error: null, view: 'plan', trips: null };
+const state: State = { journey: loadDraft() ?? newJourney(uuid()), active: 0, busy: null, error: null, view: 'plan', trips: null, explore: { origin: null, minutes: 120, roundTrip: false, result: null, busy: false } };
 const panel = document.getElementById('panel')!;
 const map = new RouteMap(document.getElementById('map')!);
 map.onPick = (id) => { const d = state.journey.days[state.active]; if (d) set({ journey: updateDay(state.journey, state.active, { chosenRouteId: id }) }); };
@@ -37,6 +43,12 @@ function set(patch: Partial<State>) {
 }
 
 function syncMap() {
+  if (state.view === 'explore') {
+    const res = state.explore.result;
+    if (res?.destinations.length) map.showPlaces(res.destinations);
+    else map.clear();
+    return;
+  }
   const d = state.journey.days[state.active];
   if (d?.plan?.routes.length) map.show(d.plan.routes, d.chosenRouteId);
   else map.clear();
@@ -54,7 +66,74 @@ function toast(msg: string) {
 // ---------- rendering ----------
 
 function render() {
-  panel.innerHTML = state.view === 'trips' ? tripsView() : planView();
+  panel.innerHTML = state.view === 'trips' ? tripsView() : state.view === 'explore' ? exploreView() : planView();
+  if (state.view === 'explore') loadPhotos();
+}
+
+function modeSwitch(): string {
+  return `<div class="seg" role="group" aria-label="Mode">
+    <button data-action="mode" data-v="plan" aria-pressed="${state.view === 'plan'}">Go somewhere</button>
+    <button data-action="mode" data-v="explore" aria-pressed="${state.view === 'explore'}">Explore nearby</button>
+  </div>`;
+}
+
+function exploreView(): string {
+  const x = state.explore;
+  const j = state.journey;
+  const res = x.result;
+  return `
+    <header class="day-head">
+      <div><img class="wordmark" src="${import.meta.env.BASE_URL}wordmark.svg" alt="Panoramica" width="150" height="22" /><h1>Where to, from here?</h1></div>
+      <button class="btn link" data-action="trips">My trips</button>
+    </header>
+    ${modeSwitch()}
+    <div class="field">
+      <label class="label" for="explore-1">From</label>
+      <input id="explore-1" class="input" autocomplete="off" data-action="place" data-day="-1" data-field="explore" value="${esc(x.origin?.label)}" placeholder="Town or address" />
+      <div class="suggest" hidden data-suggest="explore-1" role="listbox"></div>
+    </div>
+    <div class="field">
+      <span class="label" id="time-l">Drive</span>
+      <div class="seg" role="group" aria-labelledby="time-l">
+        ${EXPLORE_TIMES.map(([m, t]) => `<button data-action="explore-time" data-v="${m}" aria-pressed="${x.minutes === m}">${t}</button>`).join('')}
+      </div>
+      <div class="chips"><button class="chip" data-action="explore-loop" aria-pressed="${x.roundTrip}">↻ Come back to the start</button></div>
+    </div>
+    <div class="field">
+      <span class="label" id="love-x">What do you love?</span>
+      <div class="chips" role="group" aria-labelledby="love-x">
+        ${INTERESTS.map((i) => `<button class="chip" data-action="interest" data-v="${i}" aria-pressed="${j.interests.includes(i)}">${INTEREST_LABELS[i]}</button>`).join('')}
+      </div>
+    </div>
+    <button class="btn primary" data-action="explore" ${x.origin && !x.busy ? '' : 'disabled'}>${x.busy ? 'Looking around…' : 'Show scenic places'}</button>
+    ${state.error ? `<p class="error" role="alert">${esc(state.error)}</p>` : ''}
+    ${res ? `<div class="places">${res.destinations.map((d, k) => placeCard(d, k)).join('')}</div>
+      <p class="attribution">${esc([...res.attribution, 'Photos: Wikimedia Commons'].join(' · '))}</p>` : ''}`;
+}
+
+function placeCard(d: ExploreDestination, k: number): string {
+  const sunset = d.sunset ? new Date(d.sunset).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+  return `<button class="place" data-action="pick-place" data-k="${k}" aria-label="${esc(d.name)}, ${duration(d.minutes)}, score ${Math.round(d.score)}">
+    <div class="photo" data-photo="${d.lat},${d.lon}" data-name="${esc(d.name)}"><span class="ph-icon">${FAMILY_ICON[d.families[0]] ?? '◉'}</span></div>
+    <div class="place-over">
+      <div class="plate light"><b>${Math.round(d.score)}</b><span>SCENIC</span></div>
+      <h3>${esc(d.name)}</h3>
+      <div class="place-meta"><span>🚗 ${duration(d.minutes)}</span>${sunset ? `<span>☀︎ ${sunset}</span>` : ''}<span>${d.families.slice(0, 3).map((f) => FAMILY_ICON[f] ?? '').join(' ')}</span></div>
+    </div>
+  </button>`;
+}
+
+/** Fill photo slots lazily; each photo carries its credit. */
+function loadPhotos() {
+  panel.querySelectorAll<HTMLElement>('[data-photo]:not([data-loaded])').forEach((el) => {
+    el.dataset.loaded = '1';
+    const [lat, lon] = el.dataset.photo!.split(',').map(Number);
+    api.photos(lat, lon, el.dataset.name).then((ps) => {
+      const p = ps[0];
+      if (!p) return;
+      el.innerHTML = `<img src="${esc(p.url)}" alt="${esc(p.title)}" loading="lazy" /><a class="credit" href="${esc(p.source)}" target="_blank" rel="noopener">${esc(p.author)} · ${esc(p.license)}</a>`;
+    });
+  });
 }
 
 function planView(): string {
@@ -65,6 +144,7 @@ function planView(): string {
       <div><img class="wordmark" src="${import.meta.env.BASE_URL}wordmark.svg" alt="Panoramica" width="150" height="22" /><div class="label">Journey planner</div><h1>Plan the beautiful way</h1></div>
       <button class="btn link" data-action="trips">My trips</button>
     </header>
+    ${modeSwitch()}
     <div class="field">
       <label class="label" for="jname">Journey name</label>
       <input id="jname" class="input" data-action="name" placeholder="${esc(defaultName(j))}" value="${esc(j.name)}" />
@@ -212,13 +292,25 @@ async function plan(i: number) {
   set({ busy: i, error: null, active: i });
   try {
     const res = await api.plan({
-      origin: d.origin, destination: d.destination, extraMinutes: d.extraMinutes ?? undefined,
+      origin: d.origin, destination: d.destination, stops: d.stops ?? [], extraMinutes: d.extraMinutes ?? undefined,
       style: state.journey.style, interests: state.journey.interests, vehicle: state.journey.vehicle,
       departAt: d.departAt ? new Date(d.departAt).toISOString() : undefined, prefs: state.journey.prefs,
     });
     set({ busy: null, journey: updateDay(state.journey, i, { plan: res, chosenRouteId: res.routes[0]?.id ?? null }) });
   } catch (e) {
     set({ busy: null, error: (e as Error).message });
+  }
+}
+
+async function runExplore() {
+  const x = state.explore;
+  if (!x.origin) return;
+  set({ explore: { ...x, busy: true, result: null }, error: null });
+  try {
+    const result = await api.explore({ origin: x.origin, maxMinutes: x.minutes, mode: x.roundTrip ? 'round_trip' : 'one_way', interests: state.journey.interests, vehicle: state.journey.vehicle, prefs: state.journey.prefs });
+    set({ explore: { ...state.explore, busy: false, result } });
+  } catch (e) {
+    set({ explore: { ...state.explore, busy: false }, error: (e as Error).message });
   }
 }
 
@@ -266,6 +358,21 @@ panel.addEventListener('click', (ev) => {
     case 'save': return void save();
     case 'trips': return void openTrips();
     case 'back': return set({ view: 'plan', error: null });
+    case 'mode': return set({ view: el.dataset.v as 'plan' | 'explore', error: null });
+    case 'explore-time': return set({ explore: { ...state.explore, minutes: Number(el.dataset.v), result: null } });
+    case 'explore-loop': return set({ explore: { ...state.explore, roundTrip: !state.explore.roundTrip, result: null } });
+    case 'explore': return void runExplore();
+    case 'pick-place': {
+      const d = state.explore.result?.destinations[Number(el.dataset.k)];
+      const from = state.explore.origin;
+      if (!d || !from) return;
+      const place = { lat: d.lat, lon: d.lon, label: d.name };
+      const loop = state.explore.roundTrip;
+      const journey = { ...newJourney(uuid()), style: j.style, interests: j.interests, vehicle: j.vehicle, prefs: j.prefs };
+      journey.days = [{ ...journey.days[0], origin: from, destination: loop ? from : place, stops: loop ? [place] : [] }];
+      set({ journey, view: 'plan', active: 0 });
+      return void plan(0);
+    }
     case 'gpx': {
       const r = j.days.flatMap((d) => d.plan?.routes ?? []).find((x) => x.id === el.dataset.route);
       if (r) download(`${(j.name || defaultName(j)).replace(/[^\w-]+/g, '-')}.gpx`, toGpx(decodePolyline(r.polyline), r.summary, r.scenicStops));
@@ -302,7 +409,7 @@ panel.addEventListener('input', (ev) => {
   if (el.value.trim().length < 2) { box.hidden = true; return; }
   searchTimer = setTimeout(async () => {
     const day = state.journey.days[Number(el.dataset.day)];
-    const near = day.origin ?? undefined;
+    const near = (el.dataset.field === 'explore' ? state.explore.origin : day?.origin) ?? undefined;
     try { lastResults = await api.geocode(el.value.trim(), near ? { lat: near.lat, lon: near.lon } : undefined); } catch { lastResults = []; }
     box.innerHTML = lastResults.length
       ? lastResults.map((r, k) => `<button role="option" data-pick="${k}" data-day="${el.dataset.day}" data-field="${el.dataset.field}"><b>${esc(short(r.label))}</b><br><span class="muted small">${esc(r.label)}</span></button>`).join('')
@@ -317,6 +424,7 @@ panel.addEventListener('mousedown', (ev) => {
   ev.preventDefault();
   const r = lastResults[Number(b.dataset.pick)];
   if (!r) return;
+  if (b.dataset.field === 'explore') return set({ explore: { ...state.explore, origin: { lat: r.lat, lon: r.lon, label: r.label }, result: null } });
   const i = Number(b.dataset.day);
   set({ journey: updateDay(state.journey, i, { [b.dataset.field as 'origin' | 'destination']: { lat: r.lat, lon: r.lon, label: r.label } }), active: i });
 });

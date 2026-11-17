@@ -58,7 +58,26 @@ export class RouteMap {
       el.title = s.name || 'Scenic spot';
       return new maplibregl.Marker({ element: el }).setLngLat([s.lon, s.lat]).addTo(this.map);
     });
-    if (chosen) this.fit(chosen);
+    if (chosen && chosen.bbox.some((x) => x !== 0)) this.fit(chosen);
+  }
+
+  /** Explore: the road to each place, the best one solid, the others dotted, a dot at each place. */
+  async showPlaces(places: { lat: number; lon: number; name: string; polyline: string }[]) {
+    const routes = places.map((p, i) => ({ id: String(i), polyline: p.polyline, scenicStops: [], bbox: [0, 0, 0, 0] })) as unknown as RouteOption[];
+    await this.show(routes, '0');
+    this.markers.forEach((m) => m.remove());
+    this.markers = places.map((p, i) => {
+      const el = document.createElement('div');
+      el.className = 'stop-marker';
+      el.textContent = String(i + 1);
+      el.title = p.name;
+      return new maplibregl.Marker({ element: el }).setLngLat([p.lon, p.lat]).addTo(this.map);
+    });
+    const pts = places.flatMap((p) => decodePolyline(p.polyline));
+    if (pts.length) {
+      const lats = pts.map((p) => p.lat), lons = pts.map((p) => p.lon);
+      this.map.fitBounds([[Math.min(...lons), Math.min(...lats)], [Math.max(...lons), Math.max(...lats)]] as LngLatBoundsLike, { padding: 60, duration: 600 });
+    }
   }
 
   fit(r: RouteOption) {

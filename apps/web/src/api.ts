@@ -1,6 +1,9 @@
 // API client for the planner. Same contract as the iOS app (packages/core/src/contracts.ts).
 
-import type { GeocodeResult, PlanRequestInput, PlanResponse, Trip } from '@scenic/core';
+import type { ExploreResponse, GeocodeResult, PlanRequestInput, PlanResponse, Trip } from '@scenic/core';
+
+export interface Photo { url: string; width: number; height: number; title: string; author: string; license: string; source: string }
+const photoCache = new Map<string, Promise<Photo[]>>();
 
 const BASE = (import.meta.env.VITE_API_BASE as string | undefined)?.replace(/\/$/, '') ?? '';
 const TOKEN_KEY = 'scenic.token';
@@ -39,6 +42,13 @@ export const api = {
   geocode: (q: string, near?: { lat: number; lon: number }) =>
     call<{ results: GeocodeResult[] }>('GET', `/v1/geocode?q=${encodeURIComponent(q)}${near ? `&lat=${near.lat}&lon=${near.lon}` : ''}`).then((r) => r.results),
   plan: (req: PlanRequestInput) => call<PlanResponse>('POST', '/v1/plan', req),
+  explore: (req: { origin: { lat: number; lon: number; label?: string }; maxMinutes: number; mode: 'one_way' | 'round_trip'; interests?: string[]; vehicle?: string; prefs?: unknown }) =>
+    call<ExploreResponse>('POST', '/v1/explore', req),
+  photos: (lat: number, lon: number, name?: string): Promise<Photo[]> => {
+    const key = `${lat.toFixed(3)},${lon.toFixed(3)}`;
+    if (!photoCache.has(key)) photoCache.set(key, call<{ photos: Photo[] }>('GET', `/v1/photos?lat=${lat}&lon=${lon}&limit=3${name ? `&name=${encodeURIComponent(name)}` : ''}`).then((r) => r.photos).catch(() => []));
+    return photoCache.get(key)!;
+  },
   trips: () => call<{ trips: Trip[] }>('GET', '/v1/trips', undefined, true).then((r) => r.trips),
   saveTrip: (t: Trip) => call<Trip>('PUT', `/v1/trips/${t.id}`, t, true),
   deleteTrip: (id: string) => call<void>('DELETE', `/v1/trips/${id}`, undefined, true),
