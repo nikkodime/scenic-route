@@ -33,6 +33,16 @@ export function customModel(opts: RouteOptions): CustomModel {
   if (opts.prefs.avoidUnpaved || opts.prefs.rentalCar) {
     priority.push({ if: `road_class == TRACK || ${UNPAVED.map((s) => `surface == ${s}`).join(' || ')}`, multiply_by: '0' });
   }
+  // Narrow lanes: in Italy these are mostly unclassified, residential and service roads.
+  if (opts.vehicle === 'caravan') priority.push(
+    { if: 'road_class == SERVICE || road_class == TRACK', multiply_by: '0' },
+    { if: 'road_class == UNCLASSIFIED', multiply_by: '0.2' },
+    { if: 'road_class == RESIDENTIAL', multiply_by: '0.4' },
+  );
+  if (opts.vehicle === 'campervan') priority.push(
+    { if: 'road_class == SERVICE', multiply_by: '0.2' },
+    { if: 'road_class == UNCLASSIFIED', multiply_by: '0.5' },
+  );
   if (opts.prefs.avoidTolls) priority.push({ if: 'toll == ALL', multiply_by: '0.2' });
   // The server profile has distance_influence 0 (infra/graphhopper/custom_models/scenic_base.json);
   // with LM a request may only raise it, so every request sets its own.

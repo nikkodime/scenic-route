@@ -107,7 +107,7 @@ test('interests reweight places; quiet makes motorways cost more', async () => {
     { id: 'b', lat: 43, lon: 11, type: 'castle' as const, weight: 3, name: '' },
   ];
   const w = applyInterests(f, ['water']);
-  assert.ok(w[0].weight > 3 && w[1].weight < 3);
+  assert.ok(w[0].weight > 3 && w[1].weight === 3, 'chosen places count more; the rest are left as they are');
   assert.equal(applyInterests(f, []), f);
   const line = [{ lat: 43, lon: 11 }, { lat: 43.1, lon: 11.1 }];
   const route = { line, km: 14, minutes: 12, motorwayKm: 14 };
@@ -144,4 +144,34 @@ test('more than a day away is refused; an explicit time limit is never exceeded;
   for (const r of res.routes) assert.ok(r.minutes <= res.fastest.minutes + 30 + 0.5, `${r.minutes} vs ${res.fastest.minutes}`);
   const top = Math.max(...res.routes.map((r) => r.score));
   assert.equal(res.routes.find((r) => r.label === 'Most scenic')?.score, top);
+});
+
+test('interests choose the route but never lower the score shown; results are shown most scenic first', async () => {
+  const plain = await planRoutes(req(), fakeProviders());
+  const water = await planRoutes(req({ interests: ['water'] }), fakeProviders());
+  // Same scoring for the same road, whatever the interests.
+  for (const r of water.routes) {
+    const same = plain.routes.find((x) => x.polyline === r.polyline);
+    if (same) assert.equal(r.score, same.score);
+  }
+  for (const res of [plain, water]) for (let i = 1; i < res.routes.length; i++) assert.ok(res.routes[i - 1].score >= res.routes[i].score);
+  const p = fakeProviders();
+  await planRoutes(req({ vehicle: 'caravan' }), p);
+  assert.ok(p.router.calls.every((c) => c.opts.vehicle === 'caravan'));
+});
+
+test('a place outside the imported map gets a plain explanation', async () => {
+  const router = new FakeRouter();
+  router.route = async () => { throw new Error('Cannot find point 1: 44.49,11.34'); };
+  await assert.rejects(planRoutes(req(), fakeProviders({ router })), (e: PlanError) => e.status === 422 && /outside the area/.test(e.message));
+});
+
+test('a bigger time budget reaches for richer places further off the line', async () => {
+  const { candidateWaypointSets } = await import('../src/index.ts');
+  const start = { lat: 43, lon: 11 }, end = { lat: 43, lon: 12 };
+  const spot = (lat: number, lon: number, weight: number, name: string) => ({ lat, lon, weight, count: 3, name, types: ['viewpoint' as const] });
+  const spots = [spot(43.03, 11.5, 6, 'near'), spot(43.2, 11.5, 14, 'far')];
+  const first = (min: number) => candidateWaypointSets(start, end, spots, min)[1]?.[0]?.name;
+  assert.equal(first(30), 'near');
+  assert.equal(first(120), 'far');
 });

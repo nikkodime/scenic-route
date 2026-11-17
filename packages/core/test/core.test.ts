@@ -79,7 +79,8 @@ test('a route through the Val d\'Orcia outscores a plain one; motorways are pena
   const scenic = scoreRoute({ route: { line: scenicLine, km: lineLengthKm(scenicLine), minutes: 70 }, features: VAL_D_ORCIA_FEATURES, relief: { min: 250, max: 600, climb: 900 } });
   const plain = scoreRoute({ route: { line: plainLine, km: lineLengthKm(plainLine), minutes: 40 }, features: VAL_D_ORCIA_FEATURES, relief: { min: 250, max: 300, climb: 100 } });
   assert.ok(scenic.score > plain.score + 20, `${scenic.score} vs ${plain.score}`);
-  assert.ok(scenic.highlights.length >= 3);
+  assert.ok(scenic.highlights.length >= 2);
+  assert.ok(!scenic.highlights.some((h) => /Pienza|Siena/.test(h.name)), 'not the start or finish town');
   assert.ok(scenic.highlights.every((h, i, a) => i === 0 || a[i - 1].atKm <= h.atKm), 'highlights in driving order');
   assert.match(describe(scenic), /hill towns|viewpoint|cypress/);
   const mw = scoreRoute({ route: { line: scenicLine, km: lineLengthKm(scenicLine), minutes: 70, motorwayKm: lineLengthKm(scenicLine) }, features: VAL_D_ORCIA_FEATURES });

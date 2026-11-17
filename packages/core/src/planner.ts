@@ -29,11 +29,14 @@ export function budgetMinutes(style: RouteStyle, fastestMinutes: number, cap?: n
   return cap == null ? b : Math.min(b, cap);
 }
 
-/** Interests reweight places: chosen families count more, the rest less. */
-export function applyInterests(features: ScenicFeature[], interests: Interest[]): ScenicFeature[] {
+/**
+ * Interests boost the places the driver loves. Used to choose detours and to rank routes; the score shown
+ * stays the plain one, so picking "Lakes & coast" never makes every route look worse.
+ */
+export function applyInterests(features: ScenicFeature[], interests: Interest[], boost = 2): ScenicFeature[] {
   const fams = new Set<string>(interests.filter((i) => i !== 'quiet'));
   if (!fams.size) return features;
-  return features.map((f) => ({ ...f, weight: f.weight * (fams.has(FEATURE_FAMILY[f.type] === 'roads' ? 'views' : FEATURE_FAMILY[f.type]) ? 1.8 : 0.7) }));
+  return features.map((f) => (fams.has(FEATURE_FAMILY[f.type] === 'roads' ? 'views' : FEATURE_FAMILY[f.type]) ? { ...f, weight: f.weight * boost } : f));
 }
 
 /** Towing and big vehicles: never gravel, and only the gentler scenic strengths. */
@@ -41,7 +44,7 @@ function vehicleRules(vehicle: Vehicle, prefs: Preferences, strengths: number[])
   if (vehicle === 'car') return { prefs, strengths };
   const maxStrength = vehicle === 'caravan' ? 1 : 2;
   const s = [...new Set(strengths.map((x) => Math.min(x, maxStrength)))];
-  return { prefs: { ...prefs, avoidUnpaved: true }, strengths: s };
+  return { prefs: { ...prefs, avoidUnpaved: true }, strengths: s.length ? s : [1] };
 }
 
 export interface RoutedPath extends RouteGeometry {
@@ -54,6 +57,8 @@ export interface RouteOptions {
   strength?: number;
   avoidZones?: Zone[];
   prefs: Preferences;
+  /** Caravans and campervans keep off narrow lanes. */
+  vehicle?: Vehicle;
 }
 
 export interface Router {
@@ -113,6 +118,8 @@ interface Evaluated extends Candidate {
   minutes: number;
   line: LatLon[];
   scored: ScoredRoute;
+  /** Score with the driver's interests boosted; used to choose, not shown. */
+  fit: number;
   advisories: Advisory[];
 }
 
@@ -172,7 +179,7 @@ export async function planRoutes(req: PlanRequest, p: Providers, opts: PlanOptio
     warnings.push(`${where} inside the ${z.properties.name} ZTL (limited traffic zone): drive in only with a permit or a hotel registration, otherwise park outside.`);
   }
   const ztl = zones.filter((z) => z.properties.kind === 'ztl');
-  const base = { prefs: rules.prefs, avoidZones: ztl };
+  const base = { prefs: rules.prefs, avoidZones: ztl, vehicle: req.vehicle };
 
   // 1. Fastest route: the budget anchor. Without it there is nothing to plan.
   let fastest: RoutedPath;
@@ -180,6 +187,9 @@ export async function planRoutes(req: PlanRequest, p: Providers, opts: PlanOptio
     fastest = await p.router.route(required, { ...base, profile: 'fastest' });
   } catch (e) {
     log('fastest route failed', e);
+    // A self-hosted map covers only the regions imported so far; say so rather than "no route".
+    if (/outside|cannot find point|point_not_found|not found within/i.test(String((e as Error)?.message ?? e)))
+      throw new PlanError("One of these places is outside the area Panoramica covers so far. Try a trip within central Italy.");
     throw new PlanError('No route found between these places.');
   }
 
@@ -188,12 +198,13 @@ export async function planRoutes(req: PlanRequest, p: Providers, opts: PlanOptio
   // 2. Scenic features in the corridor.
   let features: ScenicFeature[] = [];
   try {
-    features = applyInterests(await p.features.features(area), req.interests);
+    features = await p.features.features(area);
   } catch (e) {
     log('features failed', e);
     warnings.push('Scenic places could not be loaded; scores are based on roads and hills only.');
   }
-  const spots = clusterSpots(features);
+  const loved = applyInterests(features, req.interests);
+  const spots = clusterSpots(loved);
 
   // 3. Candidates.
   const jobs: { source: Candidate['source']; points: LatLon[]; stops: Spot[]; opts: RouteOptions; alt?: boolean }[] = [];
@@ -246,12 +257,15 @@ export async function planRoutes(req: PlanRequest, p: Providers, opts: PlanOptio
     const relief = elevs ? reliefStats(elevs[ci]) : null;
     let segments: SegmentSample[] | null = null;
     if (p.segments) { try { segments = await p.segments.sample(c.path.line); } catch (e) { log('segments failed', e); } }
-    const scored = scoreRoute({ route: c.path, features, relief, segments, quiet: req.interests.includes('quiet') });
+    const quiet = req.interests.includes('quiet');
+    const scored = scoreRoute({ route: c.path, features, relief, segments, quiet });
+    // What this driver would think of it: the same score with their loved places counted double.
+    const fit = loved === features ? scored.score : scoreRoute({ route: c.path, features: loved, relief, segments, quiet }).score;
     const advisories = routeAdvisories({
       line: c.path.line, unpavedKm: c.path.unpavedKm, tollKm: c.path.tollKm, ferryKm: c.path.ferryKm,
       motorwayKmByCountry: c.path.motorwayKmByCountry, zones, date: departure, prefs: rules.prefs,
     });
-    return { ...c, minutes: c.path.minutes, line: c.path.line, scored, advisories };
+    return { ...c, minutes: c.path.minutes, line: c.path.line, scored, fit, advisories };
   })).flatMap((r) => (r.status === 'fulfilled' ? [r.value] : []));
   if (p.elevation && reliefMissing(evaluated)) warnings.push('Elevation was unavailable; hill scores are estimated.');
 
@@ -264,7 +278,9 @@ export async function planRoutes(req: PlanRequest, p: Providers, opts: PlanOptio
 
   const fastestMinutes = fastest.minutes;
   // An explicit time limit is a promise: no slack over it. The style budget may stretch by 10%.
-  const ranked = rankRoutes(usable, fastestMinutes, budget, req.maxRoutes, style.pointsPerMinute, req.extraMinutes != null ? 0 : 0.1);
+  const chosen = rankRoutes(usable.map((r) => ({ r, minutes: r.minutes, line: r.line, scored: { score: r.fit } })), fastestMinutes, budget, req.maxRoutes, style.pointsPerMinute, req.extraMinutes != null ? 0 : 0.1).map((x) => x.r);
+  // Show them most scenic first (ties: quicker first); the ranking above only decided which to keep.
+  const ranked = [...chosen].sort((a, b) => b.scored.score - a.scored.score || a.minutes - b.minutes);
   const best = ranked.reduce<Evaluated | null>((b, r) => (!b || r.scored.score > b.scored.score ? r : b), null);
 
   // 6. Weather and light for the chosen routes: one batched forecast call.

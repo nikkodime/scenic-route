@@ -203,7 +203,10 @@ export function scoreRoute({ route, features, relief = null, segments = null, qu
     // Highlights are places along the way: not the start or finish town, and only real names
     // (OSM sometimes has notes like "view from cafe terrace" in the name tag).
     highlights: near
+      // The start and finish towns: 1.5 km along the road, and 2.5 km as the crow flies (a ring road can pass the
+      // old-town gate several km in).
       .filter((f) => f.name && f.weight >= 2.5 && /^[\p{Lu}\p{N}]/u.test(f.name) && f.atKm > 1.5 && f.atKm < km - 1.5)
+      .filter((f) => distKm(f, route.line[0]) > 2.5 && distKm(f, route.line[route.line.length - 1]) > 2.5)
       .sort((a, b) => b.weight - a.weight)
       .slice(0, 6)
       .sort((a, b) => a.atKm - b.atKm)

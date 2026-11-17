@@ -266,3 +266,11 @@ test('own elevation tiles: bilinear heights, gz unpacked once, missing tiles go 
   dem.close();
   rmSync(dir, { recursive: true, force: true });
 });
+
+test('custom model: caravans keep off service roads and narrow lanes; cars are unaffected', () => {
+  const caravan = customModel({ profile: 'scenic', strength: 1, prefs, vehicle: 'caravan' });
+  assert.ok(caravan.priority.some((p) => p.if === 'road_class == SERVICE || road_class == TRACK' && p.multiply_by === '0'));
+  assert.ok(caravan.priority.some((p) => p.if === 'road_class == UNCLASSIFIED'));
+  const car = customModel({ profile: 'scenic', strength: 1, prefs, vehicle: 'car' });
+  assert.ok(!car.priority.some((p) => p.if === 'road_class == UNCLASSIFIED'));
+});

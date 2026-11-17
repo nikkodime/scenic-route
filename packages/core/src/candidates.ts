@@ -55,10 +55,13 @@ interface ScoredSpot extends Spot {
  */
 export function candidateWaypointSets(start: LatLon, end: LatLon, spots: Spot[], extraMin: number, maxSets = 8): Spot[][] {
   const budget = budgetKm(extraMin);
+  // A bigger time budget means a detour costs less: "Most beautiful" reaches for the richest places
+  // further off the line instead of the nearest pretty village.
+  const reach = Math.max(3, budget * 0.3);
   const usable: ScoredSpot[] = spots
     .map((s) => ({ ...s, t: projectT(start, end, s), detour: detourKm(start, end, s), value: 0 }))
     .filter((s) => s.t > 0.05 && s.t < 0.95 && s.detour < budget * 0.75 && distKm(s, start) > 2 && distKm(s, end) > 2)
-    .map((s) => ({ ...s, value: s.weight / (1 + s.detour / 3) }))
+    .map((s) => ({ ...s, value: s.weight / (1 + s.detour / reach) }))
     .sort((a, b) => b.value - a.value)
     .slice(0, 10);
 
@@ -79,6 +82,10 @@ export function candidateWaypointSets(start: LatLon, end: LatLon, spots: Spot[],
   };
 
   for (const s of usable.slice(0, 4)) add([s]);
+  // The richest places within budget, however far: what a long, beautiful day would go through.
+  const richest = [...usable].sort((a, b) => b.weight - a.weight);
+  if (richest.length >= 2) add(richest.slice(0, 2));
+  if (richest.length >= 3) add(richest.slice(0, 3));
   for (let i = 0; i < Math.min(6, usable.length); i++)
     for (let j = i + 1; j < Math.min(6, usable.length); j++) add([usable[i], usable[j]]);
   if (usable.length >= 3) add(usable.slice(0, 3));
