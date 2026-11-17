@@ -188,3 +188,20 @@ test('shipped features answer covered corridors; Overpass only outside, with a f
   await assert.rejects(layered.features([50, 5, 51, 6]), /timeout/);
   assert.equal(tiles([42.2, 9.6, 44.5, 12.4]).length, 10 * 12);
 });
+
+test('osmium GeoJSON features become the same scenic places as Overpass gives', async () => {
+  const { toScenicFeature, center } = await import('../scripts/build-features.ts');
+  const f = (id: string, geometry: { type: string; coordinates: unknown }, properties: Record<string, string>) =>
+    toScenicFeature({ type: 'Feature', id, geometry, properties });
+  assert.deepEqual(f('n42', { type: 'Point', coordinates: [11.4, 43.3] }, { tourism: 'viewpoint', name: 'Belvedere' }),
+    { id: 'node/42', lat: 43.3, lon: 11.4, type: 'viewpoint', weight: 5, name: 'Belvedere' });
+  const row = { type: 'LineString', coordinates: [[11.0, 43.0], [11.2, 43.1]] };
+  assert.equal(f('w7', row, { natural: 'tree_row', species: 'Cupressus sempervirens' })?.type, 'cypress');
+  assert.equal(f('w7', row, { natural: 'tree_row', species: 'Populus nigra' }), null, 'only cypress rows');
+  assert.equal(f('w8', row, { scenic: 'yes' }), null, 'scenic needs a highway');
+  assert.equal(f('a20', { type: 'MultiPolygon', coordinates: [[[[11, 43], [11.2, 43], [11.2, 43.2], [11, 43]]]] }, { natural: 'water', water: 'pond' }), null);
+  const lake = f('a21', { type: 'MultiPolygon', coordinates: [[[[11, 43], [11.2, 43], [11.2, 43.2], [11, 43]]]] }, { natural: 'water', water: 'lake' });
+  assert.equal(lake?.id, 'relation/10');
+  assert.deepEqual(center(row.coordinates), { lat: 43.05, lon: 11.1 });
+  assert.equal(f('n9', { type: 'Point', coordinates: [11.5, 43.1] }, { place: 'village', ele: '420' })?.type, 'hilltop_village');
+});
