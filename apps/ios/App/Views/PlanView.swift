@@ -1,0 +1,103 @@
+import SwiftUI
+import ScenicKit
+
+struct PlanView: View {
+    @Environment(AppModel.self) private var model
+    @State private var picking: Field?
+    @State private var showResults = false
+
+    enum Field: String, Identifiable { case origin, destination; var id: String { rawValue } }
+
+    var body: some View {
+        @Bindable var model = model
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                hero
+                VStack(spacing: 0) {
+                    placeRow(icon: "location.fill", title: "From", value: model.origin?.label ?? "Current location") { picking = .origin }
+                    Divider().padding(.leading, 44)
+                    placeRow(icon: "flag.checkered", title: "To", value: model.destination?.label ?? "Where to?") { picking = .destination }
+                }
+                .background(.background, in: RoundedRectangle(cornerRadius: Theme.corner))
+                .overlay(RoundedRectangle(cornerRadius: Theme.corner).strokeBorder(.quaternary))
+
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("Extra time for the views").font(Theme.headlineFont)
+                        Spacer()
+                        Text(model.extraMinutes == 0 ? "None" : "+\(Format.duration(minutes: model.extraMinutes))")
+                            .monospacedDigit().foregroundStyle(Theme.accent)
+                    }
+                    Slider(value: $model.extraMinutes, in: 0...180, step: 15)
+                        .accessibilityIdentifier("extraTimeSlider")
+                    DatePicker("Leaving", selection: $model.departAt, in: Date()..., displayedComponents: [.date, .hourAndMinute])
+                }
+
+                DisclosureGroup("Road preferences") {
+                    Toggle("Rental car (no gravel roads)", isOn: $model.prefs.rentalCar)
+                    Toggle("Avoid unpaved roads", isOn: $model.prefs.avoidUnpaved)
+                    Toggle("Avoid tolls", isOn: $model.prefs.avoidTolls)
+                }
+                .tint(Theme.accent)
+
+                if let error = model.errorMessage {
+                    Label(error, systemImage: "exclamationmark.triangle").foregroundStyle(.red).font(.callout)
+                }
+
+                Button {
+                    Task {
+                        await model.runPlan()
+                        if model.plan?.routes.isEmpty == false { showResults = true }
+                    }
+                } label: {
+                    HStack {
+                        if model.isPlanning { ProgressView().tint(.white) }
+                        Text(model.isPlanning ? "Finding beautiful roads…" : "Find scenic routes").bold()
+                    }
+                    .frame(maxWidth: .infinity).padding(.vertical, 14)
+                }
+                .buttonStyle(.borderedProminent)
+                .buttonBorderShape(.capsule)
+                .disabled(!model.canPlan)
+                .accessibilityIdentifier("planButton")
+            }
+            .padding()
+        }
+        .background(Theme.sand.opacity(0.35))
+        .navigationTitle("Scenic Route")
+        .navigationBarTitleDisplayMode(.inline)
+        .sheet(item: $picking) { field in
+            PlaceSearchView(title: field == .origin ? "Start" : "Destination", allowCurrentLocation: field == .origin) { place in
+                if field == .origin { model.origin = place } else { model.destination = place }
+            }
+        }
+        .navigationDestination(isPresented: $showResults) { ResultsView() }
+    }
+
+    private var hero: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Take the beautiful way").font(.system(.largeTitle, design: .serif).weight(.bold))
+            Text("Tell us where you're going and how much extra time you'd enjoy. We'll find the road with the views.")
+                .foregroundStyle(.secondary)
+        }
+        .padding(.top, 8)
+    }
+
+    private func placeRow(icon: String, title: String, value: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 14) {
+                Image(systemName: icon).frame(width: 22).foregroundStyle(Theme.accent)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title).font(.caption).foregroundStyle(.secondary)
+                    Text(value).foregroundStyle(.primary).lineLimit(1)
+                }
+                Spacer()
+                Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
+            }
+            .padding(14)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier(title == "From" ? "originField" : "destinationField")
+    }
+}
