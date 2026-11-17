@@ -63,7 +63,10 @@ final class FakeServer: HTTPTransport, @unchecked Sendable {
     let lock = NSLock()
 
     func send(_ request: URLRequest) async throws -> (Data, HTTPURLResponse) {
-        lock.lock(); defer { lock.unlock() }
+        try lock.withLock { try handle(request) }
+    }
+
+    private func handle(_ request: URLRequest) throws -> (Data, HTTPURLResponse) {
         let path = request.url!.path
         let ok = { (data: Data) in (data, HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!) }
         if path.hasSuffix("/v1/auth/anonymous") { return ok(#"{"token":"t","userId":"u"}"#.data(using: .utf8)!) }
