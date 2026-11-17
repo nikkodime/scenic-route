@@ -114,17 +114,20 @@ struct PhotoView: View {
     var families: [String] = []
 
     var body: some View {
-        ZStack {
-            Theme.mist
-            Image(systemName: FamilyIcon.symbol(families.first ?? "views"))
-                .font(.system(size: 40, weight: .light)).foregroundStyle(Theme.ink3)
-            if let photo, let url = URL(string: photo.url) {
-                AsyncImage(url: url, transaction: Transaction(animation: .easeOut(duration: 0.3))) { phase in
-                    if let image = phase.image { image.resizable().scaledToFill() } else { Color.clear }
+        // Overlays, not a ZStack: a scaledToFill image in a ZStack makes the card as wide as the photo.
+        Theme.mist
+            .overlay {
+                Image(systemName: FamilyIcon.symbol(families.first ?? "views"))
+                    .font(.system(size: 40, weight: .light)).foregroundStyle(Theme.ink3)
+            }
+            .overlay {
+                if let photo, let url = URL(string: photo.url) {
+                    AsyncImage(url: url, transaction: Transaction(animation: .easeOut(duration: 0.3))) { phase in
+                        if let image = phase.image { image.resizable().scaledToFill() } else { Color.clear }
+                    }
                 }
             }
-        }
-        .clipped()
+            .clipped()
     }
 }
 
