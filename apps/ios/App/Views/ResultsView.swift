@@ -163,7 +163,7 @@ struct RouteCard: View {
                 Rectangle().fill(Theme.line).frame(height: 1)
                 HStack(spacing: 0) {
                     ForEach(route.scorePairs, id: \.label) { p in
-                        Metric(symbol: p.symbol, value: "\(Int(p.value))", tint: Theme.ink)
+                        Metric(symbol: p.symbol, value: "\(Int(p.value))", tint: p.label == "Light" ? Theme.terracotta : Theme.ink)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .accessibilityLabel("\(p.label) \(Int(p.value))")
                     }

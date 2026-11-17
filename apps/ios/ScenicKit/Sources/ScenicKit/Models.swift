@@ -97,6 +97,8 @@ public struct ScoreParts: Codable, Hashable, Sendable {
     public var relief: Double?
     public var bends: Double
     public var variety: Double
+    /// Light along the drive (sunset, golden hour, cloud), 0–100; nil without a forecast.
+    public var light: Double?
     public var motorwayPct: Double
     public var urbanPct: Double
 }
@@ -105,6 +107,8 @@ public struct Highlight: Codable, Hashable, Sendable {
     public var name: String
     public var type: String
     public var atKm: Double
+    public var lat: Double?
+    public var lon: Double?
 }
 
 public struct ScenicStop: Codable, Hashable, Sendable {
@@ -175,6 +179,8 @@ public struct RouteOption: Codable, Hashable, Sendable, Identifiable {
     public var conditions: Conditions?
     public var advisories: [Advisory]
     public var handoff: Handoff
+    /// About 48 elevation samples in metres along the drive.
+    public var elevation: [Double]?
 
     public var line: [Coordinate] { Polyline.decode(polyline) }
 }

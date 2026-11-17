@@ -63,7 +63,8 @@ extension RouteOption {
         let line = self.line
         var seen = Set<String>()
         return highlights.compactMap { h -> ScenicMoment? in
-            guard !h.name.isEmpty, seen.insert(h.name).inserted, let c = Polyline.coordinate(on: line, atKm: h.atKm) else { return nil }
+            let placed = h.lat.flatMap { lat in h.lon.map { Coordinate(lat: lat, lon: $0) } }
+            guard !h.name.isEmpty, seen.insert(h.name).inserted, let c = placed ?? Polyline.coordinate(on: line, atKm: h.atKm) else { return nil }
             return ScenicMoment(name: h.name, type: h.type, km: h.atKm, coordinate: c)
         }
         .sorted { $0.km < $1.km }
@@ -85,13 +86,14 @@ extension RouteOption {
 
     var warnings: [Advisory] { advisories.filter { $0.severity != "info" } }
 
-    /// The four score parts in spec order (Views, Hills, Bends, then Light once the API sends it; Variety until then).
-    var scorePairs: [(symbol: String, value: Double, label: String)] {
-        var out: [(String, Double, String)] = [("binoculars.fill", parts.views ?? parts.scenery, "Views")]
-        if let r = parts.relief { out.append(("mountain.2.fill", r, "Hills")) }
-        out.append(("road.lanes.curved.right", parts.bends, "Bends"))
-        out.append(("sparkles", parts.variety, "Variety"))
-        return out.map { (symbol: $0.0, value: $0.1, label: $0.2) }
+    /// The four score parts in spec order: Views, Hills, Bends, Light (Variety when there is no forecast).
+    var scorePairs: [(symbol: String, value: Double, label: String, tint: Color)] {
+        var out: [(String, Double, String, Color)] = [("binoculars.fill", parts.views ?? parts.scenery, "Views", Theme.green)]
+        if let r = parts.relief { out.append(("mountain.2.fill", r, "Hills", Theme.green)) }
+        out.append(("road.lanes.curved.right", parts.bends, "Bends", Theme.green))
+        if let l = parts.light { out.append(("sun.horizon.fill", l, "Light", Theme.terracotta)) }
+        else { out.append(("sparkles", parts.variety, "Variety", Theme.green)) }
+        return out.map { (symbol: $0.0, value: $0.1, label: $0.2, tint: $0.3) }
     }
 }
 
@@ -255,5 +257,42 @@ struct Metric: View {
             Image(systemName: symbol).font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.ink3)
             Text(value).font(Theme.sofia(15, .semibold)).monospacedDigit().foregroundStyle(tint)
         }
+    }
+}
+
+/// The elevation profile as a soft filled line, with the lowest and highest point.
+struct ElevationProfile: View {
+    let samples: [Double]
+    var sunset: String?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            GeometryReader { g in
+                let lo = samples.min() ?? 0, hi = max(samples.max() ?? 1, lo + 1)
+                let pts = samples.enumerated().map { i, v in
+                    CGPoint(x: g.size.width * CGFloat(i) / CGFloat(max(1, samples.count - 1)),
+                            y: g.size.height * (1 - CGFloat((v - lo) / (hi - lo))))
+                }
+                ZStack {
+                    Path { p in
+                        p.move(to: CGPoint(x: 0, y: g.size.height))
+                        pts.forEach { p.addLine(to: $0) }
+                        p.addLine(to: CGPoint(x: g.size.width, y: g.size.height))
+                    }
+                    .fill(Theme.greenTint)
+                    Path { p in p.addLines(pts) }
+                        .stroke(Theme.green, style: StrokeStyle(lineWidth: 1.6, lineJoin: .round))
+                }
+            }
+            .frame(height: 34)
+            HStack {
+                Label("\(Int(samples.min() ?? 0))–\(Int(samples.max() ?? 0)) m", systemImage: "mountain.2")
+                Spacer()
+                if let sunset { Label(sunset, systemImage: "sunset.fill").foregroundStyle(Theme.terracotta) }
+            }
+            .font(.system(size: 11, weight: .medium, design: .monospaced)).foregroundStyle(Theme.ink3)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Elevation from \(Int(samples.min() ?? 0)) to \(Int(samples.max() ?? 0)) metres")
     }
 }

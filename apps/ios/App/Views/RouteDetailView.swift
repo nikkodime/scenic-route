@@ -21,6 +21,9 @@ struct RouteDetailView: View {
                 metrics.padding(.horizontal, Theme.gutter)
                 scoreParts.padding(.horizontal, Theme.gutter)
                 if moments.contains(where: { photos[$0.id] != nil }) { highlightStrip }
+                if let e = route.elevation, e.count > 1 {
+                    ElevationProfile(samples: e, sunset: Format.time(route.conditions?.sunset)).padding(.horizontal, Theme.gutter)
+                }
                 if let c = route.conditions { light(c).padding(.horizontal, Theme.gutter) }
                 if !route.advisories.isEmpty { goodToKnow.padding(.horizontal, Theme.gutter) }
                 rating.padding(.horizontal, Theme.gutter)
@@ -195,18 +198,18 @@ struct RouteDetailView: View {
 
     private var scoreParts: some View {
         HStack(spacing: 0) {
-            ForEach(route.scorePairs, id: \.label) { partRing($0.symbol, $0.value, $0.label) }
+            ForEach(route.scorePairs, id: \.label) { partRing($0.symbol, $0.value, $0.label, tint: $0.tint) }
         }
         .padding(.vertical, 16)
         .background(Theme.surface, in: RoundedRectangle(cornerRadius: 20))
         .overlay(RoundedRectangle(cornerRadius: 20).strokeBorder(Theme.border))
     }
 
-    private func partRing(_ symbol: String, _ value: Double, _ label: String) -> some View {
+    private func partRing(_ symbol: String, _ value: Double, _ label: String, tint: Color = Theme.green) -> some View {
         VStack(spacing: 6) {
             ZStack {
                 Circle().stroke(Theme.mist, lineWidth: 5)
-                Circle().trim(from: 0, to: max(0.02, value / 100)).stroke(Theme.green, style: StrokeStyle(lineWidth: 5, lineCap: .round))
+                Circle().trim(from: 0, to: max(0.02, value / 100)).stroke(tint, style: StrokeStyle(lineWidth: 5, lineCap: .round))
                     .rotationEffect(.degrees(-90))
                 VStack(spacing: 0) {
                     Image(systemName: symbol).font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.ink3)
