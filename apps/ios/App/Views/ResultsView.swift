@@ -18,7 +18,6 @@ struct ResultsView: View {
                             RouteCard(route: route, color: Theme.routeColors[i % Theme.routeColors.count], selected: route.id == model.selectedRouteID)
                         }
                         .buttonStyle(.plain)
-                        .simultaneousGesture(TapGesture().onEnded { model.selectedRouteID = route.id })
                     }
                     ForEach(model.plan?.warnings ?? [], id: \.self) { w in
                         Label(w, systemImage: "info.circle").font(.caption).foregroundStyle(.secondary)
@@ -36,7 +35,10 @@ struct ResultsView: View {
         }
         .navigationTitle(model.destination?.label?.components(separatedBy: ",").first ?? "Routes")
         .navigationBarTitleDisplayMode(.inline)
-        .navigationDestination(for: RouteOption.self) { RouteDetailView(route: $0) }
+        // Select on arrival: a simultaneous TapGesture on the link swallows the tap on iOS 18+.
+        .navigationDestination(for: RouteOption.self) { route in
+            RouteDetailView(route: route).onAppear { model.selectedRouteID = route.id }
+        }
     }
 }
 
