@@ -296,6 +296,8 @@ export async function planRoutes(req: PlanRequest, p: Providers, opts: PlanOptio
     }
   }
 
+  // The start and finish towns by name too ("Siena, Tuscany" -> "siena"), wherever OSM puts their node.
+  const endNames = [req.origin.label, req.destination.label].flatMap((l) => (l ? [l.split(',')[0].trim().toLowerCase()] : []));
   const routes: RouteOption[] = ranked.map((r, i) => {
     const stretch = bestStretch(r.scored.near, r.path.km);
     const conditions = assessConditions({ line: r.line, km: r.path.km, minutes: r.minutes, departure, forecasts: forecasts[i], bestStretch: stretch, timeZone: opts.timeZone });
@@ -313,7 +315,7 @@ export async function planRoutes(req: PlanRequest, p: Providers, opts: PlanOptio
       extraMinutes: Math.max(0, Math.round(r.minutes - fastestMinutes)),
       polyline: encodePolyline(r.line, 5),
       bbox: paddedBBox(r.line, 0),
-      highlights: r.scored.highlights,
+      highlights: r.scored.highlights.filter((h) => !endNames.includes(h.name.toLowerCase())),
       scenicStops: r.stops.filter((s) => s.count > 0).map((s) => ({ lat: s.lat, lon: s.lon, name: s.name, types: s.types })),
       bestStretch: stretch,
       conditions,

@@ -175,3 +175,8 @@ test('a bigger time budget reaches for richer places further off the line', asyn
   assert.equal(first(30), 'near');
   assert.equal(first(120), 'far');
 });
+
+test('the start and finish towns never show up as highlights, by name', async () => {
+  const res = await planRoutes(req({ origin: { ...SIENA, label: 'Pienza, Tuscany' } }), fakeProviders());
+  for (const r of res.routes) assert.ok(!r.highlights.some((h) => h.name === 'Pienza'));
+});
