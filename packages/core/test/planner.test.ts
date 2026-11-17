@@ -166,6 +166,12 @@ test('a place outside the imported map gets a plain explanation', async () => {
   await assert.rejects(planRoutes(req(), fakeProviders({ router })), (e: PlanError) => e.status === 422 && /outside the area/.test(e.message));
 });
 
+test('GraphHopper "out of bounds" also gets the coverage explanation', async () => {
+  const router = new FakeRouter();
+  router.route = async () => { throw new Error('localhost:8989 answered 400: {"message":"Point 1 is out of bounds: 44.4949,11.3426, the bounds are: 9.7,13.9,40.9,44.4"}'); };
+  await assert.rejects(planRoutes(req(), fakeProviders({ router })), (e: PlanError) => e.status === 422 && /outside the area/.test(e.message));
+});
+
 test('a bigger time budget reaches for richer places further off the line', async () => {
   const { candidateWaypointSets } = await import('../src/index.ts');
   const start = { lat: 43, lon: 11 }, end = { lat: 43, lon: 12 };
