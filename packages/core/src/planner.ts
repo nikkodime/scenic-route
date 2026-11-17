@@ -222,8 +222,11 @@ export async function planRoutes(req: PlanRequest, p: Providers, opts: PlanOptio
 
   // 3. Candidates.
   const jobs: { source: Candidate['source']; points: LatLon[]; stops: Spot[]; opts: RouteOptions; alt?: boolean }[] = [];
+  // Long drives: each scenic search over 150 km costs seconds, so try the strongest one and fewer detours.
+  const long = directKm > 150;
+  const strengths = long ? [Math.max(...rules.strengths)] : rules.strengths;
   if (p.router.supportsScenic) {
-    for (const strength of rules.strengths) jobs.push({ source: 'scenic_model', points: required, stops: [], opts: { ...base, profile: 'scenic', strength } });
+    for (const strength of strengths) jobs.push({ source: 'scenic_model', points: required, stops: [], opts: { ...base, profile: 'scenic', strength } });
   }
   if (p.router.alternatives) jobs.push({ source: 'alternative', points: required, stops: [], opts: { ...base, profile: p.router.supportsScenic ? 'scenic' : 'fastest', strength: 1 }, alt: true });
 
@@ -238,7 +241,7 @@ export async function planRoutes(req: PlanRequest, p: Providers, opts: PlanOptio
     legSets.push(sets.length ? sets : detourProbes(required[i - 1], required[i], share));
   }
   const maxVia = Math.max(0, ...legSets.map((s) => s.length));
-  for (let k = 0; k < Math.min(maxVia, 7); k++) {
+  for (let k = 0; k < Math.min(maxVia, long ? 3 : 7); k++) {
     const points: LatLon[] = [required[0]];
     const stops: Spot[] = [];
     legSets.forEach((sets, i) => {
