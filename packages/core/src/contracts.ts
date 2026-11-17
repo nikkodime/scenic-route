@@ -138,7 +138,7 @@ export const RatingSchema = z.object({
 });
 
 export const SyncRequestSchema = z.object({
-  cursor: z.number().int().min(0).nullable(),
+  cursor: z.number().int().min(0).nullable().default(null), // Swift Codable omits nil keys
   changes: z.object({
     trips: z.array(TripSchema).max(500).default([]),
     ratings: z.array(RatingSchema).max(500).default([]),
