@@ -2,3 +2,8 @@ node_modules/
 .DS_Store
 infra/data/features/.cache/
 infra/data/dem/
+
+# Swift package and Xcode build output
+**/.build/
+apps/ios/build/
+apps/ios/ScenicRoute.xcodeproj/
