@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { customModel, parseGhPath, GraphHopperRouter } from '../src/providers/graphhopper.ts';
@@ -135,7 +136,7 @@ test('cache de-duplicates concurrent loads and evicts LRU', async () => {
 });
 
 test('shipped zone files load and are found by bbox', () => {
-  const z = loadZones(new URL('../../../infra/data/zones/', import.meta.url).pathname);
+  const z = loadZones(fileURLToPath(new URL('../../../infra/data/zones/', import.meta.url)));
   assert.ok(z.all.length >= 5, `${z.all.length} zones`);
   assert.ok(z.inBBox([43.30, 11.30, 43.34, 11.35]).some((x) => x.properties.name.includes('Siena')));
   assert.equal(z.inBBox([60, 20, 61, 21]).length, 0);

@@ -1,5 +1,6 @@
 // All runtime configuration comes from the environment. Defaults are for local development.
 
+import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 
 const list = z.string().transform((s) => s.split(',').map((x) => x.trim()).filter(Boolean));
@@ -22,7 +23,7 @@ const Env = z.object({
   GEOCODER: z.enum(['photon', 'nominatim']).default('photon'),
   PHOTON_URL: z.string().default('https://photon.komoot.io'),
   NOMINATIM_URL: z.string().default('https://nominatim.openstreetmap.org'),
-  ZONES_DIR: z.string().default(new URL('../../../infra/data/zones/', import.meta.url).pathname),
+  ZONES_DIR: z.string().default(fileURLToPath(new URL('../../../infra/data/zones/', import.meta.url))),
   DATABASE_URL: z.string().optional(),
   JWT_SECRET: z.string().min(16).default('dev-only-secret-change-me-please'),
   APPLE_BUNDLE_IDS: list.default('app.scenicroute.ios'),
