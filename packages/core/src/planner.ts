@@ -188,7 +188,7 @@ export async function planRoutes(req: PlanRequest, p: Providers, opts: PlanOptio
   } catch (e) {
     log('fastest route failed', e);
     // A self-hosted map covers only the regions imported so far; say so rather than "no route".
-    if (/outside|cannot find point|point_not_found|not found within/i.test(String((e as Error)?.message ?? e)))
+    if (/outside|out of bounds|cannot find point|point_not_found|not found within/i.test(String((e as Error)?.message ?? e)))
       throw new PlanError("One of these places is outside the area Panoramica covers so far. Try a trip within central Italy.");
     throw new PlanError('No route found between these places.');
   }
