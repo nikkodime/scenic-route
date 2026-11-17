@@ -18,7 +18,7 @@ import { classify, FEATURE_WEIGHTS, type BBox, type ScenicFeature } from '@sceni
 export const OSMIUM_FILTERS = [
   'n/tourism=viewpoint', 'n/mountain_pass=yes', 'n/natural=peak',
   'nwr/historic=castle,fort,tower,monastery,church,abbey',
-  'n/place=village,hamlet', 'nwr/natural=beach', 'w/natural=water', 'w/natural=coastline',
+  'n/place=village,hamlet', 'nwr/natural=beach', 'wr/natural=water', 'w/natural=coastline',
   'n/waterway=waterfall', 'w/landuse=vineyard', 'w/natural=tree_row', 'w/scenic=yes', 'n/tourism=attraction',
 ];
 
