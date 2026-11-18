@@ -43,6 +43,13 @@ final class ContractTests: XCTestCase {
         XCTAssertEqual(r.line.first!.lat, 43.3188, accuracy: 0.001)
         XCTAssertNotNil(r.conditions?.sunset)
         XCTAssertFalse(r.highlights.isEmpty)
+        // Against the fastest road: its line and tolls, this route's detours.
+        XCTAssertGreaterThan(res.fastest.line.count, 10)
+        XCTAssertEqual(res.fastest.tolls?.eur, 5)
+        let v = try XCTUnwrap(r.vsFastest)
+        XCTAssertEqual(v.extraMinutes, r.extraMinutes)
+        XCTAssertFalse(v.detours.isEmpty)
+        XCTAssertEqual(v.detours.reduce(0) { $0 + $1.extraMinutes }, r.extraMinutes)
     }
 
     func testPlanRequestEncodesLikeTheAPIExpects() throws {

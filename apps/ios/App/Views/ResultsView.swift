@@ -11,7 +11,7 @@ struct ResultsView: View {
         @Bindable var model = model
         let routes = model.plan?.routes ?? []
         VStack(spacing: 0) {
-            RouteMap(routes: routes, selectedID: model.selectedRouteID, camera: $camera)
+            RouteMap(routes: routes, selectedID: model.selectedRouteID, camera: $camera, fastest: model.plan?.fastest.line ?? [])
                 .frame(minHeight: 260, maxHeight: 470)
                 .overlay(alignment: .bottomLeading) {
                     if let notes = model.plan?.warnings, !notes.isEmpty {
@@ -72,9 +72,16 @@ struct RouteMap: View {
     let routes: [RouteOption]
     let selectedID: String?
     @Binding var camera: MapCameraPosition
+    /// The fastest road, drawn as a dashed grey ghost line under the routes.
+    var fastest: [Coordinate] = []
 
     var body: some View {
+        let chosen = routes.first(where: { $0.id == selectedID }) ?? routes.first
         Map(position: $camera) {
+            if !fastest.isEmpty, chosen?.source != "fastest" {
+                MapPolyline(coordinates: fastest.map { CLLocationCoordinate2D(latitude: $0.lat, longitude: $0.lon) })
+                    .stroke(Theme.ink3.opacity(0.9), style: StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round, dash: [8, 7]))
+            }
             // Draw unselected first so the selected route sits on top.
             let indexed = Array(routes.enumerated())
             let ordered = indexed.filter { $0.element.id != selectedID } + indexed.filter { $0.element.id == selectedID }
@@ -83,7 +90,15 @@ struct RouteMap: View {
                 MapPolyline(coordinates: r.line.map { CLLocationCoordinate2D(latitude: $0.lat, longitude: $0.lon) })
                     .stroke(Theme.routeColors[i % Theme.routeColors.count].opacity(selected ? 1 : 0.45), style: StrokeStyle(lineWidth: selected ? 6 : 4, lineCap: .round, lineJoin: .round))
             }
-            if let r = routes.first(where: { $0.id == selectedID }) ?? routes.first {
+            if let r = chosen {
+                if !fastest.isEmpty {
+                    ForEach(r.detourMidpoints, id: \.id) { d in
+                        Annotation(d.name ?? "Detour", coordinate: CLLocationCoordinate2D(latitude: d.at.lat, longitude: d.at.lon), anchor: .center) {
+                            DetourChip(minutes: d.minutes)
+                        }
+                        .annotationTitles(.hidden)
+                    }
+                }
                 ForEach(r.scenicStops, id: \.self) { s in
                     Annotation(s.name.isEmpty ? "Scenic spot" : s.name, coordinate: CLLocationCoordinate2D(latitude: s.lat, longitude: s.lon)) {
                         Image(systemName: "camera.fill").font(.caption2).padding(6)
@@ -158,9 +173,9 @@ struct RouteCard: View {
                 }
                 HStack(spacing: 14) {
                     Metric(symbol: "clock", value: Format.duration(minutes: route.minutes))
-                    if route.extraMinutes >= 1 { Metric(symbol: "plus", value: "\(Int(route.extraMinutes.rounded())) min", tint: Theme.green) }
                     Metric(symbol: "road.lanes", value: Format.distance(km: route.km))
                 }
+                VsStrip(route: route)
                 Rectangle().fill(Theme.line).frame(height: 1)
                 HStack(spacing: 0) {
                     ForEach(route.scorePairs, id: \.label) { p in

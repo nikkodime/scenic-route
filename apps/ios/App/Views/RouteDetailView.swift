@@ -20,6 +20,7 @@ struct RouteDetailView: View {
                 hero
                 metrics.padding(.horizontal, Theme.gutter)
                 scoreParts.padding(.horizontal, Theme.gutter)
+                if let f = model.fastest(for: route) { VsFastestSection(route: route, fastest: f).padding(.horizontal, Theme.gutter) }
                 if moments.contains(where: { photos[$0.id] != nil }) { highlightStrip }
                 if let e = route.elevation, e.count > 1 {
                     ElevationProfile(samples: e, sunset: Format.time(route.conditions?.sunset)).padding(.horizontal, Theme.gutter)
@@ -56,7 +57,7 @@ struct RouteDetailView: View {
                     .overlay(alignment: .bottomLeading) { caption(m) }
                     .tag(i)
             }
-            RouteMap(routes: [route], selectedID: route.id, camera: $camera)
+            RouteMap(routes: [route], selectedID: route.id, camera: $camera, fastest: model.fastest(for: route)?.line ?? [])
                 .tag(99)
         }
         .tabViewStyle(.page(indexDisplayMode: .always))
