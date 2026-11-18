@@ -58,7 +58,7 @@ extension LoggedDrive {
     /// The island story card, ready for the share sheet.
     @MainActor func islandShareCard() -> SharedDrive? {
         let region = IslandRegion.containing(lat: lat, lon: lon) ?? .nearest(lat: lat, lon: lon)
-        let renderer = ImageRenderer(content: IslandShareCardView(drive: self, region: region))
+        let renderer = ImageRenderer(content: IslandShareCardView(drive: self, region: region).environment(\.colorScheme, .light))
         renderer.scale = 3
         guard let ui = renderer.uiImage else { return nil }
         return SharedDrive(image: ui, title: name)

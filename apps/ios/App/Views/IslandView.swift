@@ -45,6 +45,7 @@ struct IslandPoster: View {
     var region: IslandRegion
     /// Faded and colourless: an island not collected yet.
     var locked = false
+    @Environment(\.colorScheme) private var scheme
 
     var body: some View {
         Group {
@@ -56,8 +57,8 @@ struct IslandPoster: View {
         }
         .saturation(locked ? 0 : 1)
         .contrast(locked ? 0.55 : 1)
-        .brightness(locked ? 0.28 : 0)
-        .opacity(locked ? 0.5 : 1)
+        .brightness(locked ? (scheme == .dark ? 0 : 0.28) : 0)
+        .opacity(locked ? (scheme == .dark ? 0.35 : 0.5) : 1)
         .accessibilityHidden(true)
     }
 
@@ -253,11 +254,6 @@ extension AppModel {
         tab = .explore
         await runExplore()
     }
-}
-
-extension Theme {
-    /// The pale morning sky behind the islands, fading into paper.
-    static let sky = Color(red: 0.87, green: 0.91, blue: 0.93)
 }
 
 /// While roads are being found, the island of the area fills the screen and its car laps the road.

@@ -154,7 +154,7 @@ struct DriveLoggedView: View {
 /// The pale sky behind the stamp screens: a hint of the island morning, fading into paper.
 struct SkyBackdrop: View {
     var body: some View {
-        LinearGradient(colors: [Color(red: 0.87, green: 0.91, blue: 0.93), Theme.background], startPoint: .top, endPoint: UnitPoint(x: 0.5, y: 0.45))
+        LinearGradient(colors: [Theme.sky, Theme.background], startPoint: .top, endPoint: UnitPoint(x: 0.5, y: 0.45))
             .ignoresSafeArea()
     }
 }
