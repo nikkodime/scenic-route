@@ -236,3 +236,21 @@ h2 { font: 600 20px/1.2 var(--font-ui); margin: 0; }
 .warn-pin, .poi-pin { width: 26px; height: 26px; border-radius: 50%; display: grid; place-content: center; box-shadow: 0 1px 3px rgba(23, 38, 42, .25); border: 2px solid #fff; }
 .warn-pin { background: var(--terracotta); color: #fff; }
 .poi-pin { background: #fff; color: var(--green); border-color: var(--green); }
+
+/* The island stage: a live 3D island over the empty map, and while roads are found. */
+.island-stage { position: absolute; inset: 0; z-index: 5; display: flex; flex-direction: column; background: linear-gradient(180deg, #dde8ec 0%, var(--paper) 62%); }
+.island-stage[hidden] { display: none; }
+.island-live { position: relative; flex: 1; min-height: 0; }
+.island-live canvas { position: absolute; inset: 0; cursor: grab; }
+.island-live canvas:active { cursor: grabbing; }
+.island-poster { position: absolute; inset: 0; margin: auto; width: min(82%, 82vh); height: auto; max-height: 100%; object-fit: contain; transition: opacity .35s ease; }
+.island-stage.ready .island-poster { opacity: 0; pointer-events: none; }
+.island-foot { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 0 var(--gutter) calc(var(--gutter) + 8px); }
+.island-caption { margin: 0; font: 600 18px var(--font-ui); color: var(--ink); text-align: center; }
+.island-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; max-width: 640px; }
+.island-chips .chip:not([aria-pressed='true']) { background: rgba(255, 255, 255, .85); }
+.island-stage.busy .island-chips { display: none; }
+.island-stage.busy .island-caption::after { content: ''; display: block; width: 120px; height: 3px; margin: 10px auto 0; border-radius: 2px; background: linear-gradient(90deg, var(--green) 0 40%, var(--line) 40%); background-size: 200% 100%; animation: island-bar 1.6s ease-in-out infinite alternate; }
+@keyframes island-bar { from { background-position: 100% 0; } to { background-position: 0 0; } }
+@media (prefers-reduced-motion: reduce) { .island-stage.busy .island-caption::after { animation: none; } }
+@media (max-width: 760px) { .island-caption { font-size: 16px; } .island-chips { display: none; } }

@@ -55,6 +55,8 @@ try {
   });
 
   await page.goto('http://localhost:4179/?mapStyle=blank');
+  // An empty map shows the live island stage; it steps aside once routes are on the map.
+  await page.locator('.island-stage').waitFor({ state: 'visible' });
   await page.getByLabel('From', { exact: true }).fill('Siena');
   await page.getByRole('option', { name: /Siena/ }).click();
   if (shots) await page.screenshot({ path: `${shots}/web-debug.png` });
@@ -69,6 +71,7 @@ try {
   const options = await page.locator('.route').count();
   assert.ok(options >= 2, `expected route options, got ${options}`);
   assert.equal(await page.locator('.route[aria-pressed="true"]').count(), 1);
+  assert.equal(await page.locator(".island-stage").isVisible(), false, "island stage hides once routes are shown");
   // Every scenic option says what it costs against the fastest road, and the detail shows where it turns off.
   assert.ok(await page.locator('.route .vs').count() >= 2);
   await page.locator('.ribbon').first().waitFor();

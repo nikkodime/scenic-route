@@ -21,6 +21,9 @@ struct LogbookView: View {
                     Text(summary(drives)).font(Theme.sofia(14)).foregroundStyle(Theme.ink2).padding(.top, 8)
                     PassportPage(drives: Array(drives.prefix(6)), page: (drives.count + 5) / 6)
                         .padding(.top, 24)
+                    IslandCollection(collected: model.collectedIslands,
+                                     newest: drives.first.flatMap { IslandRegion.containing(lat: $0.lat, lon: $0.lon) })
+                        .padding(.top, 28)
                     HStack {
                         Text("Recent drives").font(Theme.sofia(18, .medium)).foregroundStyle(Theme.ink)
                         Spacer()
@@ -76,7 +79,7 @@ struct LogbookView: View {
             Text("Every drive you finish lands here as a stamp, with its score and the date.")
                 .font(Theme.sofia(15)).foregroundStyle(Theme.ink2).padding(.top, 10)
                 .fixedSize(horizontal: false, vertical: true)
-            IslandView(region: .moselle).frame(height: 260).frame(maxWidth: .infinity).padding(.top, 16)
+            IslandView(region: nearby, fit: 1.0, interactive: false).frame(height: 300).frame(maxWidth: .infinity).padding(.top, 8)
             Button { model.tab = .plan } label: {
                 Text("Plan a drive").font(Theme.buttonFont).foregroundStyle(Theme.onAccent)
                     .frame(maxWidth: .infinity, minHeight: 54)
@@ -84,7 +87,15 @@ struct LogbookView: View {
             }
             .buttonStyle(.plain)
             .padding(.top, 16)
+            IslandCollection(collected: [])
+                .padding(.top, 32)
         }
+    }
+
+    /// The island closest to you: the first one you can bring home.
+    private var nearby: IslandRegion {
+        if let c = model.location.last { return .nearest(lat: c.lat, lon: c.lon) }
+        return .tuscany
     }
 
     private func summary(_ drives: [LoggedDrive]) -> String {

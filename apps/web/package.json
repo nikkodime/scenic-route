@@ -10,7 +10,8 @@
   },
   "dependencies": {
     "@scenic/core": "*",
-    "maplibre-gl": "^5.1.0"
+    "maplibre-gl": "^5.1.0",
+    "@scenic/islands": "*"
   },
   "devDependencies": {
     "vite": "^6.0.0"

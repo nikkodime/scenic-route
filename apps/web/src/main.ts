@@ -3,6 +3,7 @@ import { toGpx, decodePolyline, INTERESTS, ROUTE_STYLES, VEHICLES, type GeocodeR
 import { api } from './api.ts';
 import type { ExploreDestination, ExploreResponse, Place } from '@scenic/core';
 import { RouteMap } from './map.ts';
+import { IslandStage } from './stage.ts';
 import { icon } from './icons.ts';
 import { drawShareCard, goldenChip, localInputValue, parseShareHash, shareCard, shareHash, shareTitle, stopsStrip, weatherStrip } from './extras.ts';
 import {
@@ -31,6 +32,9 @@ const saveDraft = (j: Journey) => { try { localStorage.setItem(DRAFT_KEY, JSON.s
 const state: State = { journey: loadDraft() ?? newJourney(uuid()), active: 0, busy: null, error: null, view: 'plan', trips: null, explore: { origin: null, minutes: 120, roundTrip: false, result: null, busy: false } };
 const panel = document.getElementById('panel')!;
 const map = new RouteMap(document.getElementById('map')!);
+// A big live island floats over the map while it is empty or while roads are being found.
+const stage = new IslandStage(document.getElementById('map')!);
+stage.onPickRegion = (_k, p) => set({ view: 'explore', explore: { ...state.explore, origin: { lat: p.lat, lon: p.lon, label: p.label }, result: null }, error: null });
 map.onPick = (id) => { const d = state.journey.days[state.active]; if (d) set({ journey: updateDay(state.journey, state.active, { chosenRouteId: id }) }); };
 
 const esc = (s: unknown) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
@@ -44,6 +48,7 @@ function set(patch: Partial<State>) {
 }
 
 function syncMap() {
+  syncStage();
   if (state.view === 'explore') {
     const res = state.explore.result;
     if (res?.destinations.length) map.showPlaces(res.destinations);
@@ -53,6 +58,17 @@ function syncMap() {
   const d = state.journey.days[state.active];
   if (d?.plan?.routes.length) map.show(d.plan.routes, d.chosenRouteId, d.plan.fastest);
   else map.clear();
+}
+
+function syncStage() {
+  if (state.view === 'explore') {
+    const x = state.explore;
+    stage.sync({ show: x.busy || !x.result?.destinations.length, busy: x.busy, near: x.origin });
+    return;
+  }
+  const d = state.journey.days[state.active];
+  const busy = state.busy !== null;
+  stage.sync({ show: busy || !d?.plan?.routes.length, busy, near: d?.destination ?? d?.origin ?? null });
 }
 
 function toast(msg: string) {

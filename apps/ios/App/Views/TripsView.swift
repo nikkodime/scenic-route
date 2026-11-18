@@ -9,7 +9,7 @@ struct TripsView: View {
             if let s = model.syncStatus { Text(s).font(.caption).foregroundStyle(.secondary) }
             if model.trips.isEmpty {
                 VStack(spacing: 12) {
-                    IslandView().frame(maxWidth: 280)
+                    IslandPoster(region: .tuscany).frame(maxWidth: 260)
                     Text("No trips yet").font(Theme.headlineFont).foregroundStyle(Theme.ink)
                 }
                 .frame(maxWidth: .infinity)

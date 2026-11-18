@@ -10,16 +10,31 @@ struct DriveLoggedView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Spacer(minLength: 20)
-            StampView(score: drive.score, place: drive.place, date: drive.date,
-                      ink: StampInk.forScore(drive.score, index: model.logbook.count),
-                      size: 150, rotation: -8, seed: drive.stampSeed)
-                .scaleEffect(landed ? 1 : 1.35)
-                .opacity(landed ? 1 : 0)
-                .animation(.spring(response: 0.35, dampingFraction: 0.55), value: landed)
+            // The region's island rises in (a new one joins the collection), the stamp lands beside it.
+            ZStack(alignment: .bottomTrailing) {
+                IslandView(region: region, fit: 1.05, lift: 0.04, interactive: false)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .padding(.horizontal, -24)
+                StampView(score: drive.score, place: drive.place, date: drive.date,
+                          ink: StampInk.forScore(drive.score, index: model.logbook.count),
+                          size: 118, rotation: -8, seed: drive.stampSeed)
+                    .scaleEffect(landed ? 1 : 1.35)
+                    .opacity(landed ? 1 : 0)
+                    .animation(.spring(response: 0.35, dampingFraction: 0.55).delay(0.6), value: landed)
+                    .offset(x: 4, y: 6)
+            }
+            .overlay(alignment: .top) {
+                if isNewIsland {
+                    Text("NEW ISLAND · \(region.short.uppercased())").font(Theme.labelFont).tracking(1).foregroundStyle(Theme.green)
+                        .padding(.horizontal, 10).frame(height: 24)
+                        .background(Theme.surface.opacity(0.9), in: Capsule())
+                        .padding(.top, 6)
+                }
+            }
+            .frame(minHeight: 220, maxHeight: 330)
             Text("Drive logged")
                 .font(Theme.sofia(30, .semibold, relativeTo: .title)).tracking(-0.4).foregroundStyle(Theme.ink)
-                .padding(.top, 28)
+                .padding(.top, 8)
             Text(sentence)
                 .font(Theme.sofia(15)).foregroundStyle(Theme.ink2).multilineTextAlignment(.center).lineSpacing(3)
                 .padding(.top, 10).padding(.horizontal, 12)
@@ -91,6 +106,16 @@ struct DriveLoggedView: View {
             .accessibilityLabel("Don't log this drive")
         }
         .onAppear { landed = true }
+    }
+
+    private var region: IslandRegion {
+        IslandRegion.containing(lat: drive.lat, lon: drive.lon) ?? .nearest(lat: drive.lat, lon: drive.lon)
+    }
+
+    /// The first drive in a region brings its island into the logbook.
+    private var isNewIsland: Bool {
+        guard let r = IslandRegion.containing(lat: drive.lat, lon: drive.lon) else { return false }
+        return !model.collectedIslands.contains(r)
     }
 
     private var sentence: String {

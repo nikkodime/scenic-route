@@ -11,11 +11,9 @@ struct ScenicPassView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                IslandView(region: .dolomites, fill: true)
-                    .frame(height: 250).frame(maxWidth: .infinity).clipped()
-                    .overlay(alignment: .bottom) {
-                        LinearGradient(colors: [Theme.background.opacity(0), Theme.background], startPoint: .top, endPoint: .bottom).frame(height: 80)
-                    }
+                IslandView(region: .dolomites, fit: 1.0, lift: -0.02, interactive: false)
+                    .frame(height: 320).frame(maxWidth: .infinity)
+                    .background(LinearGradient(colors: [Theme.sky, Theme.background], startPoint: .top, endPoint: .bottom).padding(.top, -200))
                 VStack(alignment: .leading, spacing: 0) {
                     Text("SCENIC PASS").font(Theme.labelFont).tracking(1).foregroundStyle(Theme.green)
                     Text("Plan the whole journey, not just the day")
