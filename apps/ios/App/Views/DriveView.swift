@@ -18,7 +18,8 @@ final class DriveTracker: NSObject, CLLocationManagerDelegate {
     private(set) var drivenKm: Double = 0
     private(set) var here: Coordinate?
     /// Steps already announced at "soon" (≤ 400 m) and "now" (≤ 80 m).
-    private var spokenSoon = Set<Int>(), spokenNow = Set<Int>()
+    private var spokenSoon = Set<Int>()
+    private var spokenNow = Set<Int>()
     var voiceOn = UserDefaults.standard.object(forKey: "driveVoice") as? Bool ?? true
 
     private let manager = CLLocationManager()

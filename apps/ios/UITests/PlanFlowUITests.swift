@@ -6,6 +6,10 @@ final class PlanFlowUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-uiTestPlaces"] // fills Siena → Pienza without typing
         app.launch()
+        // The app reopens on the last tab and mode: start from Plan → Go somewhere.
+        if app.tabBars.buttons["Plan"].waitForExistence(timeout: 10) { app.tabBars.buttons["Plan"].tap() }
+        let mode = app.segmentedControls["modePicker"]
+        if mode.waitForExistence(timeout: 3) { mode.buttons.element(boundBy: 0).tap() }
         let plan = app.buttons["planButton"]
         XCTAssertTrue(plan.waitForExistence(timeout: 10))
         // The plan button sits below the style, interests and vehicle pickers: scroll it into view first.

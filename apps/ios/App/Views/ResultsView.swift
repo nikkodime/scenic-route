@@ -127,10 +127,11 @@ struct RouteCard: View {
                     .padding(12)
                 }
                 .overlay(alignment: .topTrailing) {
-                    ScoreRing(score: route.score, color: Theme.green, size: 60)
-                        .padding(4)
+                    StampView(score: Int(route.score.rounded()), place: model.destinationShortName, ink: Theme.green, size: 66,
+                              rotation: number % 2 == 0 ? 5 : -6, seed: number)
+                        .padding(3)
                         .background(.white.opacity(0.72), in: Circle())
-                        .padding(10)
+                        .padding(8)
                 }
                 .overlay(alignment: .bottomLeading) {
                     HStack(spacing: -8) {

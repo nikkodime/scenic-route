@@ -296,3 +296,10 @@ struct ElevationProfile: View {
         .accessibilityLabel("Elevation from \(Int(samples.min() ?? 0)) to \(Int(samples.max() ?? 0)) metres")
     }
 }
+
+extension AppModel {
+    /// "Pienza" from "Pienza, Siena, Tuscany, Italy", for stamp rims.
+    var destinationShortName: String {
+        destination?.label?.components(separatedBy: ",").first?.trimmingCharacters(in: .whitespaces) ?? ""
+    }
+}

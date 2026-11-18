@@ -64,9 +64,10 @@ struct RouteDetailView: View {
         .frame(height: 310)
         .overlay(alignment: .topTrailing) {
             if page != 99 {
-                ScoreRing(score: route.score, color: .white, size: 70, inked: false)
-                    .shadow(color: .black.opacity(0.35), radius: 8)
-                    .padding(16)
+                StampView(score: Int(route.score.rounded()), place: model.destinationShortName, date: Date(), ink: Theme.green, size: 96, seed: route.rank)
+                    .padding(4)
+                    .background(.white.opacity(0.72), in: Circle())
+                    .padding(14)
             }
         }
     }
