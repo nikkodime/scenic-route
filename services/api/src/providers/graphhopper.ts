@@ -116,18 +116,6 @@ export function parseGhPath(path: GhPath): RoutedPath {
     }
   }
 
-  // Toll km per country, for the toll estimate.
-  const tollKmByCountry: Record<string, number> = {};
-  for (const [a, b, t] of path.details?.toll ?? []) {
-    if (up(t) !== 'ALL') continue;
-    for (const [ca, cb, cc] of countries) {
-      const lo = Math.max(a, ca), hi = Math.min(b, cb);
-      if (hi <= lo) continue;
-      const code = ALPHA3[up(cc)] ?? up(cc).slice(0, 2);
-      tollKmByCountry[code] = (tollKmByCountry[code] ?? 0) + segKm(lo, hi);
-    }
-  }
-
   // Turn-by-turn: where each manoeuvre happens, in km from the start (GraphHopper sign codes kept as-is).
   let at = 0;
   const steps = (path.instructions ?? []).map((ins) => {
@@ -136,7 +124,7 @@ export function parseGhPath(path: GhPath): RoutedPath {
     return step;
   });
 
-  return { line, km: path.distance / 1000, minutes: path.time / 60000, motorwayKm, unpavedKm, tollKm, ferryKm, urbanKm, motorwayKmByCountry, tollKmByCountry, ...(steps.length ? { steps } : {}) };
+  return { line, km: path.distance / 1000, minutes: path.time / 60000, motorwayKm, unpavedKm, tollKm, ferryKm, urbanKm, motorwayKmByCountry, ...(steps.length ? { steps } : {}) };
 }
 
 export class GraphHopperRouter implements Router {

@@ -200,46 +200,6 @@
               },
               "polyline": {
                 "type": "string"
-              },
-              "tolls": {
-                "type": "object",
-                "properties": {
-                  "km": {
-                    "type": "number"
-                  },
-                  "eur": {
-                    "type": "number"
-                  },
-                  "byCountry": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "country": {
-                          "type": "string"
-                        },
-                        "km": {
-                          "type": "number"
-                        },
-                        "eur": {
-                          "type": "number"
-                        }
-                      },
-                      "required": [
-                        "country",
-                        "km",
-                        "eur"
-                      ],
-                      "additionalProperties": false
-                    }
-                  }
-                },
-                "required": [
-                  "km",
-                  "eur",
-                  "byCountry"
-                ],
-                "additionalProperties": false
               }
             },
             "required": [
@@ -684,46 +644,6 @@
                     "additionalProperties": false
                   }
                 },
-                "tolls": {
-                  "type": "object",
-                  "properties": {
-                    "km": {
-                      "type": "number"
-                    },
-                    "eur": {
-                      "type": "number"
-                    },
-                    "byCountry": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "country": {
-                            "type": "string"
-                          },
-                          "km": {
-                            "type": "number"
-                          },
-                          "eur": {
-                            "type": "number"
-                          }
-                        },
-                        "required": [
-                          "country",
-                          "km",
-                          "eur"
-                        ],
-                        "additionalProperties": false
-                      }
-                    }
-                  },
-                  "required": [
-                    "km",
-                    "eur",
-                    "byCountry"
-                  ],
-                  "additionalProperties": false
-                },
                 "vsFastest": {
                   "type": "object",
                   "properties": {
@@ -731,9 +651,6 @@
                       "type": "number"
                     },
                     "extraMinutes": {
-                      "type": "number"
-                    },
-                    "tollSavedEur": {
                       "type": "number"
                     },
                     "sharedPct": {
@@ -821,7 +738,6 @@
                   "required": [
                     "extraKm",
                     "extraMinutes",
-                    "tollSavedEur",
                     "sharedPct",
                     "detours"
                   ],
@@ -1776,46 +1692,6 @@
               "additionalProperties": false
             }
           },
-          "tolls": {
-            "type": "object",
-            "properties": {
-              "km": {
-                "type": "number"
-              },
-              "eur": {
-                "type": "number"
-              },
-              "byCountry": {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "properties": {
-                    "country": {
-                      "type": "string"
-                    },
-                    "km": {
-                      "type": "number"
-                    },
-                    "eur": {
-                      "type": "number"
-                    }
-                  },
-                  "required": [
-                    "country",
-                    "km",
-                    "eur"
-                  ],
-                  "additionalProperties": false
-                }
-              }
-            },
-            "required": [
-              "km",
-              "eur",
-              "byCountry"
-            ],
-            "additionalProperties": false
-          },
           "vsFastest": {
             "type": "object",
             "properties": {
@@ -1823,9 +1699,6 @@
                 "type": "number"
               },
               "extraMinutes": {
-                "type": "number"
-              },
-              "tollSavedEur": {
                 "type": "number"
               },
               "sharedPct": {
@@ -1913,7 +1786,6 @@
             "required": [
               "extraKm",
               "extraMinutes",
-              "tollSavedEur",
               "sharedPct",
               "detours"
             ],
@@ -2524,46 +2396,6 @@
                         "additionalProperties": false
                       }
                     },
-                    "tolls": {
-                      "type": "object",
-                      "properties": {
-                        "km": {
-                          "type": "number"
-                        },
-                        "eur": {
-                          "type": "number"
-                        },
-                        "byCountry": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "country": {
-                                "type": "string"
-                              },
-                              "km": {
-                                "type": "number"
-                              },
-                              "eur": {
-                                "type": "number"
-                              }
-                            },
-                            "required": [
-                              "country",
-                              "km",
-                              "eur"
-                            ],
-                            "additionalProperties": false
-                          }
-                        }
-                      },
-                      "required": [
-                        "km",
-                        "eur",
-                        "byCountry"
-                      ],
-                      "additionalProperties": false
-                    },
                     "vsFastest": {
                       "type": "object",
                       "properties": {
@@ -2571,9 +2403,6 @@
                           "type": "number"
                         },
                         "extraMinutes": {
-                          "type": "number"
-                        },
-                        "tollSavedEur": {
                           "type": "number"
                         },
                         "sharedPct": {
@@ -2661,7 +2490,6 @@
                       "required": [
                         "extraKm",
                         "extraMinutes",
-                        "tollSavedEur",
                         "sharedPct",
                         "detours"
                       ],
@@ -3420,46 +3248,6 @@
                                   "additionalProperties": false
                                 }
                               },
-                              "tolls": {
-                                "type": "object",
-                                "properties": {
-                                  "km": {
-                                    "type": "number"
-                                  },
-                                  "eur": {
-                                    "type": "number"
-                                  },
-                                  "byCountry": {
-                                    "type": "array",
-                                    "items": {
-                                      "type": "object",
-                                      "properties": {
-                                        "country": {
-                                          "type": "string"
-                                        },
-                                        "km": {
-                                          "type": "number"
-                                        },
-                                        "eur": {
-                                          "type": "number"
-                                        }
-                                      },
-                                      "required": [
-                                        "country",
-                                        "km",
-                                        "eur"
-                                      ],
-                                      "additionalProperties": false
-                                    }
-                                  }
-                                },
-                                "required": [
-                                  "km",
-                                  "eur",
-                                  "byCountry"
-                                ],
-                                "additionalProperties": false
-                              },
                               "vsFastest": {
                                 "type": "object",
                                 "properties": {
@@ -3467,9 +3255,6 @@
                                     "type": "number"
                                   },
                                   "extraMinutes": {
-                                    "type": "number"
-                                  },
-                                  "tollSavedEur": {
                                     "type": "number"
                                   },
                                   "sharedPct": {
@@ -3557,7 +3342,6 @@
                                 "required": [
                                   "extraKm",
                                   "extraMinutes",
-                                  "tollSavedEur",
                                   "sharedPct",
                                   "detours"
                                 ],
@@ -4328,46 +4112,6 @@
                                   "additionalProperties": false
                                 }
                               },
-                              "tolls": {
-                                "type": "object",
-                                "properties": {
-                                  "km": {
-                                    "type": "number"
-                                  },
-                                  "eur": {
-                                    "type": "number"
-                                  },
-                                  "byCountry": {
-                                    "type": "array",
-                                    "items": {
-                                      "type": "object",
-                                      "properties": {
-                                        "country": {
-                                          "type": "string"
-                                        },
-                                        "km": {
-                                          "type": "number"
-                                        },
-                                        "eur": {
-                                          "type": "number"
-                                        }
-                                      },
-                                      "required": [
-                                        "country",
-                                        "km",
-                                        "eur"
-                                      ],
-                                      "additionalProperties": false
-                                    }
-                                  }
-                                },
-                                "required": [
-                                  "km",
-                                  "eur",
-                                  "byCountry"
-                                ],
-                                "additionalProperties": false
-                              },
                               "vsFastest": {
                                 "type": "object",
                                 "properties": {
@@ -4375,9 +4119,6 @@
                                     "type": "number"
                                   },
                                   "extraMinutes": {
-                                    "type": "number"
-                                  },
-                                  "tollSavedEur": {
                                     "type": "number"
                                   },
                                   "sharedPct": {
@@ -4465,7 +4206,6 @@
                                 "required": [
                                   "extraKm",
                                   "extraMinutes",
-                                  "tollSavedEur",
                                   "sharedPct",
                                   "detours"
                                 ],

@@ -10,7 +10,6 @@ import { rankRoutes, retraced } from './rank.ts';
 import { assessConditions, weatherSamplePoints, type HourlyForecast } from './conditions.ts';
 import { isBlocked, routeAdvisories, type Advisory, type Zone } from './advisories.ts';
 import { appleMapsUrl, googleMapsUrl, shapingPoints } from './exports.ts';
-import { estimateTolls } from './tolls.ts';
 import { compareRoutes } from './compare.ts';
 import type { Interest, PlanRequest, PlanResponse, Preferences, RouteOption, RouteStyle, Vehicle } from './contracts.ts';
 
@@ -72,8 +71,6 @@ export interface RouteStep {
 
 export interface RoutedPath extends RouteGeometry {
   motorwayKmByCountry?: Record<string, number>;
-  /** Toll-road km per ISO country code, for the toll estimate. */
-  tollKmByCountry?: Record<string, number>;
   steps?: RouteStep[];
 }
 
@@ -354,10 +351,8 @@ export async function planRoutes(req: PlanRequest, p: Providers, opts: PlanOptio
   const endNames = [req.origin.label, req.destination.label].flatMap((l) => (l ? [l.split(',')[0].trim().toLowerCase()] : []));
   if (best && best.source === 'fastest' && best.path.km > 0 && (best.path.motorwayKm ?? 0) / best.path.km > 0.5)
     warnings.push('No quieter road fits your time, so the fastest road leads. Allow more time or try "Most beautiful".');
-  // The fastest road is the baseline: its tolls, and each route's detours from it.
-  const fastestTolls = estimateTolls(fastest, req.vehicle);
+  // The fastest road is the baseline: each route's detours from it.
   const routes: RouteOption[] = ranked.map((r, i) => {
-    const tolls = r.source === 'fastest' ? fastestTolls : estimateTolls(r.path, req.vehicle);
     const highlights = r.scored.highlights.filter((h) => !endNames.includes(h.name.toLowerCase()));
     const vs = r.source === 'fastest'
       ? { extraKm: 0, extraMinutes: 0, sharedPct: 100, detours: [] }
@@ -385,8 +380,7 @@ export async function planRoutes(req: PlanRequest, p: Providers, opts: PlanOptio
       ...(r.path.steps?.length ? { steps: r.path.steps } : {}),
       conditions,
       advisories: r.advisories,
-      tolls,
-      vsFastest: { ...vs, tollSavedEur: fastestTolls.eur - tolls.eur },
+      vsFastest: vs,
       handoff: {
         googleMaps: googleMapsUrl(req.origin, req.destination, handoffPts),
         appleMaps: appleMapsUrl(req.origin, req.destination, r.stops[0]),
@@ -399,7 +393,7 @@ export async function planRoutes(req: PlanRequest, p: Providers, opts: PlanOptio
     planId,
     modelVersion: SCORE_MODEL.version,
     budgetMinutes: budget,
-    fastest: { km: Math.round(fastest.km * 10) / 10, minutes: Math.round(fastestMinutes), polyline: encodePolyline(fastest.line, 5), tolls: fastestTolls },
+    fastest: { km: Math.round(fastest.km * 10) / 10, minutes: Math.round(fastestMinutes), polyline: encodePolyline(fastest.line, 5) },
     routes,
     warnings,
     attribution,
