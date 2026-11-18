@@ -144,23 +144,50 @@ struct PassportPage: View {
 }
 
 /// Faint contour lines, like the security print on a passport page.
+/// Passport paper printed with a faded topographic map: pale water patches and wobbly contour rings.
 private struct ContourTexture: View {
     var body: some View {
         Canvas { ctx, size in
-            for i in 0..<14 {
+            var rng = SeededRandom2(seed: 41)
+            func unit() -> CGFloat { CGFloat(rng.next() % 10_000) / 10_000 }
+            func blob(_ c: CGPoint, _ r: CGFloat, _ wobble: CGFloat, _ phase: CGFloat) -> Path {
                 var p = Path()
-                let y0 = size.height * CGFloat(i) / 12 - 20
-                p.move(to: CGPoint(x: 0, y: y0))
-                var x: CGFloat = 0
-                while x <= size.width {
-                    x += 8
-                    let y = y0 + sin(x / 46 + CGFloat(i) * 0.7) * 9 + sin(x / 17 + CGFloat(i)) * 2.5
-                    p.addLine(to: CGPoint(x: x, y: y))
+                for k in 0...48 {
+                    let t = CGFloat(k) / 48 * .pi * 2
+                    let rr = r * (1 + wobble * sin(t * 3 + phase) + wobble * 0.5 * sin(t * 5 + phase * 2))
+                    let pt = CGPoint(x: c.x + cos(t) * rr * 1.3, y: c.y + sin(t) * rr)
+                    if k == 0 { p.move(to: pt) } else { p.addLine(to: pt) }
                 }
-                ctx.stroke(p, with: .color(Theme.lake.opacity(0.13)), lineWidth: 0.9)
+                p.closeSubpath()
+                return p
+            }
+            ctx.fill(Path(CGRect(origin: .zero, size: size)), with: .color(Theme.green.opacity(0.025)))
+            // Water and woodland washes.
+            for i in 0..<5 {
+                let c = CGPoint(x: unit() * size.width, y: unit() * size.height)
+                let tint = i % 2 == 0 ? Theme.lake.opacity(0.07) : Theme.green.opacity(0.05)
+                ctx.fill(blob(c, 24 + unit() * 40, 0.18, unit() * 6), with: .color(tint))
+            }
+            // Hills as rings of contour lines.
+            for _ in 0..<16 {
+                let c = CGPoint(x: unit() * size.width, y: unit() * size.height)
+                let phase = unit() * 6, step = 6 + unit() * 4
+                for ring in 1...7 {
+                    ctx.stroke(blob(c, CGFloat(ring) * step, 0.2, phase + CGFloat(ring) * 0.35),
+                               with: .color(Theme.ink3.opacity(0.09)), lineWidth: 0.6)
+                }
             }
         }
         .accessibilityHidden(true)
+    }
+}
+
+private struct SeededRandom2 {
+    var state: UInt64
+    init(seed: UInt64) { state = seed }
+    mutating func next() -> UInt64 {
+        state ^= state << 13; state ^= state >> 7; state ^= state << 17
+        return state
     }
 }
 

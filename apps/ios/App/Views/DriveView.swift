@@ -205,7 +205,8 @@ struct DriveView: View {
                 .frame(width: 56, height: 56).background(Theme.green, in: RoundedRectangle(cornerRadius: 14))
             VStack(alignment: .leading, spacing: 2) {
                 Text(distanceText(tracker.metresToNext)).font(Theme.sofia(28, .medium)).foregroundStyle(Theme.ink).monospacedDigit()
-                Text(tracker.nextStep?.text ?? "Follow the route").font(Theme.sofia(16)).foregroundStyle(Theme.ink).lineLimit(1)
+                Text(tracker.nextStep?.text ?? "Follow the route").font(Theme.sofia(16)).foregroundStyle(Theme.ink)
+                    .lineLimit(2).minimumScaleFactor(0.85).fixedSize(horizontal: false, vertical: true)
                 if let sub = subLine { Text(sub).font(Theme.sofia(13)).foregroundStyle(Theme.ink2).lineLimit(1) }
             }
             Spacer(minLength: 0)

@@ -118,19 +118,32 @@ private struct Squiggle: SwiftUI.Shape {
 }
 
 /// Worn ink: an opaque mask with small, seeded gaps, like a rubber stamp on paper.
+/// Worn rubber-stamp ink: a fine dense grain over every stroke, a few lighter patches where the stamp
+/// pressed unevenly, and only rare small gaps. Seeded, so a stamp never flickers.
 private struct StampWear: View {
     let seed: Int
     var body: some View {
         Canvas { ctx, size in
-            ctx.fill(Path(CGRect(origin: .zero, size: size)), with: .color(.black))
+            ctx.fill(Path(CGRect(origin: .zero, size: size)), with: .color(.black.opacity(0.9)))
             var rng = SeededRandom(seed: UInt64(seed &* 2_654_435_761 &+ 1))
+            func unit() -> Double { Double(rng.next() % 10_000) / 10_000 }
             ctx.blendMode = .destinationOut
-            for _ in 0..<Int(size.width * size.height / 45) {
-                let x = Double(rng.next() % 10_000) / 10_000 * size.width
-                let y = Double(rng.next() % 10_000) / 10_000 * size.height
-                let r = 0.5 + Double(rng.next() % 100) / 100 * 2.0
-                let a = 0.35 + Double(rng.next() % 100) / 100 * 0.6
-                ctx.fill(Path(ellipseIn: CGRect(x: x, y: y, width: r * 2, height: r * 2)), with: .color(.black.opacity(a)))
+            // Uneven pressure: soft patches where the ink is lighter.
+            for _ in 0..<5 {
+                let r = (0.12 + unit() * 0.2) * size.width
+                let rect = CGRect(x: unit() * size.width - r / 2, y: unit() * size.height - r / 2, width: r, height: r * (0.6 + unit() * 0.6))
+                ctx.fill(Path(ellipseIn: rect), with: .color(.black.opacity(0.18 + unit() * 0.17)))
+            }
+            // Fine grain: many tiny specks.
+            for _ in 0..<Int(size.width * size.height / 6) {
+                let r = 0.25 + unit() * 0.55
+                ctx.fill(Path(ellipseIn: CGRect(x: unit() * size.width, y: unit() * size.height, width: r * 2, height: r * 2)),
+                         with: .color(.black.opacity(0.35 + unit() * 0.5)))
+            }
+            // A few small gaps.
+            for _ in 0..<Int(size.width * size.height / 900) {
+                let r = 0.8 + unit() * 1.4
+                ctx.fill(Path(ellipseIn: CGRect(x: unit() * size.width, y: unit() * size.height, width: r * 2, height: r * 1.4)), with: .color(.black))
             }
         }
     }
@@ -147,10 +160,9 @@ private struct SeededRandom {
 
 /// Stamp inks, varied per drive for a real passport feel; green is the default.
 enum StampInk {
-    static let all: [Color] = [Theme.green, Theme.lake, Theme.burgundy, Theme.terracotta]
-    static func forScore(_ score: Int, index: Int) -> Color {
-        score >= 95 ? Theme.burgundy : all[index % all.count]
-    }
+    /// The passport page's rhythm (design board 07): green, blue, burgundy, terracotta, blue, green.
+    static let all: [Color] = [Theme.green, Theme.lake, Theme.burgundy, Theme.terracotta, Theme.lake, Theme.green]
+    static func forScore(_ score: Int, index: Int) -> Color { all[index % all.count] }
 }
 
 extension LoggedDrive {
