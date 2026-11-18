@@ -5,7 +5,7 @@ import { preview } from 'vite';
 import assert from 'node:assert/strict';
 import { buildApp } from '../../../services/api/src/app.ts';
 import { MemoryStore } from '../../../services/api/src/store/memory.ts';
-import { fakeProviders } from '../../../packages/core/test/fixtures.ts';
+import { fakeProviders, FakeRouter } from '../../../packages/core/test/fixtures.ts';
 
 const { chromium } = createRequire(import.meta.url)('playwright') as typeof import('playwright');
 const shots = process.argv[2];
@@ -15,7 +15,8 @@ const PLACES: Record<string, { lat: number; lon: number; label: string }> = {
 };
 const api = await buildApp({
   config: { JWT_SECRET: 'e2e-secret-e2e-secret', CORS_ORIGINS: [], APPLE_BUNDLE_IDS: [], TIME_ZONE: 'Europe/Rome', LOG_LEVEL: 'silent' },
-  providers: fakeProviders(),
+  // The fastest road uses 60 km of Italian motorway with tolls, so the toll comparison shows.
+  providers: fakeProviders({ router: new FakeRouter(true, (_p, o) => (o.profile === 'fastest' ? { tollKm: 60, tollKmByCountry: { IT: 60 } } : {})) }),
   // Photos from the app's own style images, so cards render with real pictures and credits offline.
   photos: { near: async (lat: number) => { const f = ['relaxed', 'scenic', 'most_beautiful'][Math.abs(Math.round(lat * 100)) % 3]; return [{ url: `http://localhost:4179/styles/${f}.jpg`, width: 800, height: 450, title: 'View', author: 'Test Author', license: 'CC BY 4.0', source: 'https://commons.wikimedia.org/' }]; } },
   geocoder: { search: async (q) => Object.entries(PLACES).filter(([k]) => q.toLowerCase().startsWith(k.slice(0, 3))).map(([, p]) => p) },
@@ -54,6 +55,12 @@ try {
   const options = await page.locator('.route').count();
   assert.ok(options >= 2, `expected route options, got ${options}`);
   assert.equal(await page.locator('.route[aria-pressed="true"]').count(), 1);
+  // Every scenic option says what it costs against the fastest road, and the detail shows where it turns off.
+  assert.ok(await page.locator('.route .vs').count() >= 2);
+  assert.ok(await page.locator('.route .vs .save').count() >= 1, 'toll saving shown');
+  await page.locator('.ribbon').first().waitFor();
+  if (shots) { await page.locator('.ribbon').first().scrollIntoViewIfNeeded(); await page.screenshot({ path: `${shots}/web-compare.png` }); }
+  assert.ok(await page.evaluate(() => document.querySelectorAll('.detour-chip').length) >= 1, 'detour chips on the map');
   if (shots) await page.screenshot({ path: `${shots}/web-planner.png` });
   if (shots) { await page.locator('.routes').scrollIntoViewIfNeeded(); await page.screenshot({ path: `${shots}/web-routes.png` }); }
 

@@ -50,7 +50,7 @@ function syncMap() {
     return;
   }
   const d = state.journey.days[state.active];
-  if (d?.plan?.routes.length) map.show(d.plan.routes, d.chosenRouteId);
+  if (d?.plan?.routes.length) map.show(d.plan.routes, d.chosenRouteId, d.plan.fastest);
   else map.clear();
 }
 
@@ -223,7 +223,7 @@ function dayCard(d: DayPlan, i: number): string {
     </div>
     <button class="btn primary" data-action="plan" data-day="${i}" ${d.origin && d.destination && !busy ? '' : 'disabled'}>${busy ? '<span class="spin"></span>' : `${d.plan ? 'Plan again' : 'Show routes'} ${icon('chevron', 16)}`}</button>
     ${d.plan ? results(d, i) : ''}
-    ${r ? detail(r) : ''}
+    ${r ? detail(r, d.plan?.fastest) : ''}
   </section>`;
 }
 
@@ -267,7 +267,8 @@ function results(d: DayPlan, i: number) {
         </div>
         <div class="body">
           <h3>${esc(r.label)}</h3>
-          <div class="statrow"><span>${icon('clock', 15)}${duration(r.minutes)}</span>${r.extraMinutes >= 1 ? `<span class="extra">+${duration(r.extraMinutes)}</span>` : ''}<span>${icon('dist', 15)}${Math.round(r.km)} km</span></div>
+          <div class="statrow"><span>${icon('clock', 15)}${duration(r.minutes)}</span><span>${icon('dist', 15)}${Math.round(r.km)} km</span></div>
+          ${vsStrip(r)}
           ${scoreRow(r)}
         </div>
       </button>`;
@@ -276,9 +277,52 @@ function results(d: DayPlan, i: number) {
   </div>`;
 }
 
-function detail(r: RouteOption) {
+/** "+38 min · +13 km · −€8": what this route costs against the fastest road. */
+function vsStrip(r: RouteOption) {
+  const v = r.vsFastest;
+  if (!v || r.source === 'fastest') return r.source === 'fastest' ? `<div class="vs"><span>Fastest road</span>${r.tolls?.eur ? `<span>≈ €${r.tolls.eur} tolls</span>` : ''}</div>` : '';
+  const toll = v.tollSavedEur > 0 ? `<span class="save" title="Tolls compared with the fastest road (estimate)">−€${v.tollSavedEur}</span>` : v.tollSavedEur < 0 ? `<span title="More tolls than the fastest road (estimate)">+€${-v.tollSavedEur}</span>` : '';
+  return `<div class="vs" aria-label="Compared with the fastest road"><span>+${duration(v.extraMinutes)}</span><span>+${Math.round(v.extraKm)} km</span>${toll}</div>`;
+}
+
+/** Time and toll bars against the fastest road, and a ribbon of where the route turns off. */
+function compare(r: RouteOption, fastest: { minutes: number; tolls?: { eur: number } }) {
+  const v = r.vsFastest;
+  if (!v || r.source === 'fastest') return '';
+  const maxMin = Math.max(r.minutes, fastest.minutes, 1);
+  const tf = fastest.tolls?.eur ?? 0, tr = r.tolls?.eur ?? 0, maxEur = Math.max(tf, tr, 1);
+  const bars = (rows: [string, number, number, string][]) => `<div class="cmp">${rows.map(([k, x, max, txt], n) => `<div class="${n === 0 ? 'direct' : ''}"><span>${k}</span><i style="--w:${Math.max(2, (100 * x) / max)}%"></i><b>${txt}</b></div>`).join('')}</div>`;
+  return `
+    <span class="label">Against the fastest road</span>
+    ${bars([['Fastest', fastest.minutes, maxMin, duration(fastest.minutes)], ['This', r.minutes, maxMin, duration(r.minutes)]])}
+    ${v.detours.length ? `<span class="label">Where you turn off</span>${ribbon(r)}` : ''}
+    ${tf || tr ? `<span class="label">Tolls, about</span>${bars([['Fastest', tf, maxEur, `€${tf}`], ['This', tr, maxEur, `€${tr}`]])}` : ''}`;
+}
+
+const clip = (s: string, n: number) => (s.length > n ? `${s.slice(0, n - 1).trimEnd()}…` : s);
+
+function ribbon(r: RouteOption) {
+  const W = 300, x0 = 8, x1 = W - 8, y = 58, km = r.km || 1;
+  const X = (k: number) => x0 + ((x1 - x0) * Math.min(km, Math.max(0, k))) / km;
+  const maxMin = Math.max(...r.vsFastest!.detours.map((d) => d.extraMinutes), 1);
+  let path = `M${x0} ${y}`;
+  const labels: string[] = [];
+  for (const d of r.vsFastest!.detours) {
+    const a = X(d.fromKm), b = X(d.toKm), h = 14 + 34 * (d.extraMinutes / maxMin);
+    path += ` L${a.toFixed(1)} ${y} Q${((a + b) / 2).toFixed(1)} ${(y - 2 * h).toFixed(1)} ${b.toFixed(1)} ${y}`;
+    const cx = Math.min(x1 - 30, Math.max(x0 + 30, (a + b) / 2));
+    labels.push(`<text x="${cx.toFixed(1)}" y="${y + 18}">${esc(clip(d.name ?? '', 18))}</text><text class="m" x="${cx.toFixed(1)}" y="${y + 32}">+${d.extraMinutes} min</text>`);
+  }
+  path += ` L${x1} ${y}`;
+  return `<svg class="ribbon" viewBox="0 0 ${W} ${y + 38}" role="img" aria-label="Where this route leaves the fastest road">
+    <line x1="${x0}" y1="${y}" x2="${x1}" y2="${y}" class="g"/><path d="${path}" class="s"/>
+    <circle cx="${x0}" cy="${y}" r="4.5" class="a"/><circle cx="${x1}" cy="${y}" r="4.5" class="b"/>${labels.join('')}</svg>`;
+}
+
+function detail(r: RouteOption, fastest?: { minutes: number; tolls?: { eur: number } }) {
   const c = r.conditions;
   return `<div class="field">
+    ${fastest ? compare(r, fastest) : ''}
     ${c ? `<div class="statrow"><span>${icon('clock', 15)}${hhmm(c.arrival)}</span><span class="sun">${icon('sunset', 15)}${hhmm(c.sunset)}</span></div>` : ''}
     ${(c?.notes ?? []).map((n) => `<p class="note ${/fog|rain|dark|hidden|Low sun/i.test(n) ? 'warn' : /Clear|Golden/.test(n) ? 'good' : 'weather'}">${esc(n)}</p>`).join('')}
     ${r.advisories.map((a) => `<p class="note ${a.severity === 'info' ? 'weather' : 'warn'}"><b>${esc(a.title)}.</b> ${esc(a.detail)}</p>`).join('')}

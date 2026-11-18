@@ -1,8 +1,9 @@
-// MapLibre map: chosen route in scenic green with a white halo, alternatives in dotted lake blue, numbered stops.
+// MapLibre map: chosen route in scenic green with a white halo, alternatives in dotted lake blue, numbered stops,
+// and the fastest road as a dashed grey ghost line with "+12 min" chips where the chosen route leaves it.
 
 import maplibregl, { type LngLatBoundsLike, type StyleSpecification } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { decodePolyline, type RouteOption } from '@scenic/core';
+import { cumulativeKm, decodePolyline, pointAtKm, type RouteOption } from '@scenic/core';
 
 const BLANK: StyleSpecification = { version: 8, sources: {}, layers: [{ id: 'bg', type: 'background', paint: { 'background-color': '#e9ece6' } }] };
 
@@ -29,7 +30,7 @@ export class RouteMap {
     });
   }
 
-  async show(routes: RouteOption[], chosenId: string | null) {
+  async show(routes: RouteOption[], chosenId: string | null, fastest?: { polyline?: string }) {
     await this.ready;
     const fc = (pred: (r: RouteOption) => boolean) => ({
       type: 'FeatureCollection' as const,
@@ -38,11 +39,15 @@ export class RouteMap {
     const chosen = routes.find((r) => r.id === chosenId) ?? routes[0];
     const alt = fc((r) => r !== chosen);
     const sel = fc((r) => r === chosen);
-    for (const [id, data] of [['alt', alt], ['sel', sel]] as const) {
+    // The ghost: only when the chosen route isn't the fastest road itself.
+    const ghostLine = fastest?.polyline && chosen?.source !== 'fastest' ? decodePolyline(fastest.polyline) : [];
+    const fast = { type: 'FeatureCollection' as const, features: ghostLine.length ? [{ type: 'Feature' as const, properties: {}, geometry: { type: 'LineString' as const, coordinates: ghostLine.map((p) => [p.lon, p.lat]) } }] : [] };
+    for (const [id, data] of [['fast', fast], ['alt', alt], ['sel', sel]] as const) {
       const src = this.map.getSource(id) as maplibregl.GeoJSONSource | undefined;
       if (src) src.setData(data); else this.map.addSource(id, { type: 'geojson', data });
     }
     if (!this.map.getLayer('alt-line')) {
+      this.map.addLayer({ id: 'fast-line', type: 'line', source: 'fast', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#7a8786', 'line-width': 3.5, 'line-opacity': 0.9, 'line-dasharray': [2, 1.6] } });
       this.map.addLayer({ id: 'alt-line', type: 'line', source: 'alt', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#2e5e8c', 'line-width': 4, 'line-opacity': 0.85, 'line-dasharray': [1, 1.6] } });
       this.map.addLayer({ id: 'sel-casing', type: 'line', source: 'sel', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#ffffff', 'line-width': 11 } });
       this.map.addLayer({ id: 'sel-line', type: 'line', source: 'sel', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#1e6b52', 'line-width': 7 } });
@@ -58,6 +63,21 @@ export class RouteMap {
       el.title = s.name || 'Scenic spot';
       return new maplibregl.Marker({ element: el }).setLngLat([s.lon, s.lat]).addTo(this.map);
     });
+    // A chip on each detour, halfway along it: what it costs.
+    if (ghostLine.length && chosen?.vsFastest) {
+      const line = decodePolyline(chosen.polyline);
+      const cum = cumulativeKm(line);
+      const scale = cum[cum.length - 1] / (chosen.km || 1);
+      for (const d of chosen.vsFastest.detours) {
+        if (d.extraMinutes < 1) continue;
+        const el = document.createElement('div');
+        el.className = 'detour-chip';
+        el.textContent = `+${d.extraMinutes} min`;
+        el.title = d.name ? `Detour by ${d.name}` : 'Detour';
+        const { point } = pointAtKm(line, ((d.fromKm + d.toKm) / 2) * scale, cum);
+        this.markers.push(new maplibregl.Marker({ element: el }).setLngLat([point.lon, point.lat]).addTo(this.map));
+      }
+    }
     if (chosen && chosen.bbox.some((x) => x !== 0)) this.fit(chosen);
   }
 
@@ -87,7 +107,7 @@ export class RouteMap {
 
   async clear() {
     await this.ready;
-    for (const id of ['alt', 'sel']) (this.map.getSource(id) as maplibregl.GeoJSONSource | undefined)?.setData({ type: 'FeatureCollection', features: [] });
+    for (const id of ['fast', 'alt', 'sel']) (this.map.getSource(id) as maplibregl.GeoJSONSource | undefined)?.setData({ type: 'FeatureCollection', features: [] });
     this.markers.forEach((m) => m.remove());
   }
 }
