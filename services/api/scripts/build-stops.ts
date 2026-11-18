@@ -73,14 +73,22 @@ async function main() {
   try {
     const filtered = join(tmp, 'stops.osm.pbf');
     execFileSync('osmium', ['tags-filter', pbf, ...OSMIUM_STOP_FILTERS, '-o', filtered, '--overwrite'], { stdio: 'inherit' });
-    const exp = spawn('osmium', ['export', filtered, '-f', 'geojsonseq', '--add-unique-id=type_id', '-x', 'print_record_separator=false', '-o', '-'], { stdio: ['ignore', 'pipe', 'inherit'] });
+    const exp = spawn('osmium', ['export', filtered, '-f', 'geojsonseq', '--add-unique-id=type_id', '-o', '-'], { stdio: ['ignore', 'pipe', 'inherit'] });
     const byId = new Map<string, StopPlace>();
     const views: StopPlace[] = [];
     const parking: { lat: number; lon: number }[] = [];
     let s = 90, w = 180, n = -90, e = -180;
-    for await (const line of createInterface({ input: exp.stdout })) {
-      if (!line.trim()) continue;
-      const f = JSON.parse(line) as { id?: string; geometry: { coordinates: unknown }; properties: Tags };
+    // Records start with the RS character. Some tag values (descriptions) hold raw newlines, so a record can
+    // span several lines: join them back with an escaped newline before parsing.
+    const records = (async function* () {
+      let buf = '';
+      for await (const line of createInterface({ input: exp.stdout })) {
+        if (line.startsWith('\x1e')) { if (buf.trim()) yield buf; buf = line.slice(1); } else buf += '\\n' + line;
+      }
+      if (buf.trim()) yield buf;
+    })();
+    for await (const rec of records) {
+      const f = JSON.parse(rec) as { id?: string; geometry: { coordinates: unknown }; properties: Tags };
       const tags = f.properties ?? {};
       const kind = classifyStop(tags);
       if (!kind) continue;
