@@ -47,8 +47,9 @@ export class RouteMap {
       if (src) src.setData(data); else this.map.addSource(id, { type: 'geojson', data });
     }
     if (!this.map.getLayer('alt-line')) {
-      this.map.addLayer({ id: 'fast-line', type: 'line', source: 'fast', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#7a8786', 'line-width': 3.5, 'line-opacity': 0.9, 'line-dasharray': [2, 1.6] } });
       this.map.addLayer({ id: 'alt-line', type: 'line', source: 'alt', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#2e5e8c', 'line-width': 4, 'line-opacity': 0.85, 'line-dasharray': [1, 1.6] } });
+      // The ghost sits over the alternatives (they often share the fast road) and under the chosen route.
+      this.map.addLayer({ id: 'fast-line', type: 'line', source: 'fast', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#7a8786', 'line-width': 3.5, 'line-opacity': 0.9, 'line-dasharray': [2, 1.6] } });
       this.map.addLayer({ id: 'sel-casing', type: 'line', source: 'sel', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#ffffff', 'line-width': 11 } });
       this.map.addLayer({ id: 'sel-line', type: 'line', source: 'sel', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#1e6b52', 'line-width': 7 } });
       this.map.on('click', 'alt-line', (e) => { const id = e.features?.[0]?.properties?.id; if (id) this.onPick?.(String(id)); });

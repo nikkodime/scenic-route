@@ -16,7 +16,8 @@ struct VsStrip: View {
                 if let t = route.tolls, t.eur >= 1 { chip("≈ €\(Int(t.eur)) tolls") }
             } else if let v = route.vsFastest {
                 chip("+\(Format.duration(minutes: v.extraMinutes))")
-                chip("+\(Int(v.extraKm.rounded())) km")
+                if v.extraKm >= 1 { chip("+\(Int(v.extraKm.rounded())) km") }
+                else if v.extraKm <= -1 { chip("−\(Int((-v.extraKm).rounded())) km") }
                 if v.tollSavedEur >= 1 { chip("−€\(Int(v.tollSavedEur))", filled: true) }
                 else if v.tollSavedEur <= -1 { chip("+€\(Int(-v.tollSavedEur))") }
             } else if route.extraMinutes >= 1 {
@@ -36,7 +37,7 @@ struct VsStrip: View {
 
     private var accessibility: String {
         guard let v = route.vsFastest, route.source != "fastest" else { return route.source == "fastest" ? "Fastest road" : "" }
-        var s = "\(Int(v.extraMinutes)) minutes and \(Int(v.extraKm.rounded())) kilometres more than the fastest road"
+        var s = "\(Int(v.extraMinutes)) minutes more than the fastest road, \(Int(abs(v.extraKm).rounded())) kilometres \(v.extraKm < 0 ? "shorter" : "longer")"
         if v.tollSavedEur >= 1 { s += ", about \(Int(v.tollSavedEur)) euros less in tolls" }
         return s
     }
@@ -55,7 +56,13 @@ struct VsFastestSection: View {
                     .init(label: "Fastest", value: fastest.minutes, text: Format.duration(minutes: fastest.minutes), direct: true),
                     .init(label: "This", value: route.minutes, text: Format.duration(minutes: route.minutes), direct: false),
                 ])
-                if !v.detours.isEmpty {
+                if v.sharedPct < 15 {
+                    // Nothing in common with the fast road: one arc over the whole drive says nothing.
+                    Label("A different road from start to finish", systemImage: "arrow.triangle.branch")
+                        .font(Theme.sofia(14, .medium)).foregroundStyle(Theme.greenDark)
+                        .padding(.horizontal, 12).padding(.vertical, 9)
+                        .background(Theme.greenTint, in: RoundedRectangle(cornerRadius: 12))
+                } else if !v.detours.isEmpty {
                     eyebrow("Where you turn off").padding(.top, 6)
                     DetourRibbon(km: route.km, detours: v.detours).frame(height: 104)
                 }

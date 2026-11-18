@@ -277,12 +277,14 @@ function results(d: DayPlan, i: number) {
   </div>`;
 }
 
+const km = (x: number) => (Math.abs(x) < 1 ? '' : `<span>${x > 0 ? '+' : '−'}${Math.round(Math.abs(x))} km</span>`);
+
 /** "+38 min · +13 km · −€8": what this route costs against the fastest road. */
 function vsStrip(r: RouteOption) {
   const v = r.vsFastest;
   if (!v || r.source === 'fastest') return r.source === 'fastest' ? `<div class="vs"><span>Fastest road</span>${r.tolls?.eur ? `<span>≈ €${r.tolls.eur} tolls</span>` : ''}</div>` : '';
   const toll = v.tollSavedEur > 0 ? `<span class="save" title="Tolls compared with the fastest road (estimate)">−€${v.tollSavedEur}</span>` : v.tollSavedEur < 0 ? `<span title="More tolls than the fastest road (estimate)">+€${-v.tollSavedEur}</span>` : '';
-  return `<div class="vs" aria-label="Compared with the fastest road"><span>+${duration(v.extraMinutes)}</span><span>+${Math.round(v.extraKm)} km</span>${toll}</div>`;
+  return `<div class="vs" aria-label="Compared with the fastest road"><span>+${duration(v.extraMinutes)}</span>${km(v.extraKm)}${toll}</div>`;
 }
 
 /** Time and toll bars against the fastest road, and a ribbon of where the route turns off. */
@@ -295,7 +297,7 @@ function compare(r: RouteOption, fastest: { minutes: number; tolls?: { eur: numb
   return `
     <span class="label">Against the fastest road</span>
     ${bars([['Fastest', fastest.minutes, maxMin, duration(fastest.minutes)], ['This', r.minutes, maxMin, duration(r.minutes)]])}
-    ${v.detours.length ? `<span class="label">Where you turn off</span>${ribbon(r)}` : ''}
+    ${v.sharedPct < 15 ? `<p class="note">A different road from start to finish.</p>` : v.detours.length ? `<span class="label">Where you turn off</span>${ribbon(r)}` : ''}
     ${tf || tr ? `<span class="label">Tolls, about</span>${bars([['Fastest', tf, maxEur, `€${tf}`], ['This', tr, maxEur, `€${tr}`]])}` : ''}`;
 }
 

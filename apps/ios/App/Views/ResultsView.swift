@@ -78,17 +78,23 @@ struct RouteMap: View {
     var body: some View {
         let chosen = routes.first(where: { $0.id == selectedID }) ?? routes.first
         Map(position: $camera) {
-            if !fastest.isEmpty, chosen?.source != "fastest" {
-                MapPolyline(coordinates: fastest.map { CLLocationCoordinate2D(latitude: $0.lat, longitude: $0.lon) })
-                    .stroke(Theme.ink3.opacity(0.9), style: StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round, dash: [8, 7]))
-            }
             // Draw unselected first so the selected route sits on top.
             let indexed = Array(routes.enumerated())
             let ordered = indexed.filter { $0.element.id != selectedID } + indexed.filter { $0.element.id == selectedID }
-            ForEach(ordered, id: \.element.id) { i, r in
-                let selected = r.id == selectedID
+            // Alternatives first, then the fastest road as a dashed ghost (alternatives often share it), the chosen route on top.
+            ForEach(ordered.filter { $0.element.id != selectedID }, id: \.element.id) { i, r in
                 MapPolyline(coordinates: r.line.map { CLLocationCoordinate2D(latitude: $0.lat, longitude: $0.lon) })
-                    .stroke(Theme.routeColors[i % Theme.routeColors.count].opacity(selected ? 1 : 0.45), style: StrokeStyle(lineWidth: selected ? 6 : 4, lineCap: .round, lineJoin: .round))
+                    .stroke(Theme.routeColors[i % Theme.routeColors.count].opacity(0.45), style: StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round))
+            }
+            if !fastest.isEmpty, chosen?.source != "fastest" {
+                MapPolyline(coordinates: fastest.map { CLLocationCoordinate2D(latitude: $0.lat, longitude: $0.lon) })
+                    .stroke(Theme.surface, style: StrokeStyle(lineWidth: 7, lineCap: .round, lineJoin: .round))
+                MapPolyline(coordinates: fastest.map { CLLocationCoordinate2D(latitude: $0.lat, longitude: $0.lon) })
+                    .stroke(Theme.ink2, style: StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round, dash: [8, 7]))
+            }
+            ForEach(ordered.filter { $0.element.id == selectedID }, id: \.element.id) { i, r in
+                MapPolyline(coordinates: r.line.map { CLLocationCoordinate2D(latitude: $0.lat, longitude: $0.lon) })
+                    .stroke(Theme.routeColors[i % Theme.routeColors.count], style: StrokeStyle(lineWidth: 6, lineCap: .round, lineJoin: .round))
             }
             if let r = chosen {
                 if !fastest.isEmpty {

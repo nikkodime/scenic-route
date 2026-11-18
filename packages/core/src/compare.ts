@@ -20,6 +20,7 @@ export interface Detour {
 }
 
 export interface Comparison {
+  /** Negative when this route is shorter than the fastest road (a quieter, more direct road). */
   extraKm: number;
   extraMinutes: number;
   /** Share of the scenic route that runs on the fastest road, 0–100. */
@@ -44,7 +45,7 @@ const MIN_REJOIN_KM = 0.6;
 const CELL = 0.005; // degrees, ~500 m
 
 export function compareRoutes(route: CompareInput, fastest: CompareInput): Comparison {
-  const extraKm = round1(Math.max(0, route.km - fastest.km));
+  const extraKm = round1(route.km - fastest.km);
   const extraMinutes = Math.max(0, Math.round(route.minutes - fastest.minutes));
   const pts = resample(route.line, STEP_KM);
   const fpts = resample(fastest.line, STEP_KM / 2);

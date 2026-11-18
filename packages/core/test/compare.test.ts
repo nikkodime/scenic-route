@@ -61,3 +61,12 @@ test('plan: every route is compared with the fastest road, which comes back as a
   }
   assert.ok(res.routes.some((r) => r.vsFastest!.detours.length > 0));
 });
+
+test('a shorter quieter road says so: negative extra km, and no shared road means one detour', () => {
+  const fast = wigglyLine([SIENA, { lat: 43.25, lon: 11.8 }, DEST]);
+  const line = wigglyLine([SIENA, { lat: 43.1, lon: 11.5 }, DEST]);
+  const c = compareRoutes({ line, km: 56, minutes: 80 }, { line: fast, km: 69.5, minutes: 75 });
+  assert.equal(c.extraKm, -13.5);
+  assert.equal(c.extraMinutes, 5);
+  assert.ok(c.sharedPct < 15);
+});
