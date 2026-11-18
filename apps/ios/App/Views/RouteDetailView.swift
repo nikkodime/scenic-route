@@ -254,20 +254,24 @@ struct RouteDetailView: View {
 
     private var driveBar: some View {
         HStack(spacing: 10) {
-            Button {
-                if let u = URL(string: route.handoff.googleMaps) { openURL(u) }
-            } label: {
-                Label("Start drive", systemImage: "location.north.fill").font(Theme.buttonFont)
+            Button { model.startDrive(route) } label: {
+                Text("Start drive").font(Theme.buttonFont)
                     .foregroundStyle(Theme.onAccent).frame(maxWidth: .infinity).frame(minHeight: 52)
                     .background(Theme.green, in: RoundedRectangle(cornerRadius: 16))
             }
             .buttonStyle(.plain)
-            .accessibilityHint("Opens Google Maps with the scenic stops")
-            Button { if let u = URL(string: route.handoff.appleMaps) { openURL(u) } } label: {
-                squareIcon("mappin.and.ellipse")
+            .accessibilityIdentifier("startDrive")
+            .accessibilityHint("Turn-by-turn in Panoramica")
+            Button { if let u = URL(string: route.handoff.googleMaps) { openURL(u) } } label: {
+                Text("Google Maps").font(Theme.sofia(16, .medium)).foregroundStyle(Theme.ink)
+                    .padding(.horizontal, 16).frame(minHeight: 52)
+                    .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16))
+                    .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Theme.border))
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Open in Apple Maps")
+            .contextMenu {
+                Button("Open in Apple Maps", systemImage: "map") { if let u = URL(string: route.handoff.appleMaps) { openURL(u) } }
+            }
             ShareLink(item: GPXFile(name: route.summary, route: route), preview: SharePreview("Scenic route GPX")) {
                 squareIcon("arrow.down.to.line")
             }

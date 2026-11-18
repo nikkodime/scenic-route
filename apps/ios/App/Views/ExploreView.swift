@@ -57,7 +57,10 @@ struct ExploreView: View {
                                 selected = d.id
                                 Task {
                                     await model.plan(to: d)
-                                    if model.plan?.routes.isEmpty == false { model.planPath.append(.results) }
+                                    guard model.plan?.routes.isEmpty == false else { return }
+                                    // From the Explore tab, the routes open in Plan, where a drive starts.
+                                    if model.tab == .explore { model.planPath = [.results]; model.tab = .plan }
+                                    else { model.planPath.append(.results) }
                                 }
                             } label: {
                                 PlaceCard(place: d, index: i + 1, selected: d.id == current)

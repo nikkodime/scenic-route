@@ -103,6 +103,42 @@ public struct ScoreParts: Codable, Hashable, Sendable {
     public var urbanPct: Double
 }
 
+/// One manoeuvre. `sign` follows GraphHopper: -3 sharp left … 0 straight … 3 sharp right, 4 arrive, 5 via, 6 roundabout, ±7 keep.
+public struct RouteStep: Codable, Hashable, Sendable {
+    public var atKm: Double
+    public var text: String
+    public var sign: Int
+    public var street: String
+    public var lat: Double
+    public var lon: Double
+}
+
+/// A drive the driver finished and kept: one stamp in the logbook.
+public struct LoggedDrive: Codable, Hashable, Sendable, Identifiable {
+    public var id: UUID
+    public var name: String
+    /// Short place name for the stamp ("Val d'Orcia", "Montalcino").
+    public var place: String
+    public var date: Date
+    public var km: Double
+    public var minutes: Double
+    public var extraMinutes: Double
+    public var viewpoints: Int
+    public var score: Int
+    /// 1 (flat) … 5 (breathtaking).
+    public var rating: Int
+    public var country: String?
+    public var lat: Double
+    public var lon: Double
+    public var polyline: String
+
+    public init(id: UUID = UUID(), name: String, place: String, date: Date = Date(), km: Double, minutes: Double, extraMinutes: Double, viewpoints: Int, score: Int, rating: Int, country: String?, lat: Double, lon: Double, polyline: String) {
+        self.id = id; self.name = name; self.place = place; self.date = date; self.km = km; self.minutes = minutes
+        self.extraMinutes = extraMinutes; self.viewpoints = viewpoints; self.score = score; self.rating = rating
+        self.country = country; self.lat = lat; self.lon = lon; self.polyline = polyline
+    }
+}
+
 public struct Highlight: Codable, Hashable, Sendable {
     public var name: String
     public var type: String
@@ -181,6 +217,8 @@ public struct RouteOption: Codable, Hashable, Sendable, Identifiable {
     public var handoff: Handoff
     /// About 48 elevation samples in metres along the drive.
     public var elevation: [Double]?
+    /// Turn-by-turn steps for Drive mode.
+    public var steps: [RouteStep]?
 
     public var line: [Coordinate] { Polyline.decode(polyline) }
 }

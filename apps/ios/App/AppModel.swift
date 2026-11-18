@@ -39,6 +39,15 @@ final class AppModel {
     // Photos of places, by "lat,lon"
     var photoCache: [String: [Photo]] = [:]
 
+    // Tabs, drive mode and the logbook
+    var tab: AppTab = .plan
+    /// The route being driven (Drive mode is on screen while this is set).
+    var driving: RouteOption?
+    /// A finished drive waiting for its rating (the Drive logged screen).
+    var justLogged: LoggedDrive?
+    var logbook: [LoggedDrive] = []
+    let logbookStore = LogbookStore()
+
     // Trips
     var trips: [Trip] = []
     var syncStatus: String?
@@ -61,6 +70,9 @@ final class AppModel {
     }
 
     func start() async {
+        logbook = await logbookStore.all
+        // Screenshots only: sample stamps in memory, never written to the phone's logbook.
+        if ProcessInfo.processInfo.arguments.contains("-demoLogbook") { logbook = LoggedDrive.demo }
         trips = await store.trips
         await sync()
     }
@@ -174,6 +186,8 @@ final class AppModel {
         }
     }
 }
+
+enum AppTab: Hashable { case plan, explore, logbook, you }
 
 enum PlanMode: String, CaseIterable, Identifiable {
     case go, explore
