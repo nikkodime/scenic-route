@@ -263,7 +263,7 @@ public struct PlanResponse: Codable, Sendable {
         public var minutes: Double
         public var polyline: String?
         public var tolls: TollEstimate?
-        public var line: [Coordinate] { polyline.map(Polyline.decode) ?? [] }
+        public var line: [Coordinate] { polyline.map { Polyline.decode($0) } ?? [] }
     }
     public var planId: String
     public var modelVersion: String
