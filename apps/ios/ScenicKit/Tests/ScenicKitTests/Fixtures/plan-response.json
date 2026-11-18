@@ -5,18 +5,7 @@
  "fastest": {
   "km": 70.6,
   "minutes": 56,
-  "polyline": "oukgGo`ddAxFaJzF_JxFaJzF_JxFaJzFaJxF_JzFaJxFaJzF_JxFaJxF_JzFaJxFaJzF_JxFaJzFaJxF_JzFaJxF_JzFaJxFaJxF_JzFaJxF_JzFaJxFaJzF_JxFaJzFaJxF_JzFaJxF_JzFaJxFaJxF_JzFaJxFaJzF_JxFaJzF_JxFaJzFaJxF_JzFaJxF_JxFaJzFaJxF_JzFaJxFaJzF_JxFaJzF_JxFaJzFaJxF_JxFaJzFaJxF_JzFaJxF_JzFaJxFaJzF_JxFaJzF_JxFaJxFaJzF_JxFaJzFaJxF_JzFaJxF_JzFaJxFaJzF_JxFaJzFaJxF_JxFaJzF_JxFaJzFaJxF_JzFaJxF_JzFaJxFaJzF_JxFaJxFaJzF_JxFaJzF_JxFaJzFaJxF_JzFaJxFaJzF_JxFaJxF_JzFaJxFaJzF_JxFaJzF_JxFaJzFaJxF_JzFaJxFaJxF_JzFaJxF_JzFaJxFaJzF_JxFaJzF_JxFaJzFaJxF_JzFaJxFaJxF_JzFaJxF_JzFaJxFaJzF_JxFaJzFaJxF_JzFaJxF_JxFaJzFaJxF_JzFaJxF_JzFaJxFaJzF_JxFaJzFaJxF_JxFaJzF_JxFaJzFaJxF_JzFaJxFaJzF_JxFaJzF_JxFaJxFaJzF_JxFaJzF_JxFaJzFaJxF_JzFaJxFaJzF_JxFaJzF_JxFaJxFaJzF_JxFaJzFaJxF_JzFaJxF_JzFaJxFaJzF_JxFaJxF_JzFaJxFaJzF_JxFaJzFaJxF_JzFaJxF_JzFaJxFaJxF_JzFaJxFaJzF_JxFaJzF_JxFaJzFaJxF_JzFaJxF_JxFaJzFaJxF_JzFaJxFaJzF_JxFaJzF_JxFaJzFaJxF_JzFaJxFaJxF_JzFaJxF_JzFaJxFaJzF_JxFaJzF_JxFaJzFaJxF_JxFaJzFaJxF_JzFaJxF_JzFaJxFaJzF_JxFaJzFaJxF_JxFaJzF_JxFaJzFaJxF_JzFaJxF_JzFaJxFaJzF_JxFaJxFaJzF_JxFaJzF_JxFaJzFaJxF_JzFaJxFaJzF_JxFaJzF_JxFaJxFaJzF_JxFaJzF_JxFaJzFaJxF_JzFaJxFaJzF_JxFaJxF_JzFaJxFaJzF_JxFaJzFaJxF_JzFaJxF_JzFaJxFaJxF_JzFaJxF_JzFaJxFaJzF_JpFuI",
-  "tolls": {
-   "km": 60,
-   "eur": 5,
-   "byCountry": [
-    {
-     "country": "IT",
-     "km": 60,
-     "eur": 4.8
-    }
-   ]
-  }
+  "polyline": "oukgGo`ddAxFaJzF_JxFaJzF_JxFaJzFaJxF_JzFaJxFaJzF_JxFaJxF_JzFaJxFaJzF_JxFaJzFaJxF_JzFaJxF_JzFaJxFaJxF_JzFaJxF_JzFaJxFaJzF_JxFaJzFaJxF_JzFaJxF_JzFaJxFaJxF_JzFaJxFaJzF_JxFaJzF_JxFaJzFaJxF_JzFaJxF_JxFaJzFaJxF_JzFaJxFaJzF_JxFaJzF_JxFaJzFaJxF_JxFaJzFaJxF_JzFaJxF_JzFaJxFaJzF_JxFaJzF_JxFaJxFaJzF_JxFaJzFaJxF_JzFaJxF_JzFaJxFaJzF_JxFaJzFaJxF_JxFaJzF_JxFaJzFaJxF_JzFaJxF_JzFaJxFaJzF_JxFaJxFaJzF_JxFaJzF_JxFaJzFaJxF_JzFaJxFaJzF_JxFaJxF_JzFaJxFaJzF_JxFaJzF_JxFaJzFaJxF_JzFaJxFaJxF_JzFaJxF_JzFaJxFaJzF_JxFaJzF_JxFaJzFaJxF_JzFaJxFaJxF_JzFaJxF_JzFaJxFaJzF_JxFaJzFaJxF_JzFaJxF_JxFaJzFaJxF_JzFaJxF_JzFaJxFaJzF_JxFaJzFaJxF_JxFaJzF_JxFaJzFaJxF_JzFaJxFaJzF_JxFaJzF_JxFaJxFaJzF_JxFaJzF_JxFaJzFaJxF_JzFaJxFaJzF_JxFaJzF_JxFaJxFaJzF_JxFaJzFaJxF_JzFaJxF_JzFaJxFaJzF_JxFaJxF_JzFaJxFaJzF_JxFaJzFaJxF_JzFaJxF_JzFaJxFaJxF_JzFaJxFaJzF_JxFaJzF_JxFaJzFaJxF_JzFaJxF_JxFaJzFaJxF_JzFaJxFaJzF_JxFaJzF_JxFaJzFaJxF_JzFaJxFaJxF_JzFaJxF_JzFaJxFaJzF_JxFaJzF_JxFaJzFaJxF_JxFaJzFaJxF_JzFaJxF_JzFaJxFaJzF_JxFaJzFaJxF_JxFaJzF_JxFaJzFaJxF_JzFaJxF_JzFaJxFaJzF_JxFaJxFaJzF_JxFaJzF_JxFaJzFaJxF_JzFaJxFaJzF_JxFaJzF_JxFaJxFaJzF_JxFaJzF_JxFaJzFaJxF_JzFaJxFaJzF_JxFaJxF_JzFaJxFaJzF_JxFaJzFaJxF_JzFaJxF_JzFaJxFaJxF_JzFaJxF_JzFaJxFaJzF_JpFuI"
  },
  "routes": [
   {
@@ -182,11 +171,6 @@
     ]
    },
    "advisories": [],
-   "tolls": {
-    "km": 0,
-    "eur": 0,
-    "byCountry": []
-   },
    "vsFastest": {
     "extraKm": 1.7,
     "extraMinutes": 22,
@@ -208,8 +192,7 @@
       "name": "Cipressi di San Quirico",
       "extraMinutes": 22
      }
-    ],
-    "tollSavedEur": 5
+    ]
    },
    "handoff": {
     "googleMaps": "https://www.google.com/maps/dir/?api=1&origin=43.318800%2C11.330800&destination=42.950000%2C11.850000&waypoints=43.184394%2C11.489996%7C43.065000%2C11.630000&travelmode=driving",
@@ -372,17 +355,11 @@
     ]
    },
    "advisories": [],
-   "tolls": {
-    "km": 0,
-    "eur": 0,
-    "byCountry": []
-   },
    "vsFastest": {
     "extraKm": 1.2,
     "extraMinutes": 22,
     "sharedPct": 100,
-    "detours": [],
-    "tollSavedEur": 5
+    "detours": []
    },
    "handoff": {
     "googleMaps": "https://www.google.com/maps/dir/?api=1&origin=43.318800%2C11.330800&destination=42.950000%2C11.850000&waypoints=43.133538%2C11.589654%7C43.090000%2C11.650000&travelmode=driving",
@@ -536,17 +513,11 @@
     ]
    },
    "advisories": [],
-   "tolls": {
-    "km": 0,
-    "eur": 0,
-    "byCountry": []
-   },
    "vsFastest": {
     "extraKm": 1.2,
     "extraMinutes": 22,
     "sharedPct": 100,
-    "detours": [],
-    "tollSavedEur": 5
+    "detours": []
    },
    "handoff": {
     "googleMaps": "https://www.google.com/maps/dir/?api=1&origin=43.318800%2C11.330800&destination=42.950000%2C11.850000&waypoints=43.134440%2C11.590783&travelmode=driving",
