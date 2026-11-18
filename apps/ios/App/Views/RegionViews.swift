@@ -54,8 +54,9 @@ struct RegionView: View {
             ZStack(alignment: .bottom) {
                 LinearGradient(colors: [Theme.sky, Theme.background], startPoint: .top, endPoint: UnitPoint(x: 0.5, y: 0.6))
                     .ignoresSafeArea()
-                IslandView(region: region, fit: 1.08, lift: 0.18)
-                    .frame(width: geo.size.width, height: geo.size.height + geo.safeAreaInsets.top)
+                // Fills the screen under the status bar without sizing the stack, so the text block stays above the tab bar.
+                Color.clear
+                    .overlay { IslandView(region: region, fit: 1.08, lift: 0.18) }
                     .ignoresSafeArea(edges: .top)
                 VStack(alignment: .leading, spacing: 0) {
                     Text(region.country.uppercased()).font(Theme.labelFont).tracking(1).foregroundStyle(Theme.ink2)
