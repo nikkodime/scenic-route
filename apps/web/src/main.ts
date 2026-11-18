@@ -1,4 +1,5 @@
 import './theme.css';
+import { appearance, setAppearance, type Appearance } from './appearance.ts';
 import { toGpx, decodePolyline, INTERESTS, ROUTE_STYLES, VEHICLES, type GeocodeResult, type Interest, type RouteOption, type RouteStyle, type Trip, type Vehicle } from '@scenic/core';
 import { api } from './api.ts';
 import type { ExploreDestination, ExploreResponse, Place } from '@scenic/core';
@@ -101,10 +102,24 @@ const STYLE_CREDIT: Record<RouteStyle, string> = { relaxed: '© Repuli · CC BY-
 const VEHICLE_ICON: Record<Vehicle, string> = { car: 'car', campervan: 'campervan', caravan: 'caravan' };
 const hhmm = (iso?: string | null) => (iso ? new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '');
 
+/** The wordmark in ink by day, the pale version after dark (CSS shows the one that fits). */
+function wordmark(): string {
+  const b = import.meta.env.BASE_URL;
+  return `<img class="wordmark on-light" src="${b}wordmark.svg" alt="Panoramica" width="150" height="22" /><img class="wordmark on-dark" src="${b}wordmark-dark.svg" alt="" width="150" height="22" />`;
+}
+
+const APPEARANCE_NEXT: Record<Appearance, Appearance> = { auto: 'light', light: 'dark', dark: 'auto' };
+const APPEARANCE_LABEL: Record<Appearance, string> = { auto: 'Automatic (follows your system)', light: 'Light', dark: 'Dark' };
+const APPEARANCE_ICON: Record<Appearance, string> = { auto: 'auto', light: 'sun', dark: 'moon' };
+function themeButton(): string {
+  const a = appearance();
+  return `<button class="theme-btn" data-action="appearance" aria-label="Appearance: ${APPEARANCE_LABEL[a]}. Change" title="Appearance: ${APPEARANCE_LABEL[a]}">${icon(APPEARANCE_ICON[a], 18)}</button>`;
+}
+
 function header(title: string): string {
   return `<header class="day-head">
-      <div><img class="wordmark" src="${import.meta.env.BASE_URL}wordmark.svg" alt="Panoramica" width="150" height="22" /><h1>${title}</h1></div>
-      <button class="btn link" data-action="trips">My trips</button>
+      <div>${wordmark()}<h1>${title}</h1></div>
+      <div class="head-actions">${themeButton()}<button class="btn link" data-action="trips">My trips</button></div>
     </header>`;
 }
 
@@ -366,8 +381,8 @@ function tripsView(): string {
   const list = state.trips;
   return `
     <header class="day-head">
-      <div><img class="wordmark" src="${import.meta.env.BASE_URL}wordmark.svg" alt="Panoramica" width="150" height="22" /><h1>My trips</h1></div>
-      <button class="btn link" data-action="back">Back to planner</button>
+      <div>${wordmark()}<h1>My trips</h1></div>
+      <div class="head-actions">${themeButton()}<button class="btn link" data-action="back">Back to planner</button></div>
     </header>
     ${list == null ? '<p class="muted">Loading…</p>' : list.length === 0 ? '<p class="muted">No saved journeys yet.</p>' : list.map((t) => `
       <div class="card">
@@ -453,6 +468,12 @@ panel.addEventListener('click', (ev) => {
     case 'remove-day': return set({ journey: removeDay(j, i), active: 0 });
     case 'save': return void save();
     case 'trips': return void openTrips();
+    case 'appearance': {
+      setAppearance(APPEARANCE_NEXT[appearance()]);
+      const b = panel.querySelector<HTMLButtonElement>('[data-action="appearance"]');
+      if (b) { b.outerHTML = themeButton(); panel.querySelector<HTMLButtonElement>('[data-action="appearance"]')?.focus(); }
+      return;
+    }
     case 'back': return set({ view: 'plan', error: null });
     case 'mode': return set({ view: el.dataset.v as 'plan' | 'explore', error: null });
     case 'explore-time': return set({ explore: { ...state.explore, minutes: Number(el.dataset.v), result: null } });

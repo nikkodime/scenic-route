@@ -875,7 +875,7 @@ export function makeStage(canvasW, canvasH, opts = {}) {
   scene.add(sun);
   const rim = new THREE.DirectionalLight('#bcd3ee', 0.8); rim.position.set(-14, 6, -10); scene.add(rim);
   const fill = new THREE.DirectionalLight('#ffe2c4', 0.35); fill.position.set(16, 2, 4); scene.add(fill);
-  return { renderer, scene, cam, setView };
+  return { renderer, scene, cam, setView, lights: { hemi, sun, rim, fill } };
 }
 
 export function skyTexture(C) {

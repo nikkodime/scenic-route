@@ -5,6 +5,9 @@ import { buildIsland, buildEnvironment, makeStage, REGIONS, REGION_KEYS, LOOP } 
 
 export { REGIONS, REGION_KEYS, LOOP };
 
+/** The haze colour at dusk: the dark theme's sky (Theme.sky / --sky after dark). */
+const DUSK_FOG = '#16283a';
+
 /**
  * Mount a live island into `el` (it fills the element).
  * opts.region      region key (default 'tuscany')
@@ -16,10 +19,11 @@ export { REGIONS, REGION_KEYS, LOOP };
  * opts.fps         frame cap, to spare the battery (default 30)
  * opts.motion      false renders one still frame (Reduce Motion); dragging still turns it
  * opts.phase       start phase in [0, 1) of the 36 s loop
+ * opts.mood        'day' (morning light, for light mode) or 'dusk' (low warm sun and blue hour, for dark mode)
  * opts.onReady     called after the first frame is on screen
  */
 export function mountIsland(el, opts = {}) {
-  const o = { region: 'tuscany', air: true, sea: false, fit: 0.9, lift: 0, interactive: true, fps: 30, motion: true, phase: 0.1, ...opts };
+  const o = { region: 'tuscany', air: true, sea: false, fit: 0.9, lift: 0, interactive: true, fps: 30, motion: true, phase: 0.1, mood: 'day', ...opts };
   if (!REGIONS[o.region]) o.region = 'tuscany';
   const reduce = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
   let motion = o.motion && !reduce;
@@ -50,14 +54,51 @@ export function mountIsland(el, opts = {}) {
 
   function build(k) {
     if (isl) { st.scene.remove(isl.root); dispose(isl.root); }
-    if (env) { st.scene.remove(env.env); dispose(env.env); }
     const C = REGIONS[k];
-    st.scene.fog = new THREE.Fog(C.fog, 46, 92);
     isl = buildIsland(k, { seed: 7 }); st.scene.add(isl.root);
-    env = o.air ? buildEnvironment(C, 3, { sea: o.sea }) : null;
-    if (env) st.scene.add(env.env);
     region = k;
+    air();
+    light();
   }
+
+  // Clouds and distant islands; their haze is baked in, so they are rebuilt when the mood changes.
+  function air() {
+    if (env) { st.scene.remove(env.env); dispose(env.env); env = null; }
+    if (!o.air) return;
+    const C = REGIONS[region];
+    env = buildEnvironment(mood === 'dusk' ? { ...C, fog: DUSK_FOG } : C, 3, { sea: o.sea });
+    st.scene.add(env.env);
+  }
+
+  // Day: the design's morning light. Dusk: the sun low and warm from the side, a blue-hour sky light,
+  // haze that fades into the dark page, and the car's lamps and the lighthouse glowing.
+  function light() {
+    const C = REGIONS[region], L = st.lights, dusk = mood === 'dusk';
+    const set = (l, c, i) => { l.color.set(c); l.intensity = i; };
+    if (dusk) {
+      set(L.hemi, '#a9bcdc', 0.8); L.hemi.groundColor.set('#3a2f3a');
+      set(L.sun, '#ffbb88', 2.9); L.sun.position.set(16, 12, 8);
+      set(L.rim, '#86a6e0', 1.15);
+      set(L.fill, '#d4927c', 0.3);
+      st.renderer.toneMappingExposure = 0.98;
+      st.scene.fog = new THREE.Fog(DUSK_FOG, 40, 88);
+    } else {
+      set(L.hemi, '#eef4fb', 0.9); L.hemi.groundColor.set('#7d6a58');
+      set(L.sun, '#fff3dc', 3.1); L.sun.position.set(4, 20, 14);
+      set(L.rim, '#bcd3ee', 0.8);
+      set(L.fill, '#ffe2c4', 0.35);
+      st.renderer.toneMappingExposure = 1.05;
+      st.scene.fog = new THREE.Fog(C.fog, 46, 92);
+    }
+    st.scene.traverse((n) => {
+      const m = n.material; if (!m || !m.emissive) return;
+      for (const x of Array.isArray(m) ? m : [m]) {
+        if (x.userData.glow === undefined) x.userData.glow = x.emissiveIntensity;
+        if (x.userData.glow > 0) x.emissiveIntensity = dusk ? x.userData.glow * 3.2 : x.userData.glow;
+      }
+    });
+  }
+  let mood = o.mood === 'dusk' ? 'dusk' : 'day';
   build(region);
 
   function render(now) {
@@ -120,6 +161,9 @@ export function mountIsland(el, opts = {}) {
       if (!animate || !motion) { build(k); render(performance.now()); return; }
       swap = { t: performance.now(), to: k }; kick();
     },
+    /** 'day' or 'dusk': follow the page's light or dark mode. */
+    setMood(m) { const n = m === 'dusk' ? 'dusk' : 'day'; if (n === mood) return; mood = n; air(); light(); render(performance.now()); },
+    get mood() { return mood; },
     setMotion(on) { motion = !!on && !reduce; t0 = performance.now() - phase * LOOP * 1000; kick(); },
     turn(delta) { yaw += delta; render(performance.now()); },
     destroy() {

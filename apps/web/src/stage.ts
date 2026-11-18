@@ -1,7 +1,9 @@
 // The island stage: when the map has nothing to show (or roads are being found), a big live 3D island
 // of the area floats over it, with the eight regions to jump to. The engine loads lazily, after first paint.
+// In dark mode the island sits in evening light (the engine's dusk mood) on a night sky.
 import { REGION_GEO, nearestRegion } from '@scenic/islands/regions';
 import type { IslandController } from '@scenic/islands';
+import { mode, onMode, type Mode } from './appearance.ts';
 
 export interface StageState { show: boolean; busy: boolean; near: { lat: number; lon: number } | null }
 
@@ -44,6 +46,7 @@ export class IslandStage {
       this.onPickRegion(k, { lat: g.lat, lon: g.lon, label: TITLES[k] });
     });
     this.paintPoster();
+    onMode((m) => { this.ctl?.setMood(mood(m)); this.paintPoster(); });
   }
 
   sync(s: StageState) {
@@ -63,7 +66,7 @@ export class IslandStage {
   }
 
   private paintPoster() {
-    this.poster.src = `${import.meta.env.BASE_URL}islands/poster-${this.region}.webp`;
+    this.poster.src = `${import.meta.env.BASE_URL}islands/poster-${this.region}${mode() === 'dark' ? '-dusk' : ''}.webp`;
     for (const b of this.chips.querySelectorAll<HTMLButtonElement>('button')) b.setAttribute('aria-pressed', String(b.dataset.region === this.region));
   }
 
@@ -74,7 +77,7 @@ export class IslandStage {
       const { mountIsland } = await import('@scenic/islands');
       const wide = () => this.live.clientWidth > this.live.clientHeight;
       this.ctl = mountIsland(this.live, {
-        region: this.region, fit: wide() ? 0.8 : 1.05, lift: 0.06,
+        region: this.region, fit: wide() ? 0.8 : 1.05, lift: 0.06, mood: mood(mode()),
         onReady: () => this.el.classList.add('ready'),
       });
     } catch {
@@ -84,3 +87,5 @@ export class IslandStage {
     }
   }
 }
+
+const mood = (m: Mode): 'day' | 'dusk' => (m === 'dark' ? 'dusk' : 'day');
