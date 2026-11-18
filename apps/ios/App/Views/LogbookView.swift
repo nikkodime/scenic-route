@@ -71,6 +71,8 @@ struct LogbookView: View {
             .padding(.top, 8)
             .padding(.bottom, 24)
         }
+        // Room under the last row, so the island labels and the hint end above the floating tab bar.
+        .contentMargins(.bottom, 32, for: .scrollContent)
         .background(SkyBackdrop())
         .toolbar(.hidden, for: .navigationBar)
     }
