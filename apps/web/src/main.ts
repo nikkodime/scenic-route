@@ -4,6 +4,7 @@ import { api } from './api.ts';
 import type { ExploreDestination, ExploreResponse, Place } from '@scenic/core';
 import { RouteMap } from './map.ts';
 import { icon } from './icons.ts';
+import { drawShareCard, goldenChip, localInputValue, parseShareHash, shareCard, shareHash, shareTitle, stopsStrip, weatherStrip } from './extras.ts';
 import {
   INTEREST_LABELS, LIMIT_CHOICES, STYLE_BLURBS, STYLE_LABELS, VEHICLE_LABELS, addDay, normalize, toggleInterest, updateJourney, chosenRoute, defaultName, duration, fromTrip, newJourney, removeDay, toTrip, totals, updateDay,
   type DayPlan, type Journey,
@@ -223,7 +224,7 @@ function dayCard(d: DayPlan, i: number): string {
     </div>
     <button class="btn primary" data-action="plan" data-day="${i}" ${d.origin && d.destination && !busy ? '' : 'disabled'}>${busy ? '<span class="spin"></span>' : `${d.plan ? 'Plan again' : 'Show routes'} ${icon('chevron', 16)}`}</button>
     ${d.plan ? results(d, i) : ''}
-    ${r ? detail(r, d.plan?.fastest) : ''}
+    ${r ? detail(r, d.plan?.fastest, i) : ''}
   </section>`;
 }
 
@@ -326,17 +327,21 @@ function ribbon(r: RouteOption) {
     <circle cx="${x0}" cy="${y}" r="4.5" class="a"/><circle cx="${x1}" cy="${y}" r="4.5" class="b"/>${labels.join('')}</svg>`;
 }
 
-function detail(r: RouteOption, fastest?: { minutes: number }) {
+function detail(r: RouteOption, fastest?: { minutes: number }, day = state.active) {
   const c = r.conditions;
   return `<div class="field">
     ${fastest ? compare(r, fastest) : ''}
     ${c ? `<div class="statrow"><span>${icon('clock', 15)}${hhmm(c.arrival)}</span><span class="sun">${icon('sunset', 15)}${hhmm(c.sunset)}</span></div>` : ''}
-    ${(c?.notes ?? []).map((n) => `<p class="note ${/fog|rain|dark|hidden|Low sun/i.test(n) ? 'warn' : /Clear|Golden/.test(n) ? 'good' : 'weather'}">${esc(n)}</p>`).join('')}
+    ${c ? goldenChip(c, day) : ''}
+    ${c ? weatherStrip(c) : ''}
+    ${(c?.notes ?? []).filter((n) => !/^Leave at|^Golden hour lands/.test(n)).map((n) => `<p class="note ${/fog|rain|dark|hidden|Low sun/i.test(n) ? 'warn' : /Clear|Golden/.test(n) ? 'good' : 'weather'}">${esc(n)}</p>`).join('')}
     ${r.advisories.map((a) => `<p class="note ${a.severity === 'info' ? 'weather' : 'warn'}"><b>${esc(a.title)}.</b> ${esc(a.detail)}</p>`).join('')}
     ${r.scenicStops.length ? `<div class="strip">${r.scenicStops.map((s, k) => `<div class="hl">${photoSlot(s.lat, s.lon, s.name, 'views', 'hl-photo')}<span class="badge">${k + 1}</span><b>${esc(s.name)}</b></div>`).join('')}</div>` : ''}
+    ${stopsStrip(r, day, photoSlot)}
     <div class="row">
       <a class="btn" style="display:grid;place-content:center;text-decoration:none" href="${esc(r.handoff.googleMaps)}" target="_blank" rel="noopener">Google Maps</a>
       <button class="btn" data-action="gpx" data-route="${esc(r.id)}">GPX</button>
+      <button class="btn" data-action="share" data-day="${day}" data-route="${esc(r.id)}" aria-label="Share this drive">${icon('share', 16)} Share</button>
     </div>
   </div>`;
 }
@@ -463,9 +468,41 @@ panel.addEventListener('click', (ev) => {
       api.deleteTrip(id).then(() => set({ trips: (state.trips ?? []).filter((t) => t.id !== id) })).catch((e) => set({ error: e.message }));
       return;
     }
+    case 'golden':
+      set({ journey: updateDay(j, i, { departAt: localInputValue(el.dataset.at!) }), active: i });
+      return void plan(i);
+    case 'add-stop': {
+      const d = j.days[i];
+      if (!d?.origin || !d.destination) return;
+      const stop = { lat: Number(el.dataset.lat), lon: Number(el.dataset.lon), label: el.dataset.name };
+      // Insert it in driving order among the stops already there (by distance from the start).
+      const from = d.origin;
+      const dist = (p: { lat: number; lon: number }) => (p.lat - from.lat) ** 2 + ((p.lon - from.lon) * Math.cos((from.lat * Math.PI) / 180)) ** 2;
+      const stops = [...(d.stops ?? []), stop].sort((a, b) => dist(a) - dist(b)).slice(0, 8);
+      set({ journey: updateDay(j, i, { stops }), active: i });
+      return void plan(i);
+    }
+    case 'share': return void share(i, el.dataset.route!);
     case 'place': return; // handled by input events
   }
 });
+
+async function share(i: number, routeId: string) {
+  const d = state.journey.days[i];
+  const r = d?.plan?.routes.find((x) => x.id === routeId);
+  if (!d?.origin || !d.destination || !r) return;
+  const loop = d.stops?.length && Math.abs(d.origin.lat - d.destination.lat) + Math.abs(d.origin.lon - d.destination.lon) < 0.005 ? d.stops[0] : null;
+  const title = shareTitle(d.origin, d.destination, loop);
+  const best = [...r.highlights].filter((h) => h.lat != null && h.name).sort((a, b) => ['viewpoint', 'hilltop_village', 'castle', 'cypress'].indexOf(b.type) - ['viewpoint', 'hilltop_village', 'castle', 'cypress'].indexOf(a.type))[0];
+  const at = best?.lat != null ? { lat: best.lat, lon: best.lon!, name: best.name } : routePhotoAt(r);
+  const p = (await api.photos(at.lat, at.lon, at.name).catch(() => []))[0];
+  const photo = p ? { url: p.url, credit: `${p.author} · ${p.license}` } : null;
+  const canvas = document.createElement('canvas');
+  await drawShareCard(canvas, { route: r, title, photo, wordmarkUrl: `${import.meta.env.BASE_URL}wordmark.svg` });
+  const url = `${location.origin}${location.pathname}${shareHash({ origin: d.origin, destination: d.destination, stops: d.stops ?? [], style: state.journey.style, interests: state.journey.interests, vehicle: state.journey.vehicle })}`;
+  const how = await shareCard(canvas, title, url);
+  if (how === 'downloaded') toast('Card saved, link copied');
+}
 
 panel.addEventListener('change', (ev) => {
   const el = ev.target as HTMLInputElement;
@@ -509,5 +546,14 @@ panel.addEventListener('focusout', (ev) => {
   if (el.dataset.action === 'place') setTimeout(() => panel.querySelector<HTMLElement>(`[data-suggest="${el.dataset.field}${el.dataset.day}"]`)?.setAttribute('hidden', ''), 150);
 });
 
+// Opened from a shared link: the same trip, planned fresh.
+const shared = parseShareHash(location.hash);
+if (shared) {
+  const journey = { ...newJourney(uuid()), ...(shared.style ? { style: shared.style } : {}), ...(shared.interests ? { interests: shared.interests } : {}), ...(shared.vehicle ? { vehicle: shared.vehicle } : {}) };
+  journey.days = [{ ...journey.days[0], origin: shared.origin, destination: shared.destination, stops: shared.stops }];
+  state.journey = journey;
+  history.replaceState(null, '', location.pathname + location.search);
+}
 render();
 syncMap();
+if (shared) void plan(0);

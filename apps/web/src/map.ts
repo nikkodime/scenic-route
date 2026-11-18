@@ -4,6 +4,8 @@
 import maplibregl, { type LngLatBoundsLike, type StyleSpecification } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { cumulativeKm, decodePolyline, pointAtKm, type RouteOption } from '@scenic/core';
+import { icon } from './icons.ts';
+import { STOP_ICON } from './extras.ts';
 
 const BLANK: StyleSpecification = { version: 8, sources: {}, layers: [{ id: 'bg', type: 'background', paint: { 'background-color': '#e9ece6' } }] };
 
@@ -78,6 +80,22 @@ export class RouteMap {
         const { point } = pointAtKm(line, ((d.fromKm + d.toKm) / 2) * scale, cum);
         this.markers.push(new maplibregl.Marker({ element: el }).setLngLat([point.lon, point.lat]).addTo(this.map));
       }
+    }
+    // Warnings where they happen (ZTL, gravel, closed pass) and stops worth making.
+    for (const a of chosen?.advisories ?? []) {
+      if (a.lat == null || a.lon == null || a.severity === 'info') continue;
+      const el = document.createElement('div');
+      el.className = 'warn-pin';
+      el.innerHTML = icon('warn', 14);
+      el.title = a.title;
+      this.markers.push(new maplibregl.Marker({ element: el }).setLngLat([a.lon, a.lat]).addTo(this.map));
+    }
+    for (const st of chosen?.suggestedStops ?? []) {
+      const el = document.createElement('div');
+      el.className = 'poi-pin';
+      el.innerHTML = icon(STOP_ICON[st.kind], 14);
+      el.title = st.name || 'Viewpoint';
+      this.markers.push(new maplibregl.Marker({ element: el }).setLngLat([st.lon, st.lat]).addTo(this.map));
     }
     if (chosen && chosen.bbox.some((x) => x !== 0)) this.fit(chosen);
   }

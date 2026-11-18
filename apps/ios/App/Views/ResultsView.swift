@@ -111,6 +111,21 @@ struct RouteMap: View {
                             .background(Theme.surface, in: Circle()).overlay(Circle().strokeBorder(Theme.accent, lineWidth: 2)).foregroundStyle(Theme.accent)
                     }
                 }
+                // Warnings where they happen (ZTL, gravel, closed pass) and stops worth making.
+                ForEach(r.advisories.filter { $0.severity != "info" && $0.lat != nil && $0.lon != nil }, id: \.self) { a in
+                    Annotation(AdvisoryStyle.short(a), coordinate: CLLocationCoordinate2D(latitude: a.lat!, longitude: a.lon!)) {
+                        Image(systemName: "exclamationmark.triangle.fill").font(.system(size: 11, weight: .bold)).foregroundStyle(.white)
+                            .frame(width: 26, height: 26).background(Theme.warning, in: Circle()).overlay(Circle().strokeBorder(.white, lineWidth: 2))
+                    }
+                    .annotationTitles(.hidden)
+                }
+                ForEach(r.suggestedStops ?? []) { s in
+                    Annotation(s.name.isEmpty ? "Viewpoint" : s.name, coordinate: CLLocationCoordinate2D(latitude: s.lat, longitude: s.lon)) {
+                        Image(systemName: StopStyle.symbol(s.kind)).font(.system(size: 10, weight: .bold)).foregroundStyle(Theme.green)
+                            .frame(width: 24, height: 24).background(Theme.surface, in: Circle()).overlay(Circle().strokeBorder(Theme.green, lineWidth: 1.5))
+                    }
+                    .annotationTitles(.hidden)
+                }
                 if let first = r.line.first {
                     Marker("Start", systemImage: "car.fill", coordinate: CLLocationCoordinate2D(latitude: first.lat, longitude: first.lon)).tint(Theme.ink)
                 }

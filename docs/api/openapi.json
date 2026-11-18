@@ -582,6 +582,44 @@
                       "items": {
                         "type": "string"
                       }
+                    },
+                    "goldenDeparture": {
+                      "type": "object",
+                      "properties": {
+                        "leaveAt": {
+                          "type": "string"
+                        },
+                        "reachAt": {
+                          "type": "string"
+                        },
+                        "sunset": {
+                          "type": "string"
+                        },
+                        "fromKm": {
+                          "type": "number"
+                        },
+                        "toKm": {
+                          "type": "number"
+                        },
+                        "place": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "onTime": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "leaveAt",
+                        "reachAt",
+                        "sunset",
+                        "fromKm",
+                        "toKm",
+                        "place",
+                        "onTime"
+                      ],
+                      "additionalProperties": false,
+                      "nullable": true
                     }
                   },
                   "required": [
@@ -632,6 +670,12 @@
                         "type": "string"
                       },
                       "atKm": {
+                        "type": "number"
+                      },
+                      "lat": {
+                        "type": "number"
+                      },
+                      "lon": {
                         "type": "number"
                       }
                     },
@@ -742,6 +786,74 @@
                     "detours"
                   ],
                   "additionalProperties": false
+                },
+                "suggestedStops": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "lat": {
+                        "type": "number"
+                      },
+                      "lon": {
+                        "type": "number"
+                      },
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "viewpoint",
+                          "cafe",
+                          "agriturismo",
+                          "winery"
+                        ]
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "hours": {
+                        "type": "string"
+                      },
+                      "website": {
+                        "type": "string"
+                      },
+                      "food": {
+                        "type": "boolean"
+                      },
+                      "atKm": {
+                        "type": "number"
+                      },
+                      "eta": {
+                        "type": "string"
+                      },
+                      "offKm": {
+                        "type": "number"
+                      },
+                      "reason": {
+                        "type": "string",
+                        "enum": [
+                          "view",
+                          "coffee",
+                          "lunch",
+                          "wine"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "lat",
+                      "lon",
+                      "kind",
+                      "name",
+                      "atKm",
+                      "eta",
+                      "offKm",
+                      "reason"
+                    ],
+                    "additionalProperties": false
+                  }
                 },
                 "handoff": {
                   "type": "object",
@@ -1630,6 +1742,44 @@
                 "items": {
                   "type": "string"
                 }
+              },
+              "goldenDeparture": {
+                "type": "object",
+                "properties": {
+                  "leaveAt": {
+                    "type": "string"
+                  },
+                  "reachAt": {
+                    "type": "string"
+                  },
+                  "sunset": {
+                    "type": "string"
+                  },
+                  "fromKm": {
+                    "type": "number"
+                  },
+                  "toKm": {
+                    "type": "number"
+                  },
+                  "place": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "onTime": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "leaveAt",
+                  "reachAt",
+                  "sunset",
+                  "fromKm",
+                  "toKm",
+                  "place",
+                  "onTime"
+                ],
+                "additionalProperties": false,
+                "nullable": true
               }
             },
             "required": [
@@ -1680,6 +1830,12 @@
                   "type": "string"
                 },
                 "atKm": {
+                  "type": "number"
+                },
+                "lat": {
+                  "type": "number"
+                },
+                "lon": {
                   "type": "number"
                 }
               },
@@ -1790,6 +1946,74 @@
               "detours"
             ],
             "additionalProperties": false
+          },
+          "suggestedStops": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "lat": {
+                  "type": "number"
+                },
+                "lon": {
+                  "type": "number"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "viewpoint",
+                    "cafe",
+                    "agriturismo",
+                    "winery"
+                  ]
+                },
+                "name": {
+                  "type": "string"
+                },
+                "hours": {
+                  "type": "string"
+                },
+                "website": {
+                  "type": "string"
+                },
+                "food": {
+                  "type": "boolean"
+                },
+                "atKm": {
+                  "type": "number"
+                },
+                "eta": {
+                  "type": "string"
+                },
+                "offKm": {
+                  "type": "number"
+                },
+                "reason": {
+                  "type": "string",
+                  "enum": [
+                    "view",
+                    "coffee",
+                    "lunch",
+                    "wine"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "lat",
+                "lon",
+                "kind",
+                "name",
+                "atKm",
+                "eta",
+                "offKm",
+                "reason"
+              ],
+              "additionalProperties": false
+            }
           },
           "handoff": {
             "type": "object",
@@ -2334,6 +2558,44 @@
                           "items": {
                             "type": "string"
                           }
+                        },
+                        "goldenDeparture": {
+                          "type": "object",
+                          "properties": {
+                            "leaveAt": {
+                              "type": "string"
+                            },
+                            "reachAt": {
+                              "type": "string"
+                            },
+                            "sunset": {
+                              "type": "string"
+                            },
+                            "fromKm": {
+                              "type": "number"
+                            },
+                            "toKm": {
+                              "type": "number"
+                            },
+                            "place": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "onTime": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "leaveAt",
+                            "reachAt",
+                            "sunset",
+                            "fromKm",
+                            "toKm",
+                            "place",
+                            "onTime"
+                          ],
+                          "additionalProperties": false,
+                          "nullable": true
                         }
                       },
                       "required": [
@@ -2384,6 +2646,12 @@
                             "type": "string"
                           },
                           "atKm": {
+                            "type": "number"
+                          },
+                          "lat": {
+                            "type": "number"
+                          },
+                          "lon": {
                             "type": "number"
                           }
                         },
@@ -2494,6 +2762,74 @@
                         "detours"
                       ],
                       "additionalProperties": false
+                    },
+                    "suggestedStops": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "lat": {
+                            "type": "number"
+                          },
+                          "lon": {
+                            "type": "number"
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "viewpoint",
+                              "cafe",
+                              "agriturismo",
+                              "winery"
+                            ]
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "hours": {
+                            "type": "string"
+                          },
+                          "website": {
+                            "type": "string"
+                          },
+                          "food": {
+                            "type": "boolean"
+                          },
+                          "atKm": {
+                            "type": "number"
+                          },
+                          "eta": {
+                            "type": "string"
+                          },
+                          "offKm": {
+                            "type": "number"
+                          },
+                          "reason": {
+                            "type": "string",
+                            "enum": [
+                              "view",
+                              "coffee",
+                              "lunch",
+                              "wine"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "lat",
+                          "lon",
+                          "kind",
+                          "name",
+                          "atKm",
+                          "eta",
+                          "offKm",
+                          "reason"
+                        ],
+                        "additionalProperties": false
+                      }
                     },
                     "handoff": {
                       "type": "object",
@@ -3186,6 +3522,44 @@
                                     "items": {
                                       "type": "string"
                                     }
+                                  },
+                                  "goldenDeparture": {
+                                    "type": "object",
+                                    "properties": {
+                                      "leaveAt": {
+                                        "type": "string"
+                                      },
+                                      "reachAt": {
+                                        "type": "string"
+                                      },
+                                      "sunset": {
+                                        "type": "string"
+                                      },
+                                      "fromKm": {
+                                        "type": "number"
+                                      },
+                                      "toKm": {
+                                        "type": "number"
+                                      },
+                                      "place": {
+                                        "type": "string",
+                                        "nullable": true
+                                      },
+                                      "onTime": {
+                                        "type": "boolean"
+                                      }
+                                    },
+                                    "required": [
+                                      "leaveAt",
+                                      "reachAt",
+                                      "sunset",
+                                      "fromKm",
+                                      "toKm",
+                                      "place",
+                                      "onTime"
+                                    ],
+                                    "additionalProperties": false,
+                                    "nullable": true
                                   }
                                 },
                                 "required": [
@@ -3236,6 +3610,12 @@
                                       "type": "string"
                                     },
                                     "atKm": {
+                                      "type": "number"
+                                    },
+                                    "lat": {
+                                      "type": "number"
+                                    },
+                                    "lon": {
                                       "type": "number"
                                     }
                                   },
@@ -3346,6 +3726,74 @@
                                   "detours"
                                 ],
                                 "additionalProperties": false
+                              },
+                              "suggestedStops": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "id": {
+                                      "type": "string"
+                                    },
+                                    "lat": {
+                                      "type": "number"
+                                    },
+                                    "lon": {
+                                      "type": "number"
+                                    },
+                                    "kind": {
+                                      "type": "string",
+                                      "enum": [
+                                        "viewpoint",
+                                        "cafe",
+                                        "agriturismo",
+                                        "winery"
+                                      ]
+                                    },
+                                    "name": {
+                                      "type": "string"
+                                    },
+                                    "hours": {
+                                      "type": "string"
+                                    },
+                                    "website": {
+                                      "type": "string"
+                                    },
+                                    "food": {
+                                      "type": "boolean"
+                                    },
+                                    "atKm": {
+                                      "type": "number"
+                                    },
+                                    "eta": {
+                                      "type": "string"
+                                    },
+                                    "offKm": {
+                                      "type": "number"
+                                    },
+                                    "reason": {
+                                      "type": "string",
+                                      "enum": [
+                                        "view",
+                                        "coffee",
+                                        "lunch",
+                                        "wine"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "lat",
+                                    "lon",
+                                    "kind",
+                                    "name",
+                                    "atKm",
+                                    "eta",
+                                    "offKm",
+                                    "reason"
+                                  ],
+                                  "additionalProperties": false
+                                }
                               },
                               "handoff": {
                                 "type": "object",
@@ -4050,6 +4498,44 @@
                                     "items": {
                                       "type": "string"
                                     }
+                                  },
+                                  "goldenDeparture": {
+                                    "type": "object",
+                                    "properties": {
+                                      "leaveAt": {
+                                        "type": "string"
+                                      },
+                                      "reachAt": {
+                                        "type": "string"
+                                      },
+                                      "sunset": {
+                                        "type": "string"
+                                      },
+                                      "fromKm": {
+                                        "type": "number"
+                                      },
+                                      "toKm": {
+                                        "type": "number"
+                                      },
+                                      "place": {
+                                        "type": "string",
+                                        "nullable": true
+                                      },
+                                      "onTime": {
+                                        "type": "boolean"
+                                      }
+                                    },
+                                    "required": [
+                                      "leaveAt",
+                                      "reachAt",
+                                      "sunset",
+                                      "fromKm",
+                                      "toKm",
+                                      "place",
+                                      "onTime"
+                                    ],
+                                    "additionalProperties": false,
+                                    "nullable": true
                                   }
                                 },
                                 "required": [
@@ -4100,6 +4586,12 @@
                                       "type": "string"
                                     },
                                     "atKm": {
+                                      "type": "number"
+                                    },
+                                    "lat": {
+                                      "type": "number"
+                                    },
+                                    "lon": {
                                       "type": "number"
                                     }
                                   },
@@ -4210,6 +4702,74 @@
                                   "detours"
                                 ],
                                 "additionalProperties": false
+                              },
+                              "suggestedStops": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "id": {
+                                      "type": "string"
+                                    },
+                                    "lat": {
+                                      "type": "number"
+                                    },
+                                    "lon": {
+                                      "type": "number"
+                                    },
+                                    "kind": {
+                                      "type": "string",
+                                      "enum": [
+                                        "viewpoint",
+                                        "cafe",
+                                        "agriturismo",
+                                        "winery"
+                                      ]
+                                    },
+                                    "name": {
+                                      "type": "string"
+                                    },
+                                    "hours": {
+                                      "type": "string"
+                                    },
+                                    "website": {
+                                      "type": "string"
+                                    },
+                                    "food": {
+                                      "type": "boolean"
+                                    },
+                                    "atKm": {
+                                      "type": "number"
+                                    },
+                                    "eta": {
+                                      "type": "string"
+                                    },
+                                    "offKm": {
+                                      "type": "number"
+                                    },
+                                    "reason": {
+                                      "type": "string",
+                                      "enum": [
+                                        "view",
+                                        "coffee",
+                                        "lunch",
+                                        "wine"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "lat",
+                                    "lon",
+                                    "kind",
+                                    "name",
+                                    "atKm",
+                                    "eta",
+                                    "offKm",
+                                    "reason"
+                                  ],
+                                  "additionalProperties": false
+                                }
                               },
                               "handoff": {
                                 "type": "object",

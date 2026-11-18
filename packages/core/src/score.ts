@@ -27,6 +27,8 @@ export const SCORE_MODEL = {
 export interface RouteStats {
   motorwayKm?: number;
   unpavedKm?: number;
+  /** Km from the start where the first unpaved stretch begins. */
+  unpavedAtKm?: number;
   tollKm?: number;
   urbanKm?: number;
   ferryKm?: number;

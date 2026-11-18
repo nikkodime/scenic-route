@@ -218,3 +218,21 @@ h2 { font: 600 20px/1.2 var(--font-ui); margin: 0; }
 .ribbon text { font: 700 11px var(--font-ui); fill: var(--ink); text-anchor: middle; }
 .ribbon text.m { fill: var(--green); }
 .detour-chip { font: 700 12px var(--font-ui); color: #fff; background: var(--green); border: 2px solid #fff; border-radius: 999px; padding: 2px 9px; box-shadow: 0 1px 3px rgba(23, 38, 42, .25); white-space: nowrap; }
+
+/* Golden-hour departure, weather along the way, stops worth making, map pins. */
+.golden { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 12px 14px; border: 1px solid #ecd3c6; border-radius: var(--r-control); background: #fbf1ea; color: var(--terracotta); font: inherit; cursor: pointer; }
+.golden span { flex: 1; display: grid; gap: 2px; }
+.golden b { font: 700 16px var(--font-ui); color: var(--ink); }
+.golden small { font: 500 13px var(--font-ui); color: var(--ink-2); }
+.golden:hover { border-color: var(--terracotta); }
+.wx { display: grid; grid-template-columns: repeat(auto-fit, minmax(64px, 1fr)); gap: 8px; }
+.wx > div { display: grid; justify-items: center; gap: 3px; padding: 10px 4px; background: var(--tile); border-radius: var(--r-control); color: var(--lake); }
+.wx b { font: 600 15px var(--font-ui); color: var(--ink); font-variant-numeric: tabular-nums; }
+.wx small { font: 500 11.5px var(--font-ui); color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.hl.stop small { font: 500 12px var(--font-ui); }
+.hl.stop .btn.link { justify-self: start; padding: 0; min-height: 0; color: var(--green); font: 600 13px var(--font-ui); display: inline-flex; align-items: center; gap: 4px; }
+.hl-photo.icon-only { color: var(--green); background: var(--green-tint); }
+.badge.k { display: grid; place-content: center; }
+.warn-pin, .poi-pin { width: 26px; height: 26px; border-radius: 50%; display: grid; place-content: center; box-shadow: 0 1px 3px rgba(23, 38, 42, .25); border: 2px solid #fff; }
+.warn-pin { background: var(--terracotta); color: #fff; }
+.poi-pin { background: #fff; color: var(--green); border-color: var(--green); }

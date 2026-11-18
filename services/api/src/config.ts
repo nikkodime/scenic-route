@@ -28,6 +28,8 @@ const Env = z.object({
   ZONES_DIR: z.string().default(fileURLToPath(new URL('../../../infra/data/zones/', import.meta.url))),
   /** Scenic places shipped with the server (scripts/fetch-features.ts). Overpass is only asked outside these regions. */
   FEATURES_DIR: z.string().default(fileURLToPath(new URL('../../../infra/data/features/', import.meta.url))),
+  /** Cafés, agriturismi, wineries and viewpoints with parking (scripts/build-stops.ts). */
+  STOPS_DIR: z.string().default(fileURLToPath(new URL('../../../infra/data/stops/', import.meta.url))),
   /** live Overpass outside the shipped regions | none (shipped files only) */
   OVERPASS: z.enum(['live', 'none']).default('live'),
   /** commons (Wikimedia Commons photos of places) | none */
