@@ -1,6 +1,7 @@
 // Browser test: the built planner against the real API app (fake providers), in Chromium.
 // Usage: node apps/web/test/e2e.ts [screenshotDir]
 import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
 import { preview } from 'vite';
 import assert from 'node:assert/strict';
 import { buildApp } from '../../../services/api/src/app.ts';
@@ -15,15 +16,14 @@ const PLACES: Record<string, { lat: number; lon: number; label: string }> = {
 };
 const api = await buildApp({
   config: { JWT_SECRET: 'e2e-secret-e2e-secret', CORS_ORIGINS: [], APPLE_BUNDLE_IDS: [], TIME_ZONE: 'Europe/Rome', LOG_LEVEL: 'silent' },
-  // The fastest road uses 60 km of Italian motorway with tolls, so the toll comparison shows.
-  providers: fakeProviders({ router: new FakeRouter(true, (_p, o) => (o.profile === 'fastest' ? { tollKm: 60, tollKmByCountry: { IT: 60 } } : {})) }),
+  providers: fakeProviders({ router: new FakeRouter(true) }),
   // Photos from the app's own style images, so cards render with real pictures and credits offline.
   photos: { near: async (lat: number) => { const f = ['relaxed', 'scenic', 'most_beautiful'][Math.abs(Math.round(lat * 100)) % 3]; return [{ url: `http://localhost:4179/styles/${f}.jpg`, width: 800, height: 450, title: 'View', author: 'Test Author', license: 'CC BY 4.0', source: 'https://commons.wikimedia.org/' }]; } },
   geocoder: { search: async (q) => Object.entries(PLACES).filter(([k]) => q.toLowerCase().startsWith(k.slice(0, 3))).map(([, p]) => p) },
   store: new MemoryStore(),
 });
 
-const server = await preview({ root: new URL('..', import.meta.url).pathname, preview: { port: 4179, strictPort: true }, logLevel: 'silent' });
+const server = await preview({ root: fileURLToPath(new URL('..', import.meta.url)), preview: { port: 4179, strictPort: true }, logLevel: 'silent' });
 const browser = await chromium.launch();
 try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 860 } });
@@ -57,7 +57,6 @@ try {
   assert.equal(await page.locator('.route[aria-pressed="true"]').count(), 1);
   // Every scenic option says what it costs against the fastest road, and the detail shows where it turns off.
   assert.ok(await page.locator('.route .vs').count() >= 2);
-  assert.ok(await page.locator('.route .vs .save').count() >= 1, 'toll saving shown');
   await page.locator('.ribbon').first().waitFor();
   if (shots) { await page.locator('.ribbon').first().scrollIntoViewIfNeeded(); await page.screenshot({ path: `${shots}/web-compare.png` }); }
   assert.ok(await page.evaluate(() => document.querySelectorAll('.detour-chip').length) >= 1, 'detour chips on the map');

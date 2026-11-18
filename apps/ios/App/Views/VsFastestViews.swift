@@ -3,9 +3,9 @@ import MapKit
 import ScenicKit
 
 // "What does the scenery cost?": each route against the fastest road.
-// Card strip (+38 min · +13 km · −€8), detail bars and a detour ribbon, chips and a ghost line on the map.
+// Card strip (+38 min · +13 km), detail bars and a detour ribbon, chips and a ghost line on the map.
 
-/// Three chips under a route card: extra time, extra km, and the toll difference.
+/// Chips under a route card: extra time and extra km.
 struct VsStrip: View {
     let route: RouteOption
 
@@ -13,13 +13,10 @@ struct VsStrip: View {
         HStack(spacing: 6) {
             if route.source == "fastest" {
                 chip("Fastest road")
-                if let t = route.tolls, t.eur >= 1 { chip("≈ €\(Int(t.eur)) tolls") }
             } else if let v = route.vsFastest {
                 chip("+\(Format.duration(minutes: v.extraMinutes))")
                 if v.extraKm >= 1 { chip("+\(Int(v.extraKm.rounded())) km") }
                 else if v.extraKm <= -1 { chip("−\(Int((-v.extraKm).rounded())) km") }
-                if v.tollSavedEur >= 1 { chip("−€\(Int(v.tollSavedEur))", filled: true) }
-                else if v.tollSavedEur <= -1 { chip("+€\(Int(-v.tollSavedEur))") }
             } else if route.extraMinutes >= 1 {
                 chip("+\(Int(route.extraMinutes.rounded())) min")
             }
@@ -37,13 +34,11 @@ struct VsStrip: View {
 
     private var accessibility: String {
         guard let v = route.vsFastest, route.source != "fastest" else { return route.source == "fastest" ? "Fastest road" : "" }
-        var s = "\(Int(v.extraMinutes)) minutes more than the fastest road, \(Int(abs(v.extraKm).rounded())) kilometres \(v.extraKm < 0 ? "shorter" : "longer")"
-        if v.tollSavedEur >= 1 { s += ", about \(Int(v.tollSavedEur)) euros less in tolls" }
-        return s
+        return "\(Int(v.extraMinutes)) minutes more than the fastest road, \(Int(abs(v.extraKm).rounded())) kilometres \(v.extraKm < 0 ? "shorter" : "longer")"
     }
 }
 
-/// Detail section: time bars, where the route turns off, toll bars.
+/// Detail section: time bars and where the route turns off.
 struct VsFastestSection: View {
     let route: RouteOption
     let fastest: PlanResponse.Fastest
@@ -65,14 +60,6 @@ struct VsFastestSection: View {
                 } else if !v.detours.isEmpty {
                     eyebrow("Where you turn off").padding(.top, 6)
                     DetourRibbon(km: route.km, detours: v.detours).frame(height: 104)
-                }
-                let tf = fastest.tolls?.eur ?? 0, tr = route.tolls?.eur ?? 0
-                if tf >= 1 || tr >= 1 {
-                    eyebrow("Tolls, about").padding(.top, 6)
-                    CompareBars(rows: [
-                        .init(label: "Fastest", value: tf, text: "€\(Int(tf))", direct: true),
-                        .init(label: "This", value: tr, text: "€\(Int(tr))", direct: false),
-                    ])
                 }
             }
             .accessibilityElement(children: .contain)

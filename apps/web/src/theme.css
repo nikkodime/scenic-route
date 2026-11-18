@@ -205,7 +205,6 @@ h2 { font: 600 20px/1.2 var(--font-ui); margin: 0; }
 /* Against the fastest road: strip on each card, bars + detour ribbon in the detail, ghost-line chips on the map. */
 .vs { display: flex; gap: 6px; flex-wrap: wrap; }
 .vs span { font: 600 13px var(--font-ui); padding: 3px 10px; border-radius: 999px; background: var(--green-tint); color: var(--green-dark); }
-.vs .save { background: var(--green); color: #fff; }
 .cmp { display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
 .cmp div { display: grid; grid-template-columns: 56px 1fr auto; gap: 8px; align-items: center; }
 .cmp i { display: block; height: 8px; width: var(--w); border-radius: 4px; background: var(--green); }
