@@ -48,10 +48,11 @@ final class AppModel {
     let location = LocationProvider()
 
     init() {
-        let base = UserDefaults.standard.string(forKey: "apiBaseURL")
-            ?? Bundle.main.object(forInfoDictionaryKey: "ScenicAPIBaseURL") as? String
-            ?? "http://localhost:8787"
-        api = APIClient(baseURL: URL(string: base)!, tokens: KeychainTokenStore())
+        // Settings → Panoramica → Server overrides the built-in address (testing: the tunnel link can change).
+        let override = UserDefaults.standard.string(forKey: "apiBaseURL")?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let builtIn = Bundle.main.object(forInfoDictionaryKey: "ScenicAPIBaseURL") as? String ?? "http://localhost:8787"
+        let base = override.flatMap { URL(string: $0)?.scheme?.hasPrefix("http") == true ? $0 : nil } ?? builtIn
+        api = APIClient(baseURL: URL(string: base) ?? URL(string: builtIn)!, tokens: KeychainTokenStore())
         store = TripStore(fileURL: TripStore.defaultURL())
         if ProcessInfo.processInfo.arguments.contains("-uiTestPlaces") {
             origin = Place(lat: 43.3188, lon: 11.3308, label: "Siena")
