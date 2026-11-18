@@ -157,7 +157,7 @@ private struct ContourTexture: View {
                     let y = y0 + sin(x / 46 + CGFloat(i) * 0.7) * 9 + sin(x / 17 + CGFloat(i)) * 2.5
                     p.addLine(to: CGPoint(x: x, y: y))
                 }
-                ctx.stroke(p, with: .color(Theme.lake.opacity(0.07)), lineWidth: 0.8)
+                ctx.stroke(p, with: .color(Theme.lake.opacity(0.13)), lineWidth: 0.9)
             }
         }
         .accessibilityHidden(true)

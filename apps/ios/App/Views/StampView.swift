@@ -24,7 +24,7 @@ struct StampView: View {
             case .visa: visa
             }
         }
-        .foregroundStyle(ink)
+        .foregroundStyle(ink.opacity(0.88))
         .mask { StampWear(seed: seed) }
         .blendMode(.multiply)
         .rotationEffect(.degrees(rotation))
@@ -125,11 +125,11 @@ private struct StampWear: View {
             ctx.fill(Path(CGRect(origin: .zero, size: size)), with: .color(.black))
             var rng = SeededRandom(seed: UInt64(seed &* 2_654_435_761 &+ 1))
             ctx.blendMode = .destinationOut
-            for _ in 0..<Int(size.width * size.height / 90) {
+            for _ in 0..<Int(size.width * size.height / 45) {
                 let x = Double(rng.next() % 10_000) / 10_000 * size.width
                 let y = Double(rng.next() % 10_000) / 10_000 * size.height
-                let r = 0.4 + Double(rng.next() % 100) / 100 * 1.4
-                let a = 0.25 + Double(rng.next() % 100) / 100 * 0.6
+                let r = 0.5 + Double(rng.next() % 100) / 100 * 2.0
+                let a = 0.35 + Double(rng.next() % 100) / 100 * 0.6
                 ctx.fill(Path(ellipseIn: CGRect(x: x, y: y, width: r * 2, height: r * 2)), with: .color(.black.opacity(a)))
             }
         }
