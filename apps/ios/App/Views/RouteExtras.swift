@@ -119,7 +119,7 @@ struct StopsSection: View {
             .scrollIndicators(.hidden)
         }
         .task(id: stops.map(\.id).joined()) {
-            for s in stops where s.kind == "viewpoint" {
+            for s in stops where s.kind == "viewpoint" && !s.name.isEmpty {
                 if let p = await model.photos(lat: s.lat, lon: s.lon, name: s.name.isEmpty ? nil : s.name).first { photos[s.id] = p }
             }
         }
@@ -129,7 +129,7 @@ struct StopsSection: View {
     private func card(_ s: SuggestedStop) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Group {
-                if s.kind == "viewpoint" {
+                if s.kind == "viewpoint" && !s.name.isEmpty {
                     CreditedPhoto(photo: photos[s.id], type: "viewpoint")
                 } else {
                     Theme.greenTint.overlay {
@@ -207,7 +207,11 @@ struct ShareCardView: View {
                         .font(Theme.sofia(14, .semibold)).monospacedDigit().foregroundStyle(Theme.green)
                     VStack(alignment: .leading, spacing: 4) {
                         ForEach(Array(route.moments.prefix(4)), id: \.id) { m in
-                            Label(m.name, systemImage: PlaceIcon.symbol(m.type)).font(Theme.sofia(11, .medium)).foregroundStyle(Theme.ink2).lineLimit(1)
+                            HStack(spacing: 6) {
+                                Image(systemName: PlaceIcon.symbol(m.type)).frame(width: 14)
+                                Text(m.name).lineLimit(1)
+                            }
+                            .font(Theme.sofia(11, .medium)).foregroundStyle(Theme.ink2)
                         }
                     }
                     .padding(.top, 4)

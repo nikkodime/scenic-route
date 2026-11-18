@@ -44,6 +44,8 @@ struct RouteDetailView: View {
         .accessibilityIdentifier("routeDetail")
         .navigationTitle(route.label)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(Theme.paper, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 if let card {

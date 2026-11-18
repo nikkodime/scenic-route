@@ -11,6 +11,14 @@ struct ExploreHome: View {
             if model.explore?.destinations.isEmpty == false {
                 ExploreView()
                     .toolbar {
+                        ToolbarItem(placement: .topBarLeading) {
+                            Button { run(model.exploreMinutes, loop: !model.roundTrip) } label: {
+                                Label(model.roundTrip ? "Loops" : "To a place", systemImage: model.roundTrip ? "arrow.triangle.2.circlepath" : "arrow.right")
+                                    .labelStyle(.titleAndIcon).font(Theme.sofia(14, .semibold)).foregroundStyle(Theme.ink)
+                            }
+                            .accessibilityHint(model.roundTrip ? "Switch to places to drive to" : "Switch to loops from here")
+                            .accessibilityIdentifier("loopToggle")
+                        }
                         ToolbarItem(placement: .topBarTrailing) { spanMenu }
                     }
             } else {
@@ -55,6 +63,7 @@ struct ExploreHome: View {
                 .toolbar(.hidden, for: .navigationBar)
             }
         }
+        .onAppear { loop = model.roundTrip }
         .task {
             if model.explore == nil, !model.isExploring { await model.runExplore() }
         }
