@@ -8,7 +8,13 @@ struct TripsView: View {
         List {
             if let s = model.syncStatus { Text(s).font(.caption).foregroundStyle(.secondary) }
             if model.trips.isEmpty {
-                ContentUnavailableView("No trips yet", systemImage: "suitcase", description: Text("Save a route and it appears here, on this phone and in the web planner."))
+                VStack(spacing: 12) {
+                    IslandView().frame(maxWidth: 280)
+                    Text("No trips yet").font(Theme.headlineFont).foregroundStyle(Theme.ink)
+                }
+                .frame(maxWidth: .infinity)
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
             }
             ForEach(model.trips) { trip in
                 NavigationLink(value: trip) {

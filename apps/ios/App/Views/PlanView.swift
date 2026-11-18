@@ -30,6 +30,8 @@ struct PlanView: View {
             .padding(.vertical, 8)
         }
         .background(Theme.background)
+        .overlay { if model.isPlanning || model.isExploring { PlanningOverlay().transition(.opacity) } }
+        .animation(.easeOut(duration: 0.25), value: model.isPlanning || model.isExploring)
         .toolbar(.hidden, for: .navigationBar)
         .navigationBarTitleDisplayMode(.inline)
         .sheet(item: $picking) { field in

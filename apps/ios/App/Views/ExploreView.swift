@@ -77,9 +77,7 @@ struct ExploreView: View {
             .padding(.bottom, 8)
         }
         .overlay {
-            if model.isPlanning {
-                ProgressView().controlSize(.large).padding(24).background(.regularMaterial, in: RoundedRectangle(cornerRadius: Theme.corner))
-            }
+            if model.isPlanning { PlanningOverlay() }
         }
         .background(Theme.background)
         .navigationTitle(model.roundTrip ? "Loops · \(Format.duration(minutes: Double(model.exploreMinutes)))" : "Within \(Format.duration(minutes: Double(model.exploreMinutes)))")
