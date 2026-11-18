@@ -188,7 +188,15 @@ struct ShareCardView: View {
         VStack(spacing: 0) {
             Group {
                 if let photo { Image(uiImage: photo).resizable().scaledToFill() }
-                else { LinearGradient(colors: [Theme.greenTint, Theme.green.opacity(0.45)], startPoint: .top, endPoint: .bottom) }
+                else {
+                    // No photo along the way: the region's island floats on the morning sky instead.
+                    ZStack {
+                        LinearGradient(colors: [Theme.sky, Theme.paper], startPoint: .top, endPoint: .bottom)
+                        if let end = route.line.last {
+                            IslandPoster(region: .nearest(lat: end.lat, lon: end.lon)).frame(width: 300, height: 300).offset(x: -30, y: 12)
+                        }
+                    }
+                }
             }
             .frame(width: 360, height: 252).clipped()
             .overlay(alignment: .topTrailing) {

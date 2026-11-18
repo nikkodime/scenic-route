@@ -7,6 +7,7 @@ struct DriveLoggedView: View {
     let drive: LoggedDrive
     @State private var rating = 0
     @State private var landed = false
+    @State private var card: SharedDrive?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -84,13 +85,16 @@ struct DriveLoggedView: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("addToLogbook")
-                ShareLink(item: shareText) {
-                    Image(systemName: "square.and.arrow.up").font(.system(size: 18, weight: .semibold)).foregroundStyle(Theme.ink)
-                        .frame(width: 54, height: 54)
-                        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16))
-                        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Theme.border))
+                Group {
+                    // The island story card when it has rendered, the sentence until then.
+                    if let card {
+                        ShareLink(item: card, message: Text(shareText), preview: SharePreview(drive.name, image: Image(uiImage: card.image))) { shareIcon }
+                    } else {
+                        ShareLink(item: shareText) { shareIcon }
+                    }
                 }
                 .accessibilityLabel("Share")
+                .accessibilityIdentifier("shareDrive")
             }
         }
         .padding(.horizontal, 24)
@@ -105,7 +109,7 @@ struct DriveLoggedView: View {
             .padding(16)
             .accessibilityLabel("Don't log this drive")
         }
-        .onAppear { landed = true }
+        .onAppear { landed = true; card = drive.islandShareCard() }
     }
 
     private var region: IslandRegion {
@@ -124,6 +128,13 @@ struct DriveLoggedView: View {
         s += "."
         if model.isBestThisMonth(drive.score), !model.logbook.isEmpty { s += " Your best score this month." }
         return s
+    }
+
+    private var shareIcon: some View {
+        Image(systemName: "square.and.arrow.up").font(.system(size: 18, weight: .semibold)).foregroundStyle(Theme.ink)
+            .frame(width: 54, height: 54)
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16))
+            .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Theme.border))
     }
 
     private var shareText: String {

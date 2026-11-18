@@ -36,6 +36,11 @@ struct LogbookView: View {
                         ForEach(drives.prefix(20)) { d in
                             DriveRow(drive: d)
                                 .contextMenu {
+                                    if let card = d.islandShareCard() {
+                                        ShareLink(item: card, preview: SharePreview(d.name, image: Image(uiImage: card.image))) {
+                                            Label("Share", systemImage: "square.and.arrow.up")
+                                        }
+                                    }
                                     Button("Remove from logbook", systemImage: "trash", role: .destructive) {
                                         Task { await model.deleteFromLogbook(d) }
                                     }
