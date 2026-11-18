@@ -319,3 +319,18 @@ test('Commons photos: landscape views with credits; maps, coats of arms and port
   await src.near(43.0766, 11.6787, { name: 'Pienza' });
   assert.equal(calls, 1, 'cached');
 });
+
+test('GraphHopper turn instructions become drive steps with km and position', () => {
+  const coords: [number, number][] = [[11.33, 43.31], [11.34, 43.31], [11.35, 43.31], [11.35, 43.32]];
+  const p = parseGhPath({
+    distance: 2500, time: 180000, points: { coordinates: coords },
+    instructions: [
+      { text: 'Continue onto SP438', distance: 1600, sign: 0, interval: [0, 2], street_name: 'SP438' },
+      { text: 'Turn right onto Via Lauretana', distance: 900, sign: 2, interval: [2, 3], street_name: 'Via Lauretana' },
+      { text: 'Arrive at destination', distance: 0, sign: 4, interval: [3, 3] },
+    ],
+  });
+  assert.equal(p.steps?.length, 3);
+  assert.deepEqual(p.steps?.[1], { atKm: 1.6, text: 'Turn right onto Via Lauretana', sign: 2, street: 'Via Lauretana', lat: 43.31, lon: 11.35 });
+  assert.equal(p.steps?.[2].atKm, 2.5);
+});

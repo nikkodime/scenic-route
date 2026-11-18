@@ -69,6 +69,7 @@ interface GhPath {
   time: number;
   points: { coordinates: [number, number, number?][] };
   details?: Record<string, Interval[]>;
+  instructions?: { text: string; distance: number; sign: number; interval: [number, number]; street_name?: string }[];
 }
 
 /** Turn a GraphHopper path into our route shape, summing km per detail value. */
@@ -114,7 +115,15 @@ export function parseGhPath(path: GhPath): RoutedPath {
     }
   }
 
-  return { line, km: path.distance / 1000, minutes: path.time / 60000, motorwayKm, unpavedKm, tollKm, ferryKm, urbanKm, motorwayKmByCountry };
+  // Turn-by-turn: where each manoeuvre happens, in km from the start (GraphHopper sign codes kept as-is).
+  let at = 0;
+  const steps = (path.instructions ?? []).map((ins) => {
+    const step = { atKm: Math.round(at * 100) / 100, text: ins.text, sign: ins.sign, street: ins.street_name ?? '', lat: line[ins.interval[0]]?.lat ?? 0, lon: line[ins.interval[0]]?.lon ?? 0 };
+    at += ins.distance / 1000;
+    return step;
+  });
+
+  return { line, km: path.distance / 1000, minutes: path.time / 60000, motorwayKm, unpavedKm, tollKm, ferryKm, urbanKm, motorwayKmByCountry, ...(steps.length ? { steps } : {}) };
 }
 
 export class GraphHopperRouter implements Router {
@@ -136,7 +145,8 @@ export class GraphHopperRouter implements Router {
       points: points.map((p) => [p.lon, p.lat]),
       profile: this.profile,
       points_encoded: false,
-      instructions: false,
+      instructions: true,
+      locale: 'en',
       calc_points: true,
       details: ['road_class', 'surface', 'toll', 'country', 'road_environment', 'urban_density', 'max_speed'],
       custom_model: cm,

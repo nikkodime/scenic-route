@@ -58,8 +58,19 @@ function vehicleRules(vehicle: Vehicle, prefs: Preferences, strengths: number[])
   return { prefs: { ...prefs, avoidUnpaved: true }, strengths: s.length ? s : [1] };
 }
 
+export interface RouteStep {
+  atKm: number;
+  text: string;
+  /** GraphHopper sign: -3 sharp left … 0 straight … 3 sharp right, 4 arrive, 5 via, 6 roundabout. */
+  sign: number;
+  street: string;
+  lat: number;
+  lon: number;
+}
+
 export interface RoutedPath extends RouteGeometry {
   motorwayKmByCountry?: Record<string, number>;
+  steps?: RouteStep[];
 }
 
 export interface RouteOptions {
@@ -360,6 +371,7 @@ export async function planRoutes(req: PlanRequest, p: Providers, opts: PlanOptio
       scenicStops: r.stops.filter((s) => s.count > 0).map((s) => ({ lat: s.lat, lon: s.lon, name: s.name, types: s.types })),
       bestStretch: stretch,
       elevation: profile(r.elev),
+      ...(r.path.steps?.length ? { steps: r.path.steps } : {}),
       conditions,
       advisories: r.advisories,
       handoff: {

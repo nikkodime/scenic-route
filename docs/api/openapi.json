@@ -430,6 +430,41 @@
                     "type": "number"
                   }
                 },
+                "steps": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "atKm": {
+                        "type": "number"
+                      },
+                      "text": {
+                        "type": "string"
+                      },
+                      "sign": {
+                        "type": "number"
+                      },
+                      "street": {
+                        "type": "string"
+                      },
+                      "lat": {
+                        "type": "number"
+                      },
+                      "lon": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "atKm",
+                      "text",
+                      "sign",
+                      "street",
+                      "lat",
+                      "lon"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
                 "conditions": {
                   "type": "object",
                   "properties": {
@@ -1344,6 +1379,41 @@
               "type": "number"
             }
           },
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "atKm": {
+                  "type": "number"
+                },
+                "text": {
+                  "type": "string"
+                },
+                "sign": {
+                  "type": "number"
+                },
+                "street": {
+                  "type": "string"
+                },
+                "lat": {
+                  "type": "number"
+                },
+                "lon": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "atKm",
+                "text",
+                "sign",
+                "street",
+                "lat",
+                "lon"
+              ],
+              "additionalProperties": false
+            }
+          },
           "conditions": {
             "type": "object",
             "properties": {
@@ -1912,6 +1982,41 @@
                       "type": "array",
                       "items": {
                         "type": "number"
+                      }
+                    },
+                    "steps": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "atKm": {
+                            "type": "number"
+                          },
+                          "text": {
+                            "type": "string"
+                          },
+                          "sign": {
+                            "type": "number"
+                          },
+                          "street": {
+                            "type": "string"
+                          },
+                          "lat": {
+                            "type": "number"
+                          },
+                          "lon": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "atKm",
+                          "text",
+                          "sign",
+                          "street",
+                          "lat",
+                          "lon"
+                        ],
+                        "additionalProperties": false
                       }
                     },
                     "conditions": {
@@ -2630,6 +2735,41 @@
                                 "type": "array",
                                 "items": {
                                   "type": "number"
+                                }
+                              },
+                              "steps": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "atKm": {
+                                      "type": "number"
+                                    },
+                                    "text": {
+                                      "type": "string"
+                                    },
+                                    "sign": {
+                                      "type": "number"
+                                    },
+                                    "street": {
+                                      "type": "string"
+                                    },
+                                    "lat": {
+                                      "type": "number"
+                                    },
+                                    "lon": {
+                                      "type": "number"
+                                    }
+                                  },
+                                  "required": [
+                                    "atKm",
+                                    "text",
+                                    "sign",
+                                    "street",
+                                    "lat",
+                                    "lon"
+                                  ],
+                                  "additionalProperties": false
                                 }
                               },
                               "conditions": {
@@ -3360,6 +3500,41 @@
                                 "type": "array",
                                 "items": {
                                   "type": "number"
+                                }
+                              },
+                              "steps": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "atKm": {
+                                      "type": "number"
+                                    },
+                                    "text": {
+                                      "type": "string"
+                                    },
+                                    "sign": {
+                                      "type": "number"
+                                    },
+                                    "street": {
+                                      "type": "string"
+                                    },
+                                    "lat": {
+                                      "type": "number"
+                                    },
+                                    "lon": {
+                                      "type": "number"
+                                    }
+                                  },
+                                  "required": [
+                                    "atKm",
+                                    "text",
+                                    "sign",
+                                    "street",
+                                    "lat",
+                                    "lon"
+                                  ],
+                                  "additionalProperties": false
                                 }
                               },
                               "conditions": {

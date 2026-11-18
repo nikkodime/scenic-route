@@ -103,6 +103,8 @@ export const RouteOptionSchema = z.object({
   bestStretch: z.object({ fromKm: z.number(), toKm: z.number() }).nullable(),
   /** Elevation profile in metres, evenly spaced along the route (about 48 samples). */
   elevation: z.array(z.number()).optional(),
+  /** Turn-by-turn steps for Drive mode (when the router gives them). */
+  steps: z.array(z.object({ atKm: z.number(), text: z.string(), sign: z.number(), street: z.string(), lat: z.number(), lon: z.number() })).optional(),
   conditions: ConditionsSchema.nullable(),
   advisories: z.array(AdvisorySchema),
   handoff: z.object({ googleMaps: z.string(), appleMaps: z.string() }),
