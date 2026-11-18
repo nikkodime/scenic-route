@@ -12,7 +12,8 @@ settings:
     SWIFT_VERSION: "6.0"
     MARKETING_VERSION: "0.1.0"
     CURRENT_PROJECT_VERSION: "1"
-    DEVELOPMENT_TEAM: ""
+    DEVELOPMENT_TEAM: "59U9VSKF6K"
+    CODE_SIGN_STYLE: Automatic
 targets:
   ScenicRoute:
     type: application
@@ -31,6 +32,8 @@ targets:
         LSApplicationQueriesSchemes: [comgooglemaps]
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
+        # Device test builds reach the API on the Mac over the home Wi-Fi (SCENIC_API_BASE_URL=http://<mac-ip>:8795).
+        NSLocalNetworkUsageDescription: Panoramica connects to your Mac for routes during testing.
         ScenicAPIBaseURL: $(SCENIC_API_BASE_URL)
     settings:
       base:
