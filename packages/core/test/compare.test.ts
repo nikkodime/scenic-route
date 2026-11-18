@@ -70,3 +70,17 @@ test('a shorter quieter road says so: negative extra km, and no shared road mean
   assert.equal(c.extraMinutes, 5);
   assert.ok(c.sharedPct < 15);
 });
+
+test('detours a couple of km apart merge into one, and free ones are dropped', () => {
+  const fastLine = wigglyLine([SIENA, DEST]);
+  const bump = (from: number, to: number, off: number) => {
+    const a = fastLine[from], b = fastLine[to];
+    return wigglyLine([a, { lat: (a.lat + b.lat) / 2 + off, lon: (a.lon + b.lon) / 2 - off }, b]);
+  };
+  // Two detours with 2 km of fast road between them, then a long gap and a third one.
+  const line = [...fastLine.slice(0, 20), ...bump(20, 40, 0.03), ...fastLine.slice(41, 50), ...bump(50, 70, 0.03), ...fastLine.slice(71, 200), ...bump(200, 230, 0.05), ...fastLine.slice(231)];
+  const km = lineLengthKm(line), fkm = lineLengthKm(fastLine);
+  const c = compareRoutes({ line, km, minutes: km }, { line: fastLine, km: fkm, minutes: fkm * 0.8 });
+  assert.equal(c.detours.length, 2, JSON.stringify(c.detours.map((d) => [d.fromKm, d.toKm])));
+  assert.equal(c.detours.reduce((s, d) => s + d.extraMinutes, 0), c.extraMinutes);
+});

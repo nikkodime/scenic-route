@@ -42,6 +42,8 @@ const SHARED_KM = 0.15;
 /** Shorter excursions off the fast road are noise; shorter stretches back on it (crossing it) don't split a detour. */
 const MIN_DETOUR_KM = 1;
 const MIN_REJOIN_KM = 0.6;
+/** Detours closer than this (or 5% of the route) are one detour. */
+const MERGE_GAP_KM = 3;
 const CELL = 0.005; // degrees, ~500 m
 
 export function compareRoutes(route: CompareInput, fastest: CompareInput): Comparison {
@@ -109,7 +111,19 @@ export function compareRoutes(route: CompareInput, fastest: CompareInput): Compa
   const sharedKm = Math.max(0, cum[cum.length - 1] - raw.reduce((s, d) => s + d.km, 0));
   // Share the route's real extra minutes out over the detours by their estimated cost, so they add up.
   const total = raw.reduce((s, d) => s + d.rawMin, 0);
-  const detours: Detour[] = raw.map(({ rawMin, ...d }) => ({ ...d, extraMinutes: total > 0 ? Math.round((extraMinutes * rawMin) / total) : 0 }));
+  const split: Detour[] = raw.map(({ rawMin, ...d }) => ({ ...d, extraMinutes: total > 0 ? Math.round((extraMinutes * rawMin) / total) : 0 }));
+  // Detours a few km apart read as one to a driver (and as a pile of labels on screen): merge them.
+  const gapKm = Math.max(MERGE_GAP_KM, route.km * 0.05);
+  const merged: Detour[] = [];
+  for (const d of split) {
+    const prev = merged[merged.length - 1];
+    if (prev && d.fromKm - prev.toKm < gapKm) {
+      const name = d.extraMinutes > prev.extraMinutes && d.name ? d.name : prev.name ?? d.name;
+      merged[merged.length - 1] = { ...prev, toKm: d.toKm, rejoin: d.rejoin, km: round1(d.toKm - prev.fromKm), extraKm: round1(prev.extraKm + d.extraKm), extraMinutes: prev.extraMinutes + d.extraMinutes, name };
+    } else merged.push(d);
+  }
+  // A detour that costs no time isn't one to mention (its minutes are 0, so the total still adds up).
+  const detours = merged.filter((d) => d.extraMinutes >= 1);
   return { extraKm, extraMinutes, sharedPct: Math.round((100 * sharedKm) / Math.max(cum[cum.length - 1], 1e-6)), detours };
 }
 

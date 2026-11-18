@@ -88,9 +88,9 @@ struct RouteMap: View {
             }
             if !fastest.isEmpty, chosen?.source != "fastest" {
                 MapPolyline(coordinates: fastest.map { CLLocationCoordinate2D(latitude: $0.lat, longitude: $0.lon) })
-                    .stroke(Theme.surface, style: StrokeStyle(lineWidth: 7, lineCap: .round, lineJoin: .round))
+                    .stroke(Theme.surface.opacity(0.8), style: StrokeStyle(lineWidth: 5, lineCap: .round, lineJoin: .round))
                 MapPolyline(coordinates: fastest.map { CLLocationCoordinate2D(latitude: $0.lat, longitude: $0.lon) })
-                    .stroke(Theme.ink2, style: StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round, dash: [8, 7]))
+                    .stroke(Theme.ink3, style: StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round, dash: [4, 6]))
             }
             ForEach(ordered.filter { $0.element.id == selectedID }, id: \.element.id) { i, r in
                 MapPolyline(coordinates: r.line.map { CLLocationCoordinate2D(latitude: $0.lat, longitude: $0.lon) })

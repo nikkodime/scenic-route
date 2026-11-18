@@ -144,7 +144,7 @@ struct DetourRibbon: View {
                 .stroke(Theme.green, style: StrokeStyle(lineWidth: 5, lineCap: .round, lineJoin: .round))
                 Circle().fill(Theme.ink).frame(width: 9, height: 9).position(x: x0, y: base)
                 Circle().fill(Theme.surface).overlay(Circle().strokeBorder(Theme.ink, lineWidth: 2.5)).frame(width: 10, height: 10).position(x: x1, y: base)
-                ForEach(Array(detours.enumerated()), id: \.offset) { _, d in
+                ForEach(Array(labelled(x).enumerated()), id: \.offset) { _, d in
                     VStack(spacing: 1) {
                         if let n = d.name { Text(n).font(Theme.sofia(11, .bold)).foregroundStyle(Theme.ink).lineLimit(1) }
                         Text("+\(Int(d.extraMinutes)) min").font(Theme.sofia(11, .bold)).foregroundStyle(Theme.green).monospacedDigit()
@@ -156,6 +156,19 @@ struct DetourRibbon: View {
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(detours.map { "\($0.name ?? "Detour") adds \(Int($0.extraMinutes)) minutes" }.joined(separator: ", "))
+    }
+}
+
+extension DetourRibbon {
+    /// The costliest detours get a label; one that would sit on top of a label already placed is left out.
+    func labelled(_ x: (Double) -> CGFloat) -> [Detour] {
+        var placed: [CGFloat] = []
+        return detours.sorted { $0.extraMinutes > $1.extraMinutes }.filter { d in
+            let cx = (x(d.fromKm) + x(d.toKm)) / 2
+            guard !placed.contains(where: { abs($0 - cx) < 92 }) else { return false }
+            placed.append(cx)
+            return true
+        }
     }
 }
 

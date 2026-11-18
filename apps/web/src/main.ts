@@ -309,11 +309,19 @@ function ribbon(r: RouteOption) {
   const maxMin = Math.max(...r.vsFastest!.detours.map((d) => d.extraMinutes), 1);
   let path = `M${x0} ${y}`;
   const labels: string[] = [];
+  // Label the costliest detours first; skip a label that would sit on top of one already placed.
+  const placed: number[] = [];
+  const labelled = new Set([...r.vsFastest!.detours].sort((a, b) => b.extraMinutes - a.extraMinutes).filter((d) => {
+    const cx = (X(d.fromKm) + X(d.toKm)) / 2;
+    if (placed.some((p) => Math.abs(p - cx) < 74)) return false;
+    placed.push(cx);
+    return true;
+  }));
   for (const d of r.vsFastest!.detours) {
     const a = X(d.fromKm), b = X(d.toKm), h = 14 + 34 * (d.extraMinutes / maxMin);
     path += ` L${a.toFixed(1)} ${y} Q${((a + b) / 2).toFixed(1)} ${(y - 2 * h).toFixed(1)} ${b.toFixed(1)} ${y}`;
     const cx = Math.min(x1 - 30, Math.max(x0 + 30, (a + b) / 2));
-    labels.push(`<text x="${cx.toFixed(1)}" y="${y + 18}">${esc(clip(d.name ?? '', 18))}</text><text class="m" x="${cx.toFixed(1)}" y="${y + 32}">+${d.extraMinutes} min</text>`);
+    if (labelled.has(d)) labels.push(`<text x="${cx.toFixed(1)}" y="${y + 18}">${esc(clip(d.name ?? '', 18))}</text><text class="m" x="${cx.toFixed(1)}" y="${y + 32}">+${d.extraMinutes} min</text>`);
   }
   path += ` L${x1} ${y}`;
   return `<svg class="ribbon" viewBox="0 0 ${W} ${y + 38}" role="img" aria-label="Where this route leaves the fastest road">
