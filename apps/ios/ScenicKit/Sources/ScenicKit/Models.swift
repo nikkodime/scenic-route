@@ -196,6 +196,37 @@ public struct Handoff: Codable, Hashable, Sendable {
     public var appleMaps: String
 }
 
+/// Estimated tolls for one vehicle class. Show as "≈ €12".
+public struct TollEstimate: Codable, Hashable, Sendable {
+    public struct Country: Codable, Hashable, Sendable { public var country: String; public var km: Double; public var eur: Double }
+    public var km: Double
+    public var eur: Double
+    public var byCountry: [Country]
+}
+
+/// Where a route leaves the fastest road and comes back, and what that costs.
+public struct Detour: Codable, Hashable, Sendable {
+    public var fromKm: Double
+    public var toKm: Double
+    public var leave: Coordinate
+    public var rejoin: Coordinate
+    public var km: Double
+    public var extraKm: Double
+    public var extraMinutes: Double
+    public var name: String?
+}
+
+/// A route against the fastest road.
+public struct VsFastest: Codable, Hashable, Sendable {
+    public var extraKm: Double
+    public var extraMinutes: Double
+    /// Fastest-road tolls minus this route's (positive: this route saves money).
+    public var tollSavedEur: Double
+    /// Share of the route on the fastest road, 0–100.
+    public var sharedPct: Double
+    public var detours: [Detour]
+}
+
 public struct RouteOption: Codable, Hashable, Sendable, Identifiable {
     public var id: String
     public var rank: Int
@@ -219,12 +250,21 @@ public struct RouteOption: Codable, Hashable, Sendable, Identifiable {
     public var elevation: [Double]?
     /// Turn-by-turn steps for Drive mode.
     public var steps: [RouteStep]?
+    public var tolls: TollEstimate?
+    public var vsFastest: VsFastest?
 
     public var line: [Coordinate] { Polyline.decode(polyline) }
 }
 
 public struct PlanResponse: Codable, Sendable {
-    public struct Fastest: Codable, Sendable { public var km: Double; public var minutes: Double }
+    /// The fastest road: the baseline, drawn as a ghost line.
+    public struct Fastest: Codable, Hashable, Sendable {
+        public var km: Double
+        public var minutes: Double
+        public var polyline: String?
+        public var tolls: TollEstimate?
+        public var line: [Coordinate] { polyline.map(Polyline.decode) ?? [] }
+    }
     public var planId: String
     public var modelVersion: String
     public var fastest: Fastest

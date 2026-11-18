@@ -84,6 +84,36 @@ export const ConditionsSchema = z.object({
   notes: z.array(z.string()),
 });
 
+export const TollEstimateSchema = z.object({
+  /** Km on toll roads. */
+  km: z.number(),
+  /** Estimated euros for this vehicle, rounded; 0 when free. An estimate: show as "≈ €12". */
+  eur: z.number(),
+  byCountry: z.array(z.object({ country: z.string(), km: z.number(), eur: z.number() })),
+});
+
+export const DetourSchema = z.object({
+  fromKm: z.number(),
+  toKm: z.number(),
+  leave: LatLonSchema,
+  rejoin: LatLonSchema,
+  km: z.number(),
+  extraKm: z.number(),
+  extraMinutes: z.number(),
+  name: z.string().nullable(),
+});
+
+/** This route against the fastest one: what the scenery costs, and where. */
+export const VsFastestSchema = z.object({
+  extraKm: z.number(),
+  extraMinutes: z.number(),
+  /** Tolls on the fastest road minus tolls on this one (positive = this route saves money). */
+  tollSavedEur: z.number(),
+  /** Share of this route that runs on the fastest road, 0–100. */
+  sharedPct: z.number(),
+  detours: z.array(DetourSchema),
+});
+
 export const RouteOptionSchema = z.object({
   id: z.string(),
   rank: z.number().int(),
@@ -107,13 +137,22 @@ export const RouteOptionSchema = z.object({
   steps: z.array(z.object({ atKm: z.number(), text: z.string(), sign: z.number(), street: z.string(), lat: z.number(), lon: z.number() })).optional(),
   conditions: ConditionsSchema.nullable(),
   advisories: z.array(AdvisorySchema),
+  tolls: TollEstimateSchema.optional(),
+  vsFastest: VsFastestSchema.optional(),
   handoff: z.object({ googleMaps: z.string(), appleMaps: z.string() }),
 });
 
 export const PlanResponseSchema = z.object({
   planId: z.string(),
   modelVersion: z.string(),
-  fastest: z.object({ km: z.number(), minutes: z.number() }),
+  /** The fastest road: the baseline every route is compared with, drawn as a ghost line on the map. */
+  fastest: z.object({
+    km: z.number(),
+    minutes: z.number(),
+    /** Google encoded polyline, precision 5. */
+    polyline: z.string().optional(),
+    tolls: TollEstimateSchema.optional(),
+  }),
   /** The extra-time budget the planner used (from the style, capped by extraMinutes). */
   budgetMinutes: z.number().optional(),
   routes: z.array(RouteOptionSchema),

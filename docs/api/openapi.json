@@ -197,6 +197,49 @@
               },
               "minutes": {
                 "type": "number"
+              },
+              "polyline": {
+                "type": "string"
+              },
+              "tolls": {
+                "type": "object",
+                "properties": {
+                  "km": {
+                    "type": "number"
+                  },
+                  "eur": {
+                    "type": "number"
+                  },
+                  "byCountry": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "country": {
+                          "type": "string"
+                        },
+                        "km": {
+                          "type": "number"
+                        },
+                        "eur": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "country",
+                        "km",
+                        "eur"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": [
+                  "km",
+                  "eur",
+                  "byCountry"
+                ],
+                "additionalProperties": false
               }
             },
             "required": [
@@ -640,6 +683,149 @@
                     ],
                     "additionalProperties": false
                   }
+                },
+                "tolls": {
+                  "type": "object",
+                  "properties": {
+                    "km": {
+                      "type": "number"
+                    },
+                    "eur": {
+                      "type": "number"
+                    },
+                    "byCountry": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "country": {
+                            "type": "string"
+                          },
+                          "km": {
+                            "type": "number"
+                          },
+                          "eur": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "country",
+                          "km",
+                          "eur"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "km",
+                    "eur",
+                    "byCountry"
+                  ],
+                  "additionalProperties": false
+                },
+                "vsFastest": {
+                  "type": "object",
+                  "properties": {
+                    "extraKm": {
+                      "type": "number"
+                    },
+                    "extraMinutes": {
+                      "type": "number"
+                    },
+                    "tollSavedEur": {
+                      "type": "number"
+                    },
+                    "sharedPct": {
+                      "type": "number"
+                    },
+                    "detours": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "fromKm": {
+                            "type": "number"
+                          },
+                          "toKm": {
+                            "type": "number"
+                          },
+                          "leave": {
+                            "type": "object",
+                            "properties": {
+                              "lat": {
+                                "type": "number",
+                                "minimum": -90,
+                                "maximum": 90
+                              },
+                              "lon": {
+                                "type": "number",
+                                "minimum": -180,
+                                "maximum": 180
+                              }
+                            },
+                            "required": [
+                              "lat",
+                              "lon"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "rejoin": {
+                            "type": "object",
+                            "properties": {
+                              "lat": {
+                                "type": "number",
+                                "minimum": -90,
+                                "maximum": 90
+                              },
+                              "lon": {
+                                "type": "number",
+                                "minimum": -180,
+                                "maximum": 180
+                              }
+                            },
+                            "required": [
+                              "lat",
+                              "lon"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "km": {
+                            "type": "number"
+                          },
+                          "extraKm": {
+                            "type": "number"
+                          },
+                          "extraMinutes": {
+                            "type": "number"
+                          },
+                          "name": {
+                            "type": "string",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "fromKm",
+                          "toKm",
+                          "leave",
+                          "rejoin",
+                          "km",
+                          "extraKm",
+                          "extraMinutes",
+                          "name"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "extraKm",
+                    "extraMinutes",
+                    "tollSavedEur",
+                    "sharedPct",
+                    "detours"
+                  ],
+                  "additionalProperties": false
                 },
                 "handoff": {
                   "type": "object",
@@ -1590,6 +1776,149 @@
               "additionalProperties": false
             }
           },
+          "tolls": {
+            "type": "object",
+            "properties": {
+              "km": {
+                "type": "number"
+              },
+              "eur": {
+                "type": "number"
+              },
+              "byCountry": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "country": {
+                      "type": "string"
+                    },
+                    "km": {
+                      "type": "number"
+                    },
+                    "eur": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "country",
+                    "km",
+                    "eur"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "km",
+              "eur",
+              "byCountry"
+            ],
+            "additionalProperties": false
+          },
+          "vsFastest": {
+            "type": "object",
+            "properties": {
+              "extraKm": {
+                "type": "number"
+              },
+              "extraMinutes": {
+                "type": "number"
+              },
+              "tollSavedEur": {
+                "type": "number"
+              },
+              "sharedPct": {
+                "type": "number"
+              },
+              "detours": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "fromKm": {
+                      "type": "number"
+                    },
+                    "toKm": {
+                      "type": "number"
+                    },
+                    "leave": {
+                      "type": "object",
+                      "properties": {
+                        "lat": {
+                          "type": "number",
+                          "minimum": -90,
+                          "maximum": 90
+                        },
+                        "lon": {
+                          "type": "number",
+                          "minimum": -180,
+                          "maximum": 180
+                        }
+                      },
+                      "required": [
+                        "lat",
+                        "lon"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "rejoin": {
+                      "type": "object",
+                      "properties": {
+                        "lat": {
+                          "type": "number",
+                          "minimum": -90,
+                          "maximum": 90
+                        },
+                        "lon": {
+                          "type": "number",
+                          "minimum": -180,
+                          "maximum": 180
+                        }
+                      },
+                      "required": [
+                        "lat",
+                        "lon"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "km": {
+                      "type": "number"
+                    },
+                    "extraKm": {
+                      "type": "number"
+                    },
+                    "extraMinutes": {
+                      "type": "number"
+                    },
+                    "name": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "fromKm",
+                    "toKm",
+                    "leave",
+                    "rejoin",
+                    "km",
+                    "extraKm",
+                    "extraMinutes",
+                    "name"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "extraKm",
+              "extraMinutes",
+              "tollSavedEur",
+              "sharedPct",
+              "detours"
+            ],
+            "additionalProperties": false
+          },
           "handoff": {
             "type": "object",
             "properties": {
@@ -2194,6 +2523,149 @@
                         ],
                         "additionalProperties": false
                       }
+                    },
+                    "tolls": {
+                      "type": "object",
+                      "properties": {
+                        "km": {
+                          "type": "number"
+                        },
+                        "eur": {
+                          "type": "number"
+                        },
+                        "byCountry": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "country": {
+                                "type": "string"
+                              },
+                              "km": {
+                                "type": "number"
+                              },
+                              "eur": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "country",
+                              "km",
+                              "eur"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "km",
+                        "eur",
+                        "byCountry"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "vsFastest": {
+                      "type": "object",
+                      "properties": {
+                        "extraKm": {
+                          "type": "number"
+                        },
+                        "extraMinutes": {
+                          "type": "number"
+                        },
+                        "tollSavedEur": {
+                          "type": "number"
+                        },
+                        "sharedPct": {
+                          "type": "number"
+                        },
+                        "detours": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "fromKm": {
+                                "type": "number"
+                              },
+                              "toKm": {
+                                "type": "number"
+                              },
+                              "leave": {
+                                "type": "object",
+                                "properties": {
+                                  "lat": {
+                                    "type": "number",
+                                    "minimum": -90,
+                                    "maximum": 90
+                                  },
+                                  "lon": {
+                                    "type": "number",
+                                    "minimum": -180,
+                                    "maximum": 180
+                                  }
+                                },
+                                "required": [
+                                  "lat",
+                                  "lon"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "rejoin": {
+                                "type": "object",
+                                "properties": {
+                                  "lat": {
+                                    "type": "number",
+                                    "minimum": -90,
+                                    "maximum": 90
+                                  },
+                                  "lon": {
+                                    "type": "number",
+                                    "minimum": -180,
+                                    "maximum": 180
+                                  }
+                                },
+                                "required": [
+                                  "lat",
+                                  "lon"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "km": {
+                                "type": "number"
+                              },
+                              "extraKm": {
+                                "type": "number"
+                              },
+                              "extraMinutes": {
+                                "type": "number"
+                              },
+                              "name": {
+                                "type": "string",
+                                "nullable": true
+                              }
+                            },
+                            "required": [
+                              "fromKm",
+                              "toKm",
+                              "leave",
+                              "rejoin",
+                              "km",
+                              "extraKm",
+                              "extraMinutes",
+                              "name"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "extraKm",
+                        "extraMinutes",
+                        "tollSavedEur",
+                        "sharedPct",
+                        "detours"
+                      ],
+                      "additionalProperties": false
                     },
                     "handoff": {
                       "type": "object",
@@ -2947,6 +3419,149 @@
                                   ],
                                   "additionalProperties": false
                                 }
+                              },
+                              "tolls": {
+                                "type": "object",
+                                "properties": {
+                                  "km": {
+                                    "type": "number"
+                                  },
+                                  "eur": {
+                                    "type": "number"
+                                  },
+                                  "byCountry": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "country": {
+                                          "type": "string"
+                                        },
+                                        "km": {
+                                          "type": "number"
+                                        },
+                                        "eur": {
+                                          "type": "number"
+                                        }
+                                      },
+                                      "required": [
+                                        "country",
+                                        "km",
+                                        "eur"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "km",
+                                  "eur",
+                                  "byCountry"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "vsFastest": {
+                                "type": "object",
+                                "properties": {
+                                  "extraKm": {
+                                    "type": "number"
+                                  },
+                                  "extraMinutes": {
+                                    "type": "number"
+                                  },
+                                  "tollSavedEur": {
+                                    "type": "number"
+                                  },
+                                  "sharedPct": {
+                                    "type": "number"
+                                  },
+                                  "detours": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "fromKm": {
+                                          "type": "number"
+                                        },
+                                        "toKm": {
+                                          "type": "number"
+                                        },
+                                        "leave": {
+                                          "type": "object",
+                                          "properties": {
+                                            "lat": {
+                                              "type": "number",
+                                              "minimum": -90,
+                                              "maximum": 90
+                                            },
+                                            "lon": {
+                                              "type": "number",
+                                              "minimum": -180,
+                                              "maximum": 180
+                                            }
+                                          },
+                                          "required": [
+                                            "lat",
+                                            "lon"
+                                          ],
+                                          "additionalProperties": false
+                                        },
+                                        "rejoin": {
+                                          "type": "object",
+                                          "properties": {
+                                            "lat": {
+                                              "type": "number",
+                                              "minimum": -90,
+                                              "maximum": 90
+                                            },
+                                            "lon": {
+                                              "type": "number",
+                                              "minimum": -180,
+                                              "maximum": 180
+                                            }
+                                          },
+                                          "required": [
+                                            "lat",
+                                            "lon"
+                                          ],
+                                          "additionalProperties": false
+                                        },
+                                        "km": {
+                                          "type": "number"
+                                        },
+                                        "extraKm": {
+                                          "type": "number"
+                                        },
+                                        "extraMinutes": {
+                                          "type": "number"
+                                        },
+                                        "name": {
+                                          "type": "string",
+                                          "nullable": true
+                                        }
+                                      },
+                                      "required": [
+                                        "fromKm",
+                                        "toKm",
+                                        "leave",
+                                        "rejoin",
+                                        "km",
+                                        "extraKm",
+                                        "extraMinutes",
+                                        "name"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "extraKm",
+                                  "extraMinutes",
+                                  "tollSavedEur",
+                                  "sharedPct",
+                                  "detours"
+                                ],
+                                "additionalProperties": false
                               },
                               "handoff": {
                                 "type": "object",
@@ -3712,6 +4327,149 @@
                                   ],
                                   "additionalProperties": false
                                 }
+                              },
+                              "tolls": {
+                                "type": "object",
+                                "properties": {
+                                  "km": {
+                                    "type": "number"
+                                  },
+                                  "eur": {
+                                    "type": "number"
+                                  },
+                                  "byCountry": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "country": {
+                                          "type": "string"
+                                        },
+                                        "km": {
+                                          "type": "number"
+                                        },
+                                        "eur": {
+                                          "type": "number"
+                                        }
+                                      },
+                                      "required": [
+                                        "country",
+                                        "km",
+                                        "eur"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "km",
+                                  "eur",
+                                  "byCountry"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "vsFastest": {
+                                "type": "object",
+                                "properties": {
+                                  "extraKm": {
+                                    "type": "number"
+                                  },
+                                  "extraMinutes": {
+                                    "type": "number"
+                                  },
+                                  "tollSavedEur": {
+                                    "type": "number"
+                                  },
+                                  "sharedPct": {
+                                    "type": "number"
+                                  },
+                                  "detours": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "fromKm": {
+                                          "type": "number"
+                                        },
+                                        "toKm": {
+                                          "type": "number"
+                                        },
+                                        "leave": {
+                                          "type": "object",
+                                          "properties": {
+                                            "lat": {
+                                              "type": "number",
+                                              "minimum": -90,
+                                              "maximum": 90
+                                            },
+                                            "lon": {
+                                              "type": "number",
+                                              "minimum": -180,
+                                              "maximum": 180
+                                            }
+                                          },
+                                          "required": [
+                                            "lat",
+                                            "lon"
+                                          ],
+                                          "additionalProperties": false
+                                        },
+                                        "rejoin": {
+                                          "type": "object",
+                                          "properties": {
+                                            "lat": {
+                                              "type": "number",
+                                              "minimum": -90,
+                                              "maximum": 90
+                                            },
+                                            "lon": {
+                                              "type": "number",
+                                              "minimum": -180,
+                                              "maximum": 180
+                                            }
+                                          },
+                                          "required": [
+                                            "lat",
+                                            "lon"
+                                          ],
+                                          "additionalProperties": false
+                                        },
+                                        "km": {
+                                          "type": "number"
+                                        },
+                                        "extraKm": {
+                                          "type": "number"
+                                        },
+                                        "extraMinutes": {
+                                          "type": "number"
+                                        },
+                                        "name": {
+                                          "type": "string",
+                                          "nullable": true
+                                        }
+                                      },
+                                      "required": [
+                                        "fromKm",
+                                        "toKm",
+                                        "leave",
+                                        "rejoin",
+                                        "km",
+                                        "extraKm",
+                                        "extraMinutes",
+                                        "name"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "extraKm",
+                                  "extraMinutes",
+                                  "tollSavedEur",
+                                  "sharedPct",
+                                  "detours"
+                                ],
+                                "additionalProperties": false
                               },
                               "handoff": {
                                 "type": "object",
