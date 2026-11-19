@@ -36,7 +36,7 @@ const Env = z.object({
   PHOTOS: z.enum(['commons', 'none']).default('commons'),
   DATABASE_URL: z.string().optional(),
   JWT_SECRET: z.string().min(16).default('dev-only-secret-change-me-please'),
-  APPLE_BUNDLE_IDS: list.default('app.scenicroute.ios'),
+  APPLE_BUNDLE_IDS: list.default('com.nikkodime.panoramica,app.scenicroute.ios'),
   CORS_ORIGINS: list.default('http://localhost:5173,https://nikkodime.github.io'),
   USER_AGENT: z.string().default('scenic-route/0.1 (+https://github.com/nikkodime/scenic-route)'),
   TIME_ZONE: z.string().default('Europe/Rome'),
