@@ -1,7 +1,36 @@
 # Scenic Route
 
-Pick a destination and how much extra time you're happy to spend. The app finds
-the most beautiful drive there and opens it in Google Maps.
+Pick a destination and how much extra time you're happy to spend. Scenic Route
+finds the most beautiful drive there: views, hill towns, cypress avenues, coast
+and good roads, checked against sunset, sun glare, weather, ZTLs and gravel.
+iPhone app first, plus a web planner for multi-day journeys.
+
+**Architecture:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) (decisions in [docs/adr](docs/adr)).
+
+| Part | Path | Run |
+|---|---|---|
+| Shared planning library (scoring, candidates, conditions, advisories, API contract) | `packages/core` | `npm run test:core` |
+| API (Fastify; GraphHopper, Overpass, MET Norway, Photon, Postgres) | `services/api` | `npm run dev:api` → http://localhost:8787 |
+| Web journey planner (Vite, MapLibre) | `apps/web` | `npm run dev:web` → http://localhost:5173 |
+| iOS app (SwiftUI) + ScenicKit package | `apps/ios` | see [apps/ios/README.md](apps/ios/README.md) |
+| Routing config, ZTL data, local stack | `infra` | see [infra/graphhopper/README.md](infra/graphhopper/README.md) |
+| Phone prototype used for Tuscany test drives | `/` (`index.html`, `src/`) | GitHub Pages |
+
+```sh
+npm install
+npm run typecheck && npm test     # prototype + core + API + web unit tests (offline)
+npm run test:e2e                  # web planner in Chromium against the API with fake providers
+npm run dev:api & npm run dev:web # local planner using public demo services (dev only)
+```
+
+API contract: zod schemas in `packages/core/src/contracts.ts`, generated
+OpenAPI at [docs/api/openapi.json](docs/api/openapi.json) (`npm run openapi`).
+
+---
+
+## The original prototype
+
+The app finds the most beautiful drive and opens it in Google Maps.
 
 **Prototype for test drives in Tuscany.** Open it on your phone at
 https://nikkodime.github.io/scenic-route/ and use "Add to Home Screen" to

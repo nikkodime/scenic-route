@@ -2,7 +2,12 @@
 // Before any public launch: host our own router and Overpass, and use a
 // commercial weather plan (Open-Meteo's free tier is non-commercial).
 
-const OVERPASS = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'];
+const OVERPASS = [
+  'https://overpass-api.de/api/interpreter',
+  'https://overpass.private.coffee/api/interpreter',
+  'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter',
+];
 const OSRM = 'https://router.project-osrm.org/route/v1/driving/';
 const NOMINATIM = 'https://nominatim.openstreetmap.org/search';
 const ELEVATION = 'https://api.open-meteo.com/v1/elevation';
@@ -34,7 +39,7 @@ export async function overpass(query) {
   let lastErr;
   for (const url of OVERPASS) {
     try {
-      return await getJson(url, { method: 'POST', body: 'data=' + encodeURIComponent(query), headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }, 60000);
+      return await getJson(url, { method: 'POST', body: 'data=' + encodeURIComponent(query), headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }, 25000);
     } catch (e) {
       lastErr = e;
     }

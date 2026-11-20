@@ -1,0 +1,42 @@
+# Local stack: API + Postgres + GraphHopper (+ Photon geocoder).
+# 1. Put an OSM extract in infra/data/osm/region.osm.pbf, e.g.
+#    curl -L -o infra/data/osm/region.osm.pbf https://download.geofabrik.de/europe/italy/centro-latest.osm.pbf
+# 2. docker compose -f infra/docker-compose.yml up --build
+services:
+  postgres:
+    image: postgres:16
+    environment: { POSTGRES_USER: scenic, POSTGRES_PASSWORD: scenic, POSTGRES_DB: scenic }
+    volumes: [pgdata:/var/lib/postgresql/data]
+    ports: ['5432:5432']
+
+  graphhopper:
+    image: eclipse-temurin:21-jre
+    working_dir: /app
+    command: >
+      sh -c "test -f /app/gh.jar || curl -sSfL -o /app/gh.jar https://repo1.maven.org/maven2/com/graphhopper/graphhopper-web/11.0/graphhopper-web-11.0.jar;
+             java -Xmx6g -jar /app/gh.jar server /config/config.yml"
+    volumes:
+      - ./graphhopper:/config:ro
+      - ./data/osm:/data
+      - ghapp:/app
+    ports: ['8989:8989']
+
+  photon:
+    image: rtuszik/photon-docker:latest
+    environment: { COUNTRY_CODE: it }
+    volumes: [photon:/photon/photon_data]
+    ports: ['2322:2322']
+
+  api:
+    build: { context: .., dockerfile: services/api/Dockerfile }
+    depends_on: [postgres, graphhopper]
+    environment:
+      ROUTER: graphhopper
+      GRAPHHOPPER_URL: http://graphhopper:8989
+      PHOTON_URL: http://photon:2322
+      DATABASE_URL: postgres://scenic:scenic@postgres:5432/scenic
+      WEATHER: metno
+      JWT_SECRET: change-me-local-only-secret
+    ports: ['8787:8787']
+
+volumes: { pgdata: {}, ghapp: {}, photon: {} }

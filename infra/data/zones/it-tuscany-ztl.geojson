@@ -1,0 +1,412 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "kind": "ztl",
+    "name": "Firenze",
+    "city": "Firenze",
+    "hours": "Mon\u2013Fri 7:30\u201320:00, Sat 7:30\u201316:00; summer nights Thu\u2013Sat 23:00\u20133:00",
+    "approx": true
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       11.242,
+       43.762
+      ],
+      [
+       11.27,
+       43.762
+      ],
+      [
+       11.27,
+       43.784
+      ],
+      [
+       11.242,
+       43.784
+      ],
+      [
+       11.242,
+       43.762
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "kind": "ztl",
+    "name": "Siena",
+    "city": "Siena",
+    "hours": "always",
+    "approx": true
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       11.3225,
+       43.3125
+      ],
+      [
+       11.3395,
+       43.3125
+      ],
+      [
+       11.3395,
+       43.326
+      ],
+      [
+       11.3225,
+       43.326
+      ],
+      [
+       11.3225,
+       43.3125
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "kind": "ztl",
+    "name": "Pisa",
+    "city": "Pisa",
+    "hours": "varies by sector",
+    "approx": true
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       10.392,
+       43.711
+      ],
+      [
+       10.413,
+       43.711
+      ],
+      [
+       10.413,
+       43.723
+      ],
+      [
+       10.392,
+       43.723
+      ],
+      [
+       10.392,
+       43.711
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "kind": "ztl",
+    "name": "Lucca",
+    "city": "Lucca",
+    "hours": "always (inside the walls)",
+    "approx": true
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       10.496,
+       43.838
+      ],
+      [
+       10.5115,
+       43.838
+      ],
+      [
+       10.5115,
+       43.8485
+      ],
+      [
+       10.496,
+       43.8485
+      ],
+      [
+       10.496,
+       43.838
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "kind": "ztl",
+    "name": "San Gimignano",
+    "city": "San Gimignano",
+    "hours": "always",
+    "approx": true
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       11.04,
+       43.464
+      ],
+      [
+       11.047,
+       43.464
+      ],
+      [
+       11.047,
+       43.471
+      ],
+      [
+       11.04,
+       43.471
+      ],
+      [
+       11.04,
+       43.464
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "kind": "ztl",
+    "name": "Montepulciano",
+    "city": "Montepulciano",
+    "hours": "always",
+    "approx": true
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       11.779,
+       43.0915
+      ],
+      [
+       11.788,
+       43.0915
+      ],
+      [
+       11.788,
+       43.1005
+      ],
+      [
+       11.779,
+       43.1005
+      ],
+      [
+       11.779,
+       43.0915
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "kind": "ztl",
+    "name": "Pienza",
+    "city": "Pienza",
+    "hours": "always",
+    "approx": true
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       11.676,
+       43.0755
+      ],
+      [
+       11.682,
+       43.0755
+      ],
+      [
+       11.682,
+       43.0775
+      ],
+      [
+       11.676,
+       43.0775
+      ],
+      [
+       11.676,
+       43.0755
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "kind": "ztl",
+    "name": "Montalcino",
+    "city": "Montalcino",
+    "hours": "always",
+    "approx": true
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       11.4855,
+       43.0545
+      ],
+      [
+       11.4915,
+       43.0545
+      ],
+      [
+       11.4915,
+       43.06
+      ],
+      [
+       11.4855,
+       43.06
+      ],
+      [
+       11.4855,
+       43.0545
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "kind": "ztl",
+    "name": "Cortona",
+    "city": "Cortona",
+    "hours": "always",
+    "approx": true
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       11.982,
+       43.273
+      ],
+      [
+       11.99,
+       43.273
+      ],
+      [
+       11.99,
+       43.2785
+      ],
+      [
+       11.982,
+       43.2785
+      ],
+      [
+       11.982,
+       43.273
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "kind": "ztl",
+    "name": "Volterra",
+    "city": "Volterra",
+    "hours": "always",
+    "approx": true
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       10.857,
+       43.3985
+      ],
+      [
+       10.8675,
+       43.3985
+      ],
+      [
+       10.8675,
+       43.4045
+      ],
+      [
+       10.857,
+       43.4045
+      ],
+      [
+       10.857,
+       43.3985
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "kind": "ztl",
+    "name": "Arezzo",
+    "city": "Arezzo",
+    "hours": "varies by sector",
+    "approx": true
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       11.877,
+       43.4625
+      ],
+      [
+       11.8875,
+       43.4625
+      ],
+      [
+       11.8875,
+       43.4695
+      ],
+      [
+       11.877,
+       43.4695
+      ],
+      [
+       11.877,
+       43.4625
+      ]
+     ]
+    ]
+   }
+  }
+ ]
+}

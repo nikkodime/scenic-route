@@ -1,0 +1,601 @@
+{
+ "planId": "fixture",
+ "modelVersion": "2026.11.2",
+ "budgetMinutes": 23,
+ "fastest": {
+  "km": 70.6,
+  "minutes": 56,
+  "polyline": "oukgGo`ddAxFaJzF_JxFaJzF_JxFaJzFaJxF_JzFaJxFaJzF_JxFaJxF_JzFaJxFaJzF_JxFaJzFaJxF_JzFaJxF_JzFaJxFaJxF_JzFaJxF_JzFaJxFaJzF_JxFaJzFaJxF_JzFaJxF_JzFaJxFaJxF_JzFaJxFaJzF_JxFaJzF_JxFaJzFaJxF_JzFaJxF_JxFaJzFaJxF_JzFaJxFaJzF_JxFaJzF_JxFaJzFaJxF_JxFaJzFaJxF_JzFaJxF_JzFaJxFaJzF_JxFaJzF_JxFaJxFaJzF_JxFaJzFaJxF_JzFaJxF_JzFaJxFaJzF_JxFaJzFaJxF_JxFaJzF_JxFaJzFaJxF_JzFaJxF_JzFaJxFaJzF_JxFaJxFaJzF_JxFaJzF_JxFaJzFaJxF_JzFaJxFaJzF_JxFaJxF_JzFaJxFaJzF_JxFaJzF_JxFaJzFaJxF_JzFaJxFaJxF_JzFaJxF_JzFaJxFaJzF_JxFaJzF_JxFaJzFaJxF_JzFaJxFaJxF_JzFaJxF_JzFaJxFaJzF_JxFaJzFaJxF_JzFaJxF_JxFaJzFaJxF_JzFaJxF_JzFaJxFaJzF_JxFaJzFaJxF_JxFaJzF_JxFaJzFaJxF_JzFaJxFaJzF_JxFaJzF_JxFaJxFaJzF_JxFaJzF_JxFaJzFaJxF_JzFaJxFaJzF_JxFaJzF_JxFaJxFaJzF_JxFaJzFaJxF_JzFaJxF_JzFaJxFaJzF_JxFaJxF_JzFaJxFaJzF_JxFaJzFaJxF_JzFaJxF_JzFaJxFaJxF_JzFaJxFaJzF_JxFaJzF_JxFaJzFaJxF_JzFaJxF_JxFaJzFaJxF_JzFaJxFaJzF_JxFaJzF_JxFaJzFaJxF_JzFaJxFaJxF_JzFaJxF_JzFaJxFaJzF_JxFaJzF_JxFaJzFaJxF_JxFaJzFaJxF_JzFaJxF_JzFaJxFaJzF_JxFaJzFaJxF_JxFaJzF_JxFaJzFaJxF_JzFaJxF_JzFaJxFaJzF_JxFaJxFaJzF_JxFaJzF_JxFaJzFaJxF_JzFaJxFaJzF_JxFaJzF_JxFaJxFaJzF_JxFaJzF_JxFaJzFaJxF_JzFaJxFaJzF_JxFaJxF_JzFaJxFaJzF_JxFaJzFaJxF_JzFaJxF_JzFaJxFaJxF_JzFaJxF_JzFaJxFaJzF_JpFuI"
+ },
+ "routes": [
+  {
+   "id": "fixture-1",
+   "rank": 1,
+   "label": "Most scenic",
+   "source": "via_spots",
+   "score": 17,
+   "parts": {
+    "scenery": 2,
+    "views": null,
+    "relief": 67,
+    "bends": 34,
+    "variety": 5,
+    "motorwayPct": 0,
+    "urbanPct": 0,
+    "light": 95
+   },
+   "summary": "A cypress avenue, a castle",
+   "km": 72.3,
+   "minutes": 79,
+   "extraMinutes": 22,
+   "polyline": "oukgGo`ddAhEgK~FqI`IqG~IqF~HqG|FsIhEgKhEgK`GqI`IoG~IqF~HqG|FuIfEiKjEeK`GoIbIoG~IqF|HsGzFuIfEiKjEeKbGoIdImG|IqF|HuGxFuIfEkKlEcKbGmIdIkG~IsFzHuGxFyIdEiKlEeKdGkIfIiG|IsFzHwGvFyIdEiKnEeKdGiIfIiG~IsFxHwGtF{IfEkKlEcKfGgIhIiG|IsFxHyGtF{IdEkKlEcKhGgIhIgG~IsFvHyGrF}IdEmKnEaKjGeIhIgG|IsFvH{GpF_JdEkKnEaKlGeIhIeG|IsFtH{GpFaJdEkKpEaKlGcIjIeG|IsFrH}GpFaJbEmKpE_KnGaIlIeGzIsFrH_HnFaJbEmKrE_KnGaIlIcG|IsFpH_HlFcJbEmKrE_KpG_InIcGzIsFpHaHjFeJbEmKtE}JpG}HnIcG|IsFnHcHjFeJ`EmKtE}JtG{HnIaGzIwFlHaHjFgJbEoKtEyJtG}HpI_GxIwFlHcHhFgJbEoKtEyJvG{HpI_GzIwFjHeHfFiJbEmKvEyJvGyHrI_GxIwFjHeHdFkJbEoKxEwJxGwHpI_GzIwFhHgHdFkJ`EoKxEwJzGwHrI}FxIwFfHiHdFmJ`EmKzEwJzGuHrI}FxIwFfHkHbFmJ`EoKzEuJ|GsHtI}FxIwFdHkH`FoJ`EoK|EuJ~GqHtI}FvIwFbHmH`FoJbEoK|EsJ~GsHtIyFvI{FbHmH`FqJ`EoK|EqJ`HqHvIyFnGaIzCiN~DaLbG_J|G_I`G_J|DcLhCuMjCwM`E_L`G}I~G_I~FaJ|DcLhCwMjCuM`E}KbG}I~G_I~FcJzDcLfCwMjCuMbE}KdG{I~G_I|FcJxDeLhCyMjCsMdE{KdGyI~GcIzFcJxDgLfCwMlCsMdEyKfGyI~GcIzFcJvDiLfCyMlCqMfEyKfGwI|GcIzFeJtDiLfCyMlCqMhEwKhGwI|GcIxFeJtDkLdC{MnCoMhEwKjGuI|GcIvFgJtDkLdC{MnCoMjEuKhGuI~GcIvFiJpDmLdCyMpCoMjEuKjGsI~GcItFiJpDoLdC{MpCmMlEsKjGsI|GcItFkJnDoLdC{MrCmMlEqKlGsI|GcIrFmJnDoLdC}MpCkMpEqKlGqI|GcIpFmJnDsLbC{MrCmMpEmKnGqI|GcInFoJlDsLbC{MtCmMrEkKnGqIzGcIjCuL",
+   "bbox": [
+    42.95,
+    11.3308,
+    43.3188,
+    11.85
+   ],
+   "highlights": [
+    {
+     "name": "Cipressi di San Quirico",
+     "type": "cypress",
+     "atKm": 38,
+     "lat": 43.065,
+     "lon": 11.63
+    },
+    {
+     "name": "Torre",
+     "type": "castle",
+     "atKm": 38.8,
+     "lat": 43.062,
+     "lon": 11.64
+    }
+   ],
+   "scenicStops": [
+    {
+     "lat": 43.065,
+     "lon": 11.63,
+     "name": "Cipressi di San Quirico",
+     "types": [
+      "cypress"
+     ]
+    }
+   ],
+   "bestStretch": {
+    "fromKm": 38,
+    "toKm": 53
+   },
+   "elevation": [
+    245,
+    212,
+    198,
+    174,
+    165,
+    153,
+    150,
+    152,
+    164,
+    173,
+    196,
+    226,
+    243,
+    279,
+    298,
+    335,
+    370,
+    386,
+    414,
+    425,
+    442,
+    449,
+    450,
+    444,
+    437,
+    418,
+    406,
+    376,
+    342,
+    323,
+    286,
+    268,
+    232,
+    201,
+    188,
+    167,
+    159,
+    151,
+    152,
+    156,
+    170,
+    180,
+    206,
+    238,
+    256,
+    293,
+    311,
+    348
+   ],
+   "conditions": {
+    "departure": "2026-06-01T07:00:00.000Z",
+    "arrival": "2026-06-01T08:18:50.765Z",
+    "sunrise": "2026-06-01T03:36:44.067Z",
+    "sunset": "2026-06-01T18:44:23.524Z",
+    "arrivesAfterDark": false,
+    "goldenHour": null,
+    "glare": [],
+    "weather": [
+     {
+      "atKm": 0,
+      "eta": "2026-06-01T07:00:00.000Z",
+      "cloud": 10,
+      "lowCloud": 5,
+      "precipProb": 0,
+      "precipMm": 0,
+      "visibilityKm": 30,
+      "fog": false
+     },
+     {
+      "atKm": 20,
+      "eta": "2026-06-01T07:26:16.921Z",
+      "cloud": 10,
+      "lowCloud": 5,
+      "precipProb": 0,
+      "precipMm": 0,
+      "visibilityKm": 30,
+      "fog": false
+     },
+     {
+      "atKm": 40,
+      "eta": "2026-06-01T07:52:33.843Z",
+      "cloud": 10,
+      "lowCloud": 5,
+      "precipProb": 0,
+      "precipMm": 0,
+      "visibilityKm": 30,
+      "fog": false
+     },
+     {
+      "atKm": 60,
+      "eta": "2026-06-01T08:18:50.765Z",
+      "cloud": 10,
+      "lowCloud": 5,
+      "precipProb": 0,
+      "precipMm": 0,
+      "visibilityKm": 30,
+      "fog": false
+     }
+    ],
+    "verdict": "great",
+    "notes": [
+     "Clear skies: a great day for this drive.",
+     "Leave at 19:15 to reach Torre in golden light."
+    ],
+    "goldenDeparture": {
+     "leaveAt": "2026-06-01T17:15:00.000Z",
+     "reachAt": "2026-06-01T18:14:33.818Z",
+     "sunset": "2026-06-01T18:45:13.622Z",
+     "fromKm": 38,
+     "toKm": 53,
+     "place": "Torre",
+     "onTime": false
+    }
+   },
+   "advisories": [],
+   "vsFastest": {
+    "extraKm": 1.7,
+    "extraMinutes": 22,
+    "sharedPct": 5,
+    "detours": [
+     {
+      "fromKm": 2.4,
+      "toKm": 71,
+      "leave": {
+       "lat": 43.30553743638958,
+       "lon": 11.346904662390205
+      },
+      "rejoin": {
+       "lat": 42.955350375114534,
+       "lon": 11.83998326770218
+      },
+      "km": 68.6,
+      "extraKm": 1.6,
+      "name": "Cipressi di San Quirico",
+      "extraMinutes": 22
+     }
+    ]
+   },
+   "suggestedStops": [
+    {
+     "id": "node/3",
+     "kind": "cafe",
+     "name": "Bar Centrale",
+     "lat": 43.11735,
+     "lon": 11.56922,
+     "atKm": 29.9,
+     "offKm": 0.09,
+     "eta": "2026-06-01T07:39:11.508Z",
+     "reason": "coffee"
+    },
+    {
+     "id": "node/1",
+     "kind": "viewpoint",
+     "name": "Belvedere",
+     "lat": 43.09683,
+     "lon": 11.59328,
+     "atKm": 33.1,
+     "offKm": 0.06,
+     "eta": "2026-06-01T07:43:22.081Z",
+     "reason": "view"
+    },
+    {
+     "id": "node/2",
+     "kind": "winery",
+     "name": "Cantina del Colle",
+     "hours": "Mo-Sa 10:00-18:00",
+     "lat": 43.05838,
+     "lon": 11.64166,
+     "atKm": 38.9,
+     "offKm": 0.06,
+     "eta": "2026-06-01T07:50:56.821Z",
+     "reason": "wine"
+    }
+   ],
+   "handoff": {
+    "googleMaps": "https://www.google.com/maps/dir/?api=1&origin=43.318800%2C11.330800&destination=42.950000%2C11.850000&waypoints=43.184394%2C11.489996%7C43.065000%2C11.630000&travelmode=driving",
+    "appleMaps": "https://maps.apple.com/?saddr=43.318800%2C11.330800&daddr=43.065000%2C11.630000&dirflg=d"
+   }
+  },
+  {
+   "id": "fixture-2",
+   "rank": 2,
+   "label": "Also beautiful",
+   "source": "via_spots",
+   "score": 17,
+   "parts": {
+    "scenery": 2,
+    "views": null,
+    "relief": 68,
+    "bends": 34,
+    "variety": 7,
+    "motorwayPct": 0,
+    "urbanPct": 0,
+    "light": 95
+   },
+   "summary": "A viewpoint, a hill town, a vineyard",
+   "km": 71.8,
+   "minutes": 78,
+   "extraMinutes": 22,
+   "polyline": "oukgGo`ddAtDeLhFqJlHmHhIqGlHoHfFqJtDeLtDeLjFoJnHmHhIqGjHoHfFsJrDgLtDcLlFoJnHkHhIqGhHqHfFsJrDgLvDcLlFmJpHkHhIqGfHqHdFuJrDgLvDcLnFkJpHkHhIoGfHsHdFwJpDiLxDaLnFkJrHgHhIqGdHuHbFwJpDiLxDaLpFiJrHgHhIqGdHuH`FyJpDiLxDaLrFgJtHgHfIqGdHwH~EyJpDkLzD_LrFgJtHeHhIqGbHwH~E}JnDiLzD_LtFeJvHeHfIqGbHyH|E}JnDiL|D_LvFcJtHeHhIqG~G{H|E}JnDkL|D}KxFcJvHcHfIqG~G{HzE_KnDkL|D}KzFaJvHaHhIsG|G}HxE_KnDkL~D}KzF_JxHaHfIsG|G}HxEaKnDmL|D{K|F}IxHaHfIsG|G_IvEcKnDkL~D{K|F}IzH_HfIsGxG_IvEeKnDkL~D{K~F{IzH_HfIsGxGaItEeKnDmL`EyK~FyI|H_HdIsGxGcIrEeKnDmL`EwKbGyIzH_HfIsGvGcIrEgKlDmLbEwKbGwI|H}GdIuGtGeIrEiKlDkLbEwKdGwI|H{GdIuGtGgIpEiKlDmLdEuKdGuI~H{GdIuGrGgInEkKlDmLdEuKfGsI~H{GdIuGpGiInEkKlDmLfEuKhGqI~H{GbIuGpGkIlEmKlDmLhEqKhGqI`IyGbIyGnGiIjEoKlDmLhEqKjGoI`IyGbIyGlGkIjEoKbA}DpDiLfFsJhHqHdIuGhHqHdFuJpDkLpDgLhFsJhHqHfIsGfHsHbFwJpDiLrDiLhFqJjHoHdIsGfHuHbFwJnDkLrDgLjFoJjHoHfIuGdHuH`FyJnDkLrDeLlFoJlHmHdIuGbHuH`F{JnDkLrDgLnFmJlHkHdIuGbHwH~E{JnDmLtDeLlFkJnHkHfIuG`HyH|E}JnDkLtDeLnFkJpHkHdIsG`H{H|E}JlDmLtDeLpFiJpHiHdIuG`H{HzE_KlDmLvDcLpFgJrHiHdIuG|G}HzE_KlDmLvDcLrFgJrHgHdIuG|G}HxEcKlDmLvDaLtFeJtHgHdIwGzG}HvEcKlDoLxDaLvFcJrHeHdIwGzG_ItEcKlDoLxDaLxFcJtHeHbIuGxGaItEeKlDoLzD_LxFaJtHeHbIuGxGcItEeKjDqLzD}KzFaJvHcHbIwGvGcIrEgKjDoL~CkD",
+   "bbox": [
+    42.95,
+    11.3308,
+    43.3188,
+    11.85
+   ],
+   "highlights": [
+    {
+     "name": "Belvedere Val d'Orcia",
+     "type": "viewpoint",
+     "atKm": 39.2,
+     "lat": 43.07,
+     "lon": 11.66
+    }
+   ],
+   "scenicStops": [
+    {
+     "lat": 43.09,
+     "lon": 11.65,
+     "name": "",
+     "types": [
+      "vineyard"
+     ]
+    }
+   ],
+   "bestStretch": {
+    "fromKm": 37,
+    "toKm": 52
+   },
+   "elevation": [
+    225,
+    195,
+    182,
+    163,
+    156,
+    150,
+    153,
+    158,
+    175,
+    186,
+    213,
+    246,
+    264,
+    301,
+    320,
+    356,
+    389,
+    403,
+    427,
+    436,
+    447,
+    450,
+    447,
+    436,
+    427,
+    403,
+    389,
+    356,
+    320,
+    301,
+    264,
+    246,
+    213,
+    186,
+    174,
+    158,
+    153,
+    150,
+    157,
+    163,
+    183,
+    195,
+    225,
+    260,
+    278,
+    315,
+    334,
+    369
+   ],
+   "conditions": {
+    "departure": "2026-06-01T07:00:00.000Z",
+    "arrival": "2026-06-01T08:18:19.541Z",
+    "sunrise": "2026-06-01T03:36:44.067Z",
+    "sunset": "2026-06-01T18:44:23.524Z",
+    "arrivesAfterDark": false,
+    "goldenHour": null,
+    "glare": [],
+    "weather": [
+     {
+      "atKm": 0,
+      "eta": "2026-06-01T07:00:00.000Z",
+      "cloud": 10,
+      "lowCloud": 5,
+      "precipProb": 0,
+      "precipMm": 0,
+      "visibilityKm": 30,
+      "fog": false
+     },
+     {
+      "atKm": 20,
+      "eta": "2026-06-01T07:26:06.513Z",
+      "cloud": 10,
+      "lowCloud": 5,
+      "precipProb": 0,
+      "precipMm": 0,
+      "visibilityKm": 30,
+      "fog": false
+     },
+     {
+      "atKm": 40,
+      "eta": "2026-06-01T07:52:13.027Z",
+      "cloud": 10,
+      "lowCloud": 5,
+      "precipProb": 0,
+      "precipMm": 0,
+      "visibilityKm": 30,
+      "fog": false
+     },
+     {
+      "atKm": 60,
+      "eta": "2026-06-01T08:18:19.541Z",
+      "cloud": 10,
+      "lowCloud": 5,
+      "precipProb": 0,
+      "precipMm": 0,
+      "visibilityKm": 30,
+      "fog": false
+     }
+    ],
+    "verdict": "great",
+    "notes": [
+     "Clear skies: a great day for this drive.",
+     "Leave at 19:15 to reach Belvedere Val d'Orcia in golden light."
+    ],
+    "goldenDeparture": {
+     "leaveAt": "2026-06-01T17:15:00.000Z",
+     "reachAt": "2026-06-01T18:13:15.272Z",
+     "sunset": "2026-06-01T18:45:14.655Z",
+     "fromKm": 37,
+     "toKm": 52,
+     "place": "Belvedere Val d'Orcia",
+     "onTime": false
+    }
+   },
+   "advisories": [],
+   "vsFastest": {
+    "extraKm": 1.2,
+    "extraMinutes": 22,
+    "sharedPct": 100,
+    "detours": []
+   },
+   "handoff": {
+    "googleMaps": "https://www.google.com/maps/dir/?api=1&origin=43.318800%2C11.330800&destination=42.950000%2C11.850000&waypoints=43.133538%2C11.589654%7C43.090000%2C11.650000&travelmode=driving",
+    "appleMaps": "https://maps.apple.com/?saddr=43.318800%2C11.330800&daddr=43.090000%2C11.650000&dirflg=d"
+   }
+  },
+  {
+   "id": "fixture-3",
+   "rank": 3,
+   "label": "Also beautiful",
+   "source": "scenic_model",
+   "score": 17,
+   "parts": {
+    "scenery": 2,
+    "views": null,
+    "relief": 66,
+    "bends": 34,
+    "variety": 7,
+    "motorwayPct": 0,
+    "urbanPct": 0,
+    "light": 95
+   },
+   "summary": "A viewpoint, a hill town, a vineyard",
+   "km": 71.8,
+   "minutes": 78,
+   "extraMinutes": 22,
+   "polyline": "oukgGo`ddArDgLhFqJjHoHhIsGhHoHhFsJpDgLtDgLhFoJlHoHhIqGhHqHdFuJrDgLtDeLjFoJlHmHfIsGhHqHdFwJpDgLtDeLlFoJnHkHfIsGfHsHdFuJpDiLtDeLnFmJnHkHfIqGfHuH`FwJpDiLvDeLnFkJpHiHfIsGdHuH`FyJpDkLvDcLnFiJpHiHhIsGbHuH`F{JnDkLvDaLrFiJpHiHhIqG`HyH~E{JpDkLvDaLrFgJrHgHhIsG`HyH|E}JnDkLxDaLtFeJrHgHfIsG`HyH|E_KlDkLzD_LtFeJtHeHfIsG~G{HzE_KnDmLzD_LvFcJtHeHfIsG|G}HzE_KlDmL|D_LvFaJvHeHfIsG|G}HvEaKnDmLzD}KzFaJvHcHfIuGzG}HvEcKlDmL|D}KzF_JxHcHdIsGzGaIvEcKlDmL|D}K|F}IxHaHdIuGxGaItEeKlDmL~D{K|F}IzHaHdIuGvGaItEgKlDmL~D{K~F{IzH_HdIwGvGcIpEgKlDmL`E{K`GyIzH_HbIuGvGeIpEiKlDmL`EyK`GyI|H_HbIuGtGgIpEiKjDoLbEwKbGwI|H}GbIwGrGgInEkKlDoLbEuKbGwI|H}GdIwGpGgInEmKjDoLdEuKdGuI|H{GbIyGpGiIlEmKlDoLdEsKfGuI|H{GbIwGnGkIlEoKjDoLfEsKfGsI~H{GbIwGlGmIjEoKlDoLfEsKhGoI~H{G`IyGlGmIjEqKjDoLhEqKjGoI~H{G`IyGjGoIhEqKlDoLhEqKjGmI`IyG`I{GhGoIhEsKjDoLjEoKlGmI`IyG~H{GhGqIfEsKlDoLjEoKnGkI`IwG~H}GfGqIfEuKjDoLlEmKnGkIbIwG~H{GdGuIdEuKlDoLlEkKpGiIbIyG|H{GdGuIdEwKjDoLnEkKrGgIbIwG|H}GbGwIbEwKlDoLnEiKrGgIdIwG|H}G`GyIbEwKjDoLpEiKtGeIdIuGzH_H`GyI`EyKlDoLpEgKvGeIdIuGzH_H~F{I`EyKjDoLtEgKvGaIdIuGxHaH~F{I~D{KlDoLtEeKvGaIfIuGxHaH|F}I~D{KlDmLtEeKxGaIfIuGvHaH|F_J|D{KlDmLvEeKzG_IfIsGvHcHzF_J|D}KlDmLvEcK|G}HfIuGtHcHxFaJ|D_LlDkLxEaK~G}HdIsGvHeHvFcJzD_L`FeJ",
+   "bbox": [
+    42.95,
+    11.3308,
+    43.3188,
+    11.85
+   ],
+   "highlights": [
+    {
+     "name": "Belvedere Val d'Orcia",
+     "type": "viewpoint",
+     "atKm": 39.2,
+     "lat": 43.07,
+     "lon": 11.66
+    }
+   ],
+   "scenicStops": [],
+   "bestStretch": {
+    "fromKm": 37,
+    "toKm": 52
+   },
+   "elevation": [
+    289,
+    252,
+    235,
+    203,
+    190,
+    168,
+    155,
+    151,
+    151,
+    155,
+    169,
+    191,
+    204,
+    236,
+    253,
+    290,
+    327,
+    346,
+    380,
+    395,
+    421,
+    439,
+    445,
+    450,
+    449,
+    440,
+    433,
+    411,
+    383,
+    366,
+    331,
+    312,
+    275,
+    239,
+    223,
+    193,
+    181,
+    162,
+    152,
+    150,
+    154,
+    159,
+    176,
+    201,
+    215,
+    249,
+    267,
+    304
+   ],
+   "conditions": {
+    "departure": "2026-06-01T07:00:00.000Z",
+    "arrival": "2026-06-01T08:18:18.973Z",
+    "sunrise": "2026-06-01T03:36:44.067Z",
+    "sunset": "2026-06-01T18:44:23.524Z",
+    "arrivesAfterDark": false,
+    "goldenHour": null,
+    "glare": [],
+    "weather": [
+     {
+      "atKm": 0,
+      "eta": "2026-06-01T07:00:00.000Z",
+      "cloud": 10,
+      "lowCloud": 5,
+      "precipProb": 0,
+      "precipMm": 0,
+      "visibilityKm": 30,
+      "fog": false
+     },
+     {
+      "atKm": 20,
+      "eta": "2026-06-01T07:26:06.324Z",
+      "cloud": 10,
+      "lowCloud": 5,
+      "precipProb": 0,
+      "precipMm": 0,
+      "visibilityKm": 30,
+      "fog": false
+     },
+     {
+      "atKm": 40,
+      "eta": "2026-06-01T07:52:12.648Z",
+      "cloud": 10,
+      "lowCloud": 5,
+      "precipProb": 0,
+      "precipMm": 0,
+      "visibilityKm": 30,
+      "fog": false
+     },
+     {
+      "atKm": 60,
+      "eta": "2026-06-01T08:18:18.973Z",
+      "cloud": 10,
+      "lowCloud": 5,
+      "precipProb": 0,
+      "precipMm": 0,
+      "visibilityKm": 30,
+      "fog": false
+     }
+    ],
+    "verdict": "great",
+    "notes": [
+     "Clear skies: a great day for this drive.",
+     "Leave at 19:15 to reach Belvedere Val d'Orcia in golden light."
+    ],
+    "goldenDeparture": {
+     "leaveAt": "2026-06-01T17:15:00.000Z",
+     "reachAt": "2026-06-01T18:13:15.272Z",
+     "sunset": "2026-06-01T18:45:14.566Z",
+     "fromKm": 37,
+     "toKm": 52,
+     "place": "Belvedere Val d'Orcia",
+     "onTime": false
+    }
+   },
+   "advisories": [],
+   "vsFastest": {
+    "extraKm": 1.2,
+    "extraMinutes": 22,
+    "sharedPct": 100,
+    "detours": []
+   },
+   "handoff": {
+    "googleMaps": "https://www.google.com/maps/dir/?api=1&origin=43.318800%2C11.330800&destination=42.950000%2C11.850000&waypoints=43.134440%2C11.590783&travelmode=driving",
+    "appleMaps": "https://maps.apple.com/?saddr=43.318800%2C11.330800&daddr=42.950000%2C11.850000&dirflg=d"
+   }
+  }
+ ],
+ "warnings": [],
+ "attribution": [
+  "Fake router",
+  "Fake features",
+  "Stops: © OpenStreetMap contributors (ODbL)",
+  "© OpenStreetMap contributors"
+ ]
+}

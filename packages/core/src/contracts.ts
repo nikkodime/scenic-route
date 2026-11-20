@@ -1,0 +1,292 @@
+// API contract. Source of truth for the API, the web planner, and (via OpenAPI) the iOS client.
+
+import { z } from 'zod';
+import { FEATURE_TYPES } from './features.ts';
+
+export const ROUTE_STYLES = ['relaxed', 'scenic', 'most_beautiful'] as const;
+export const INTERESTS = ['views', 'heritage', 'water', 'mountains', 'countryside', 'quiet'] as const;
+export const VEHICLES = ['car', 'campervan', 'caravan'] as const;
+export type RouteStyle = (typeof ROUTE_STYLES)[number];
+export type Interest = (typeof INTERESTS)[number];
+export type Vehicle = (typeof VEHICLES)[number];
+
+export const LatLonSchema = z.object({
+  lat: z.number().min(-90).max(90),
+  lon: z.number().min(-180).max(180),
+});
+
+export const PlaceSchema = LatLonSchema.extend({ label: z.string().max(300).optional() });
+
+export const PreferencesSchema = z.object({
+  rentalCar: z.boolean().default(false),
+  avoidUnpaved: z.boolean().default(true),
+  avoidTolls: z.boolean().default(false),
+  avoidMotorways: z.boolean().default(true),
+  vignettes: z.array(z.string().length(2)).default([]),
+});
+
+export const PlanRequestSchema = z.object({
+  origin: PlaceSchema,
+  destination: PlaceSchema,
+  /** Places the driver must pass, in order (e.g. lunch stop). */
+  stops: z.array(PlaceSchema).max(8).default([]),
+  /**
+   * How much the driver wants scenery over speed. Sets the time budget from the fastest route
+   * (relaxed ≈ +15%, scenic ≈ +40%, most beautiful ≈ +80%) and how strongly time counts in ranking.
+   */
+  style: z.enum(ROUTE_STYLES).default('scenic'),
+  /** What the driver loves; matching places count more, others less. Empty = everything equally. */
+  interests: z.array(z.enum(INTERESTS)).max(INTERESTS.length).default([]),
+  /** Optional hard cap on extra minutes over the fastest route. Without it the style decides. */
+  extraMinutes: z.number().int().min(0).max(300).optional(),
+  /** Car + caravan and campervans stay on calmer, wider roads and never take gravel. */
+  vehicle: z.enum(VEHICLES).default('car'),
+  departAt: z.string().datetime({ offset: true }).optional(),
+  prefs: PreferencesSchema.default({}),
+  maxRoutes: z.number().int().min(1).max(5).default(3),
+});
+
+const FeatureTypeSchema = z.enum(FEATURE_TYPES);
+
+export const ScorePartsSchema = z.object({
+  scenery: z.number(),
+  views: z.number().nullable(),
+  relief: z.number().nullable(),
+  bends: z.number(),
+  variety: z.number(),
+  motorwayPct: z.number(),
+  urbanPct: z.number(),
+  /** Light on the day (weather and sun), 0–100; null when no forecast. */
+  light: z.number().nullable().optional(),
+});
+
+export const AdvisorySchema = z.object({
+  kind: z.enum(['ztl', 'lez', 'unpaved', 'vignette', 'toll', 'pass_closed', 'pass_seasonal', 'ferry']),
+  severity: z.enum(['info', 'warning', 'block']),
+  title: z.string(),
+  detail: z.string(),
+  atKm: z.number().optional(),
+  lat: z.number().optional(),
+  lon: z.number().optional(),
+});
+
+export const ConditionsSchema = z.object({
+  departure: z.string(),
+  arrival: z.string(),
+  sunrise: z.string().nullable(),
+  sunset: z.string().nullable(),
+  arrivesAfterDark: z.boolean(),
+  goldenHour: z.object({ fromKm: z.number(), toKm: z.number() }).nullable(),
+  glare: z.array(z.object({ fromKm: z.number(), toKm: z.number() })),
+  weather: z.array(z.object({
+    atKm: z.number(), eta: z.string(), cloud: z.number(), lowCloud: z.number(), precipProb: z.number(),
+    precipMm: z.number(), visibilityKm: z.number().nullable(), fog: z.boolean(),
+  })),
+  verdict: z.enum(['great', 'good', 'mixed', 'poor']),
+  notes: z.array(z.string()),
+  /** When to leave so the best stretch is driven in golden light; null when it can't be reached today or tomorrow. */
+  goldenDeparture: z.object({
+    leaveAt: z.string(), reachAt: z.string(), sunset: z.string(), fromKm: z.number(), toKm: z.number(),
+    place: z.string().nullable(), onTime: z.boolean(),
+  }).nullable().optional(),
+});
+
+export const DetourSchema = z.object({
+  fromKm: z.number(),
+  toKm: z.number(),
+  leave: LatLonSchema,
+  rejoin: LatLonSchema,
+  km: z.number(),
+  extraKm: z.number(),
+  extraMinutes: z.number(),
+  name: z.string().nullable(),
+});
+
+/** This route against the fastest one: what the scenery costs, and where. */
+export const VsFastestSchema = z.object({
+  extraKm: z.number(),
+  extraMinutes: z.number(),
+  /** Share of this route that runs on the fastest road, 0–100. */
+  sharedPct: z.number(),
+  detours: z.array(DetourSchema),
+});
+
+export const SuggestedStopSchema = z.object({
+  id: z.string(),
+  lat: z.number(),
+  lon: z.number(),
+  kind: z.enum(['viewpoint', 'cafe', 'agriturismo', 'winery']),
+  name: z.string(),
+  hours: z.string().optional(),
+  website: z.string().optional(),
+  food: z.boolean().optional(),
+  atKm: z.number(),
+  eta: z.string(),
+  offKm: z.number(),
+  reason: z.enum(['view', 'coffee', 'lunch', 'wine']),
+});
+
+export const RouteOptionSchema = z.object({
+  id: z.string(),
+  rank: z.number().int(),
+  label: z.string(),
+  source: z.enum(['fastest', 'scenic_model', 'via_spots', 'alternative']),
+  score: z.number(),
+  parts: ScorePartsSchema,
+  summary: z.string(),
+  km: z.number(),
+  minutes: z.number(),
+  extraMinutes: z.number(),
+  /** Google encoded polyline, precision 5. */
+  polyline: z.string(),
+  bbox: z.tuple([z.number(), z.number(), z.number(), z.number()]),
+  highlights: z.array(z.object({ name: z.string(), type: FeatureTypeSchema, atKm: z.number(), lat: z.number().optional(), lon: z.number().optional() })),
+  scenicStops: z.array(LatLonSchema.extend({ name: z.string(), types: z.array(FeatureTypeSchema) })),
+  bestStretch: z.object({ fromKm: z.number(), toKm: z.number() }).nullable(),
+  /** Elevation profile in metres, evenly spaced along the route (about 48 samples). */
+  elevation: z.array(z.number()).optional(),
+  /** Turn-by-turn steps for Drive mode (when the router gives them). */
+  steps: z.array(z.object({ atKm: z.number(), text: z.string(), sign: z.number(), street: z.string(), lat: z.number(), lon: z.number() })).optional(),
+  conditions: ConditionsSchema.nullable(),
+  advisories: z.array(AdvisorySchema),
+  vsFastest: VsFastestSchema.optional(),
+  /** Places worth pulling over for along this route: a viewpoint, coffee, lunch, a winery. */
+  suggestedStops: z.array(SuggestedStopSchema).optional(),
+  handoff: z.object({ googleMaps: z.string(), appleMaps: z.string() }),
+});
+
+export const PlanResponseSchema = z.object({
+  planId: z.string(),
+  modelVersion: z.string(),
+  /** The fastest road: the baseline every route is compared with, drawn as a ghost line on the map. */
+  fastest: z.object({
+    km: z.number(),
+    minutes: z.number(),
+    /** Google encoded polyline, precision 5. */
+    polyline: z.string().optional(),
+  }),
+  /** The extra-time budget the planner used (from the style, capped by extraMinutes). */
+  budgetMinutes: z.number().optional(),
+  routes: z.array(RouteOptionSchema),
+  /** Problems that did not stop planning, e.g. "weather unavailable". */
+  warnings: z.array(z.string()),
+  attribution: z.array(z.string()),
+});
+
+/** "Where can I go from here?" */
+export const EXPLORE_MODES = ['one_way', 'round_trip'] as const;
+export const ExploreRequestSchema = z.object({
+  origin: PlaceSchema,
+  /** Drive time: one way, or the whole loop for a round trip. */
+  maxMinutes: z.number().int().min(20).max(480).default(90),
+  mode: z.enum(EXPLORE_MODES).default('one_way'),
+  interests: z.array(z.enum(INTERESTS)).max(INTERESTS.length).default([]),
+  vehicle: z.enum(VEHICLES).default('car'),
+  departAt: z.string().datetime({ offset: true }).optional(),
+  prefs: PreferencesSchema.default({}),
+  maxResults: z.number().int().min(1).max(10).default(6),
+});
+
+export const ExploreDestinationSchema = LatLonSchema.extend({
+  name: z.string(),
+  types: z.array(FeatureTypeSchema),
+  families: z.array(z.string()),
+  /** Scenic places clustered here. */
+  places: z.number().int(),
+  /** Beauty of the scenic road there, 0–100. */
+  score: z.number(),
+  summary: z.string(),
+  km: z.number(),
+  /** By the scenic road; for a round trip, the whole loop (km too). */
+  minutes: z.number(),
+  fastestMinutes: z.number(),
+  straightKm: z.number(),
+  highlights: z.array(z.object({ name: z.string(), type: FeatureTypeSchema, atKm: z.number(), lat: z.number().optional(), lon: z.number().optional() })),
+  polyline: z.string(),
+  sunset: z.string().nullable(),
+});
+
+export const ExploreResponseSchema = z.object({
+  origin: PlaceSchema,
+  mode: z.enum(EXPLORE_MODES),
+  maxMinutes: z.number(),
+  destinations: z.array(ExploreDestinationSchema),
+  warnings: z.array(z.string()),
+  attribution: z.array(z.string()),
+});
+
+export const GeocodeResultSchema = PlaceSchema.extend({ label: z.string(), kind: z.string().optional() });
+
+const Uuid = z.string().uuid();
+const Iso = z.string().datetime({ offset: true });
+
+export const TripDaySchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  origin: PlaceSchema,
+  destination: PlaceSchema,
+  stops: z.array(PlaceSchema).default([]),
+  extraMinutes: z.number().int().min(0).max(300).default(45),
+  route: RouteOptionSchema.optional(),
+});
+
+export const TripSchema = z.object({
+  id: Uuid,
+  name: z.string().min(1).max(120),
+  notes: z.string().max(5000).default(''),
+  days: z.array(TripDaySchema).min(1).max(60),
+  /** How the journey was planned, so it can be re-planned the same way. */
+  style: z.enum(ROUTE_STYLES).optional(),
+  interests: z.array(z.enum(INTERESTS)).optional(),
+  vehicle: z.enum(VEHICLES).optional(),
+  createdAt: Iso,
+  updatedAt: Iso,
+  deleted: z.boolean().default(false),
+});
+
+export const RatingSchema = z.object({
+  id: Uuid,
+  tripId: Uuid.optional(),
+  planId: z.string().optional(),
+  routeId: z.string().optional(),
+  thumbs: z.enum(['up', 'down']),
+  comment: z.string().max(2000).optional(),
+  modelVersion: z.string(),
+  score: z.number(),
+  parts: ScorePartsSchema,
+  polyline: z.string(),
+  drivenAt: Iso.optional(),
+  createdAt: Iso,
+});
+
+export const SyncRequestSchema = z.object({
+  cursor: z.number().int().min(0).nullable().default(null), // Swift Codable omits nil keys
+  changes: z.object({
+    trips: z.array(TripSchema).max(500).default([]),
+    ratings: z.array(RatingSchema).max(500).default([]),
+  }).default({}),
+});
+
+export const SyncResponseSchema = z.object({
+  cursor: z.number().int(),
+  changes: z.object({ trips: z.array(TripSchema), ratings: z.array(RatingSchema) }),
+  /** Ids of client changes the server ignored because it had a newer version. */
+  rejected: z.array(z.string()),
+});
+
+export type PlanRequest = z.infer<typeof PlanRequestSchema>;
+export type PlanRequestInput = z.input<typeof PlanRequestSchema>;
+export type PlanResponse = z.infer<typeof PlanResponseSchema>;
+export type RouteOption = z.infer<typeof RouteOptionSchema>;
+export type SuggestedStopOut = z.infer<typeof SuggestedStopSchema>;
+export type Preferences = z.infer<typeof PreferencesSchema>;
+export type Place = z.infer<typeof PlaceSchema>;
+export type GeocodeResult = z.infer<typeof GeocodeResultSchema>;
+export type Trip = z.infer<typeof TripSchema>;
+export type TripDay = z.infer<typeof TripDaySchema>;
+export type Rating = z.infer<typeof RatingSchema>;
+export type SyncRequest = z.infer<typeof SyncRequestSchema>;
+export type SyncResponse = z.infer<typeof SyncResponseSchema>;
+
+export type ExploreRequest = z.infer<typeof ExploreRequestSchema>;
+export type ExploreDestination = z.infer<typeof ExploreDestinationSchema>;
+export type ExploreResponse = z.infer<typeof ExploreResponseSchema>;
