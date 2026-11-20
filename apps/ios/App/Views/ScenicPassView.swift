@@ -27,8 +27,8 @@ struct ScenicPassView: View {
                     }
                     .padding(.top, 24)
                     HStack(spacing: 10) {
-                        plan(on: yearly, title: "Yearly", price: "€29.99", note: "€2.50 a month", badge: "Save 50%") { yearly = true }
-                        plan(on: !yearly, title: "Monthly", price: "€4.99", note: "cancel any time", badge: nil) { yearly = false }
+                        plan(on: yearly, title: "Yearly", price: "€34.99", note: "€2.92 a month", badge: "Save 50%") { yearly = true }
+                        plan(on: !yearly, title: "Monthly", price: "€5.99", note: "cancel any time", badge: nil) { yearly = false }
                     }
                     .padding(.top, 28)
                     Button { notYet = true } label: {
