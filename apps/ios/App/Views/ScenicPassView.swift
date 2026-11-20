@@ -32,7 +32,7 @@ struct ScenicPassView: View {
                     }
                     .padding(.top, 28)
                     Button { notYet = true } label: {
-                        Text("Try 14 days free").font(Theme.buttonFont).foregroundStyle(Theme.onAccent)
+                        Text("Try 7 days free").font(Theme.buttonFont).foregroundStyle(Theme.onAccent)
                             .frame(maxWidth: .infinity, minHeight: 56)
                             .background(Theme.green, in: RoundedRectangle(cornerRadius: 16))
                     }
