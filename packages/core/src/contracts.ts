@@ -66,6 +66,8 @@ export const AdvisorySchema = z.object({
   title: z.string(),
   detail: z.string(),
   atKm: z.number().optional(),
+  lat: z.number().optional(),
+  lon: z.number().optional(),
 });
 
 export const ConditionsSchema = z.object({
@@ -82,6 +84,11 @@ export const ConditionsSchema = z.object({
   })),
   verdict: z.enum(['great', 'good', 'mixed', 'poor']),
   notes: z.array(z.string()),
+  /** When to leave so the best stretch is driven in golden light; null when it can't be reached today or tomorrow. */
+  goldenDeparture: z.object({
+    leaveAt: z.string(), reachAt: z.string(), sunset: z.string(), fromKm: z.number(), toKm: z.number(),
+    place: z.string().nullable(), onTime: z.boolean(),
+  }).nullable().optional(),
 });
 
 export const DetourSchema = z.object({
@@ -102,6 +109,21 @@ export const VsFastestSchema = z.object({
   /** Share of this route that runs on the fastest road, 0–100. */
   sharedPct: z.number(),
   detours: z.array(DetourSchema),
+});
+
+export const SuggestedStopSchema = z.object({
+  id: z.string(),
+  lat: z.number(),
+  lon: z.number(),
+  kind: z.enum(['viewpoint', 'cafe', 'agriturismo', 'winery']),
+  name: z.string(),
+  hours: z.string().optional(),
+  website: z.string().optional(),
+  food: z.boolean().optional(),
+  atKm: z.number(),
+  eta: z.string(),
+  offKm: z.number(),
+  reason: z.enum(['view', 'coffee', 'lunch', 'wine']),
 });
 
 export const RouteOptionSchema = z.object({
@@ -128,6 +150,8 @@ export const RouteOptionSchema = z.object({
   conditions: ConditionsSchema.nullable(),
   advisories: z.array(AdvisorySchema),
   vsFastest: VsFastestSchema.optional(),
+  /** Places worth pulling over for along this route: a viewpoint, coffee, lunch, a winery. */
+  suggestedStops: z.array(SuggestedStopSchema).optional(),
   handoff: z.object({ googleMaps: z.string(), appleMaps: z.string() }),
 });
 
@@ -253,6 +277,7 @@ export type PlanRequest = z.infer<typeof PlanRequestSchema>;
 export type PlanRequestInput = z.input<typeof PlanRequestSchema>;
 export type PlanResponse = z.infer<typeof PlanResponseSchema>;
 export type RouteOption = z.infer<typeof RouteOptionSchema>;
+export type SuggestedStopOut = z.infer<typeof SuggestedStopSchema>;
 export type Preferences = z.infer<typeof PreferencesSchema>;
 export type Place = z.infer<typeof PlaceSchema>;
 export type GeocodeResult = z.infer<typeof GeocodeResultSchema>;

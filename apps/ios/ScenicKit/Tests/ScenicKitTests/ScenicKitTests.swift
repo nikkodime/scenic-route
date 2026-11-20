@@ -49,6 +49,14 @@ final class ContractTests: XCTestCase {
         XCTAssertEqual(v.extraMinutes, r.extraMinutes)
         XCTAssertFalse(v.detours.isEmpty)
         XCTAssertEqual(v.detours.reduce(0) { $0 + $1.extraMinutes }, r.extraMinutes)
+        // Golden-hour departure and stops worth making.
+        let g = try XCTUnwrap(r.conditions?.goldenDeparture)
+        XCTAssertEqual(g.place, "Torre")
+        XCTAssertFalse(g.onTime)
+        XCTAssertNotNil(ISO8601.parse(g.leaveAt))
+        let stops = try XCTUnwrap(r.suggestedStops)
+        XCTAssertEqual(stops.map(\.reason), ["coffee", "view", "wine"])
+        XCTAssertEqual(stops.last?.hours, "Mo-Sa 10:00-18:00")
     }
 
     func testPlanRequestEncodesLikeTheAPIExpects() throws {

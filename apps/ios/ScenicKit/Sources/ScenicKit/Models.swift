@@ -181,6 +181,40 @@ public struct Conditions: Codable, Hashable, Sendable {
     public var weather: [WeatherSample]
     public var verdict: String
     public var notes: [String]
+    /// When to leave to drive the best stretch in golden light (nil when not reachable today or tomorrow).
+    public var goldenDeparture: GoldenDeparture?
+}
+
+/// "Leave at 15:40 to reach Pienza in golden light."
+public struct GoldenDeparture: Codable, Hashable, Sendable {
+    public var leaveAt: String
+    public var reachAt: String
+    public var sunset: String
+    public var fromKm: Double
+    public var toKm: Double
+    public var place: String?
+    /// The planned departure already catches it.
+    public var onTime: Bool
+}
+
+/// A place worth pulling over for along a route: a viewpoint, coffee, lunch, a winery.
+public struct SuggestedStop: Codable, Hashable, Sendable, Identifiable {
+    public var id: String
+    public var lat: Double
+    public var lon: Double
+    /// viewpoint, cafe, agriturismo, winery
+    public var kind: String
+    public var name: String
+    public var hours: String?
+    public var website: String?
+    public var food: Bool?
+    public var atKm: Double
+    public var eta: String
+    public var offKm: Double
+    /// view, coffee, lunch, wine
+    public var reason: String
+    public var coordinate: Coordinate { Coordinate(lat: lat, lon: lon) }
+    public var place: Place { Place(lat: lat, lon: lon, label: name.isEmpty ? "Viewpoint" : name) }
 }
 
 public struct Advisory: Codable, Hashable, Sendable {
@@ -189,6 +223,9 @@ public struct Advisory: Codable, Hashable, Sendable {
     public var title: String
     public var detail: String
     public var atKm: Double?
+    /// Where on the map, when the advisory is about one place (a ZTL gate, a pass, where gravel starts).
+    public var lat: Double?
+    public var lon: Double?
 }
 
 public struct Handoff: Codable, Hashable, Sendable {
@@ -241,6 +278,8 @@ public struct RouteOption: Codable, Hashable, Sendable, Identifiable {
     /// Turn-by-turn steps for Drive mode.
     public var steps: [RouteStep]?
     public var vsFastest: VsFastest?
+    /// Viewpoints, coffee, lunch and wine stops along the route.
+    public var suggestedStops: [SuggestedStop]?
 
     public var line: [Coordinate] { Polyline.decode(polyline) }
 }

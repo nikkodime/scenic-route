@@ -37,7 +37,7 @@ targets:
         ScenicAPIBaseURL: $(SCENIC_API_BASE_URL)
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: app.scenicroute.ios
+        PRODUCT_BUNDLE_IDENTIFIER: com.nikkodime.panoramica
         SCENIC_API_BASE_URL: http://localhost:8787
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ENABLE_PREVIEWS: YES
@@ -50,7 +50,7 @@ targets:
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES
-        PRODUCT_BUNDLE_IDENTIFIER: app.scenicroute.ios.uitests
+        PRODUCT_BUNDLE_IDENTIFIER: com.nikkodime.panoramica.uitests
 schemes:
   ScenicRoute:
     build:

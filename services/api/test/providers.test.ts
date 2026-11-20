@@ -334,3 +334,23 @@ test('GraphHopper turn instructions become drive steps with km and position', ()
   assert.deepEqual(p.steps?.[1], { atKm: 1.6, text: 'Turn right onto Via Lauretana', sign: 2, street: 'Via Lauretana', lat: 43.31, lon: 11.35 });
   assert.equal(p.steps?.[2].atKm, 2.5);
 });
+
+test('stops: OSM tags to stop kinds, viewpoints need a pull-off, FileStops answers by bbox', async () => {
+  const { classifyStop, servesFood, withPullOff } = await import('../scripts/build-stops.ts');
+  const { FileStops } = await import('../src/providers/stops-file.ts');
+  assert.equal(classifyStop({ tourism: 'viewpoint' }), 'viewpoint');
+  assert.equal(classifyStop({ amenity: 'parking' }), 'parking');
+  assert.equal(classifyStop({ amenity: 'parking', access: 'private' }), null);
+  assert.equal(classifyStop({ amenity: 'cafe' }), null, 'unnamed café');
+  assert.equal(classifyStop({ amenity: 'cafe', name: 'Bar Sport' }), 'cafe');
+  assert.equal(classifyStop({ craft: 'winery', name: 'Castello Banfi' }), 'winery');
+  assert.equal(classifyStop({ tourism: 'guest_house', name: 'Agriturismo Il Rigo' }), 'agriturismo');
+  assert.equal(classifyStop({ amenity: 'restaurant', name: 'Agriturismo Poggio' }), 'agriturismo');
+  assert.equal(classifyStop({ amenity: 'restaurant', name: 'Trattoria' }), null);
+  assert.ok(servesFood({ amenity: 'restaurant' }) && !servesFood({ tourism: 'guest_house' }));
+  const views = [{ id: 'a', kind: 'viewpoint' as const, name: '', lat: 43.0, lon: 11.0 }, { id: 'b', kind: 'viewpoint' as const, name: '', lat: 43.1, lon: 11.0 }];
+  assert.deepEqual(withPullOff(views, [{ lat: 43.0008, lon: 11.0005 }]).map((v) => v.id), ['a']);
+  const fs = new FileStops([{ region: 't', bbox: [42, 10, 44, 12], fetchedAt: '', attribution: '', stops: [...views, { ...views[0] }] }]);
+  assert.equal(fs.count, 2);
+  assert.deepEqual((await fs.stops([42.95, 10.9, 43.05, 11.1])).map((v) => v.id), ['a']);
+});

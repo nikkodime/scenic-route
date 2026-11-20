@@ -12,6 +12,7 @@ import { HgtElevation } from './providers/dem.ts';
 import { MetNoWeather, OpenMeteoWeather } from './providers/weather.ts';
 import { FallbackGeocoder, NominatimGeocoder, PhotonGeocoder, type Geocoder } from './providers/geocode.ts';
 import { loadZones } from './providers/zones.ts';
+import { FileStops } from './providers/stops-file.ts';
 import { CommonsPhotos, type PhotoSource } from './providers/photos.ts';
 import { MemoryStore } from './store/memory.ts';
 import { PgStore } from './store/postgres.ts';
@@ -30,6 +31,7 @@ export function makeProviders(c: Config): { providers: Providers; geocoder: Geoc
         : c.ELEVATION === 'open-meteo' ? new OpenMeteoElevation(http, c.OPEN_METEO_API_KEY) : undefined,
       weather: c.WEATHER === 'metno' ? new MetNoWeather(http) : c.WEATHER === 'open-meteo' ? new OpenMeteoWeather(http, c.OPEN_METEO_API_KEY) : undefined,
       zones: (b) => zones.inBBox(b),
+      stops: FileStops.load(c.STOPS_DIR),
     },
     photos: c.PHOTOS === 'commons' ? new CommonsPhotos(http) : undefined,
     geocoder: c.GEOCODER === 'photon' ? new FallbackGeocoder(new PhotonGeocoder(http, c.PHOTON_URL), new NominatimGeocoder(http, c.NOMINATIM_URL)) : new NominatimGeocoder(http, c.NOMINATIM_URL),

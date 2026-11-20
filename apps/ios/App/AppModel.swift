@@ -22,6 +22,9 @@ final class AppModel {
     var roundTrip = false
     /// A round trip goes out to this place and back to the start.
     var loopVia: Place?
+    /// Stops the driver added from "Worth a stop", with where they sit along the route (0–1), for this trip only.
+    var addedStops: [(place: Place, at: Double)] = []
+    private var addedStopsTrip: String?
 
     // Explore output
     var explore: ExploreResponse?
@@ -130,7 +133,12 @@ final class AppModel {
         defer { isPlanning = false }
         do {
             let start = try await startPlace()
-            let req = PlanRequest(origin: start, destination: loopVia == nil ? destination : start, stops: loopVia.map { [$0] } ?? [], style: style, interests: Interest.allCases.filter(interests.contains), vehicle: vehicle, extraMinutes: timeLimit, departAt: departAt, prefs: prefs)
+            // Added stops belong to one trip: a new start, destination or loop clears them.
+            resetAddedStopsIfTripChanged()
+            let added = addedStops.sorted { $0.at < $1.at }
+            // In a loop, stops in the first half come before the turnaround place, the rest after it.
+            let stops = loopVia.map { via in added.filter { $0.at < 0.5 }.map(\.place) + [via] + added.filter { $0.at >= 0.5 }.map(\.place) } ?? added.map(\.place)
+            let req = PlanRequest(origin: start, destination: loopVia == nil ? destination : start, stops: stops, style: style, interests: Interest.allCases.filter(interests.contains), vehicle: vehicle, extraMinutes: timeLimit, departAt: departAt, prefs: prefs)
             let res = try await api.plan(req)
             plan = res
             selectedRouteID = res.routes.first?.id
@@ -138,6 +146,27 @@ final class AppModel {
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    /// "Leave at 15:40": plan again with that departure and show the new routes.
+    func leave(at date: Date) async {
+        departAt = date
+        await runPlan()
+        if plan?.routes.isEmpty == false { planPath = [.results] }
+    }
+
+    private func resetAddedStopsIfTripChanged() {
+        let trip = [origin?.id ?? "here", destination?.id ?? "", loopVia?.id ?? ""].joined(separator: "|")
+        if trip != addedStopsTrip { addedStops = []; addedStopsTrip = trip }
+    }
+
+    /// Put a suggested stop on the route and plan again through it.
+    func addStop(_ stop: SuggestedStop, on route: RouteOption) async {
+        resetAddedStopsIfTripChanged()
+        guard !addedStops.contains(where: { $0.place.id == stop.place.id }) else { return }
+        addedStops.append((stop.place, route.km > 0 ? stop.atKm / route.km : 0.5))
+        await runPlan()
+        if plan?.routes.isEmpty == false { planPath = [.results] }
     }
 
     func photos(lat: Double, lon: Double, name: String?) async -> [Photo] {

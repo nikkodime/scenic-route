@@ -18,7 +18,7 @@ struct YouView: View {
 
                 Button { showPass = true } label: {
                     HStack(spacing: 14) {
-                        IslandView(region: .dolomites).frame(width: 76, height: 76)
+                        IslandPoster(region: .dolomites).scaleEffect(1.15).frame(width: 76, height: 76)
                         VStack(alignment: .leading, spacing: 4) {
                             Text("SCENIC PASS").font(Theme.labelFont).tracking(1).foregroundStyle(Theme.green)
                             Text("Plan the whole journey").font(Theme.sofia(17, .medium)).foregroundStyle(Theme.ink)

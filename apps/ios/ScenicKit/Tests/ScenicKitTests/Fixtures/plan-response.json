@@ -167,8 +167,18 @@
     ],
     "verdict": "great",
     "notes": [
-     "Clear skies: a great day for this drive."
-    ]
+     "Clear skies: a great day for this drive.",
+     "Leave at 19:15 to reach Torre in golden light."
+    ],
+    "goldenDeparture": {
+     "leaveAt": "2026-06-01T17:15:00.000Z",
+     "reachAt": "2026-06-01T18:14:33.818Z",
+     "sunset": "2026-06-01T18:45:13.622Z",
+     "fromKm": 38,
+     "toKm": 53,
+     "place": "Torre",
+     "onTime": false
+    }
    },
    "advisories": [],
    "vsFastest": {
@@ -194,6 +204,42 @@
      }
     ]
    },
+   "suggestedStops": [
+    {
+     "id": "node/3",
+     "kind": "cafe",
+     "name": "Bar Centrale",
+     "lat": 43.11735,
+     "lon": 11.56922,
+     "atKm": 29.9,
+     "offKm": 0.09,
+     "eta": "2026-06-01T07:39:11.508Z",
+     "reason": "coffee"
+    },
+    {
+     "id": "node/1",
+     "kind": "viewpoint",
+     "name": "Belvedere",
+     "lat": 43.09683,
+     "lon": 11.59328,
+     "atKm": 33.1,
+     "offKm": 0.06,
+     "eta": "2026-06-01T07:43:22.081Z",
+     "reason": "view"
+    },
+    {
+     "id": "node/2",
+     "kind": "winery",
+     "name": "Cantina del Colle",
+     "hours": "Mo-Sa 10:00-18:00",
+     "lat": 43.05838,
+     "lon": 11.64166,
+     "atKm": 38.9,
+     "offKm": 0.06,
+     "eta": "2026-06-01T07:50:56.821Z",
+     "reason": "wine"
+    }
+   ],
    "handoff": {
     "googleMaps": "https://www.google.com/maps/dir/?api=1&origin=43.318800%2C11.330800&destination=42.950000%2C11.850000&waypoints=43.184394%2C11.489996%7C43.065000%2C11.630000&travelmode=driving",
     "appleMaps": "https://maps.apple.com/?saddr=43.318800%2C11.330800&daddr=43.065000%2C11.630000&dirflg=d"
@@ -351,8 +397,18 @@
     ],
     "verdict": "great",
     "notes": [
-     "Clear skies: a great day for this drive."
-    ]
+     "Clear skies: a great day for this drive.",
+     "Leave at 19:15 to reach Belvedere Val d'Orcia in golden light."
+    ],
+    "goldenDeparture": {
+     "leaveAt": "2026-06-01T17:15:00.000Z",
+     "reachAt": "2026-06-01T18:13:15.272Z",
+     "sunset": "2026-06-01T18:45:14.655Z",
+     "fromKm": 37,
+     "toKm": 52,
+     "place": "Belvedere Val d'Orcia",
+     "onTime": false
+    }
    },
    "advisories": [],
    "vsFastest": {
@@ -509,8 +565,18 @@
     ],
     "verdict": "great",
     "notes": [
-     "Clear skies: a great day for this drive."
-    ]
+     "Clear skies: a great day for this drive.",
+     "Leave at 19:15 to reach Belvedere Val d'Orcia in golden light."
+    ],
+    "goldenDeparture": {
+     "leaveAt": "2026-06-01T17:15:00.000Z",
+     "reachAt": "2026-06-01T18:13:15.272Z",
+     "sunset": "2026-06-01T18:45:14.566Z",
+     "fromKm": 37,
+     "toKm": 52,
+     "place": "Belvedere Val d'Orcia",
+     "onTime": false
+    }
    },
    "advisories": [],
    "vsFastest": {
@@ -529,6 +595,7 @@
  "attribution": [
   "Fake router",
   "Fake features",
+  "Stops: © OpenStreetMap contributors (ODbL)",
   "© OpenStreetMap contributors"
  ]
 }

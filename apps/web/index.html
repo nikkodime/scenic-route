@@ -4,6 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#f5f6f3" />
+    <meta name="color-scheme" content="light dark" />
+    <script>
+      // Set light or dark before first paint (src/appearance.ts keeps it in sync after that).
+      try { var a = localStorage.getItem('panoramica.appearance'); document.documentElement.dataset.theme = a === 'light' || a === 'dark' ? a : matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; } catch (e) {}
+    </script>
     <title>Panoramica · Journey planner</title>
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />

@@ -105,11 +105,26 @@ struct RouteMap: View {
                         .annotationTitles(.hidden)
                     }
                 }
-                ForEach(r.scenicStops, id: \.self) { s in
+                ForEach(r.scenicStops.filter { s in !nearDetourChip(r, s.lat, s.lon) }, id: \.self) { s in
                     Annotation(s.name.isEmpty ? "Scenic spot" : s.name, coordinate: CLLocationCoordinate2D(latitude: s.lat, longitude: s.lon)) {
                         Image(systemName: "camera.fill").font(.caption2).padding(6)
                             .background(Theme.surface, in: Circle()).overlay(Circle().strokeBorder(Theme.accent, lineWidth: 2)).foregroundStyle(Theme.accent)
                     }
+                }
+                // Warnings where they happen (ZTL, gravel, closed pass) and stops worth making.
+                ForEach(r.advisories.filter { $0.severity != "info" && $0.lat != nil && $0.lon != nil }, id: \.self) { a in
+                    Annotation(AdvisoryStyle.short(a), coordinate: CLLocationCoordinate2D(latitude: a.lat!, longitude: a.lon!)) {
+                        Image(systemName: "exclamationmark.triangle.fill").font(.system(size: 11, weight: .bold)).foregroundStyle(.white)
+                            .frame(width: 26, height: 26).background(Theme.warning, in: Circle()).overlay(Circle().strokeBorder(.white, lineWidth: 2))
+                    }
+                    .annotationTitles(.hidden)
+                }
+                ForEach((r.suggestedStops ?? []).filter { s in !nearDetourChip(r, s.lat, s.lon) }) { s in
+                    Annotation(s.name.isEmpty ? "Viewpoint" : s.name, coordinate: CLLocationCoordinate2D(latitude: s.lat, longitude: s.lon)) {
+                        Image(systemName: StopStyle.symbol(s.kind)).font(.system(size: 10, weight: .bold)).foregroundStyle(Theme.green)
+                            .frame(width: 24, height: 24).background(Theme.surface, in: Circle()).overlay(Circle().strokeBorder(Theme.green, lineWidth: 1.5))
+                    }
+                    .annotationTitles(.hidden)
                 }
                 if let first = r.line.first {
                     Marker("Start", systemImage: "car.fill", coordinate: CLLocationCoordinate2D(latitude: first.lat, longitude: first.lon)).tint(Theme.ink)
@@ -121,6 +136,15 @@ struct RouteMap: View {
         }
         .mapStyle(.standard(elevation: .realistic, pointsOfInterest: .excludingAll))
         .mapControls { MapCompass(); MapScaleView() }
+    }
+
+    /// Pins within about a kilometre of a detour chip would cover it (Map doesn't stack annotations in written order).
+    private func nearDetourChip(_ r: RouteOption, _ lat: Double, _ lon: Double) -> Bool {
+        guard !fastest.isEmpty else { return false }
+        return r.detourMidpoints.contains { d in
+            let dy = (d.at.lat - lat) * 111, dx = (d.at.lon - lon) * 111 * cos(lat * .pi / 180)
+            return dx * dx + dy * dy < 1.2 * 1.2
+        }
     }
 }
 
@@ -144,14 +168,14 @@ struct RouteCard: View {
                         Text("\(number)").font(Theme.sofia(13, .bold)).foregroundStyle(Theme.ink)
                     }
                     .padding(.horizontal, 10).padding(.vertical, 6)
-                    .background(.white.opacity(0.82), in: Capsule())
+                    .background(Theme.surface.opacity(0.86), in: Capsule())
                     .padding(12)
                 }
                 .overlay(alignment: .topTrailing) {
                     StampView(score: Int(route.score.rounded()), place: model.destinationShortName, ink: Theme.green, size: 66,
                               rotation: number % 2 == 0 ? 5 : -6, seed: number)
                         .padding(3)
-                        .background(.white.opacity(0.72), in: Circle())
+                        .background(Theme.surface.opacity(0.78), in: Circle())
                         .padding(8)
                 }
                 .overlay(alignment: .bottomLeading) {

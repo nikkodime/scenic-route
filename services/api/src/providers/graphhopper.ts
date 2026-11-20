@@ -99,6 +99,10 @@ export function parseGhPath(path: GhPath): RoutedPath {
   };
   const motorwayKm = fastKm(0, line.length - 1);
   const unpavedKm = sumWhere('surface', (v) => UNPAVED.includes(v)) + sumWhere('road_class', (v) => v === 'TRACK');
+  // Where the first gravel starts, so the warning can be pinned on the map.
+  const firstUnpaved = [...(path.details?.surface ?? []).filter(([, , v]) => UNPAVED.includes(up(v))), ...(path.details?.road_class ?? []).filter(([, , v]) => up(v) === 'TRACK')]
+    .reduce((m, [a]) => Math.min(m, a), Infinity);
+  const unpavedAtKm = unpavedKm > 0 && Number.isFinite(firstUnpaved) ? segKm(0, firstUnpaved) : undefined;
   const tollKm = sumWhere('toll', (v) => v === 'ALL');
   const ferryKm = sumWhere('road_environment', (v) => v === 'FERRY');
   const urbanKm = sumWhere('urban_density', (v) => v === 'CITY');
@@ -124,7 +128,7 @@ export function parseGhPath(path: GhPath): RoutedPath {
     return step;
   });
 
-  return { line, km: path.distance / 1000, minutes: path.time / 60000, motorwayKm, unpavedKm, tollKm, ferryKm, urbanKm, motorwayKmByCountry, ...(steps.length ? { steps } : {}) };
+  return { line, km: path.distance / 1000, minutes: path.time / 60000, motorwayKm, unpavedKm, ...(unpavedAtKm != null ? { unpavedAtKm } : {}), tollKm, ferryKm, urbanKm, motorwayKmByCountry, ...(steps.length ? { steps } : {}) };
 }
 
 export class GraphHopperRouter implements Router {

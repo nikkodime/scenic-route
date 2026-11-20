@@ -187,7 +187,7 @@ struct DriveView: View {
             ForEach(Array(route.moments.prefix(6).enumerated()), id: \.element.id) { i, m in
                 Annotation(m.name, coordinate: m.coordinate.cl) {
                     Text("\(i + 1)").font(Theme.sofia(12, .semibold)).foregroundStyle(Theme.green)
-                        .frame(width: 24, height: 24).background(.white, in: Circle())
+                        .frame(width: 24, height: 24).background(Theme.surface, in: Circle())
                         .overlay(Circle().strokeBorder(Theme.green, lineWidth: 2))
                 }
             }

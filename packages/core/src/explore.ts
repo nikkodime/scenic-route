@@ -5,6 +5,7 @@ import { distKm, encodePolyline, paddedBBox, resample, type LatLon } from './geo
 import { FEATURE_FAMILY, type FeatureType, type ScenicFeature } from './features.ts';
 import type { Spot } from './candidates.ts';
 import { describe, reliefStats, scoreRoute } from './score.ts';
+import { retraced } from './rank.ts';
 import { sunTimes } from './sun.ts';
 import { applyInterests, PlanError, type PlanOptions, type Providers, type RoutedPath } from './planner.ts';
 import type { ExploreRequest, ExploreResponse, ExploreDestination } from './contracts.ts';
@@ -157,8 +158,11 @@ export async function exploreFrom(req: ExploreRequest, p: Providers, opts: PlanO
     if (fastest.minutes > req.maxMinutes) return null;
     const out = await scenicOr([req.origin, c], 3, fastOut);
     const back = await scenicOr([c, req.origin], 1, fastBack);
-    for (const loop of [join(out, back), join(out, fastBack), join(fastOut, back)]) if (loop.minutes <= req.maxMinutes) return { c, fastest, scenic: loop };
-    return { c, fastest, scenic: fastest };
+    // Of the loops that fit, the one that shares least road between going and coming back.
+    const fits = [join(out, back), join(out, fastBack), join(fastOut, back), fastest].filter((l) => l.minutes <= req.maxMinutes)
+      .map((l) => ({ l, same: retraced(l.line, req.origin) }));
+    fits.sort((a, b) => a.same - b.same);
+    return { c, fastest, scenic: fits[0]?.l ?? fastest };
   });
   const ok = routed.filter((x): x is NonNullable<typeof x> => !!x);
   if (!ok.length) throw new PlanError('No scenic places can be reached within that time. Try a longer drive.');
@@ -180,7 +184,9 @@ export async function exploreFrom(req: ExploreRequest, p: Providers, opts: PlanO
     const s = scoreRoute({ route: r.scenic, features, relief: elevs ? reliefStats(elevs[i]) : null, quiet });
     // The place matters as much as the road there: a great town at the end of a fine road leads.
     const matches = prefer.has(r.c.family);
-    const value = 0.65 * s.score + 35 * Math.sqrt(r.c.weight / maxWeight) + (matches ? 15 : 0);
+    // A loop that comes back the way it went is half a drive; one that uses little of the time is a short hop.
+    const loopFactor = roundTrip ? (1 - 0.6 * retraced(r.scenic.line, req.origin)) * (0.6 + 0.4 * Math.min(1, r.scenic.minutes / (req.maxMinutes * 0.6))) : 1;
+    const value = (0.65 * s.score + 35 * Math.sqrt(r.c.weight / maxWeight) + (matches ? 15 : 0)) * loopFactor;
     return { ...r, s, value };
   });
   scored.sort((a, b) => b.value - a.value);

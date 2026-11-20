@@ -28,13 +28,15 @@ const Env = z.object({
   ZONES_DIR: z.string().default(fileURLToPath(new URL('../../../infra/data/zones/', import.meta.url))),
   /** Scenic places shipped with the server (scripts/fetch-features.ts). Overpass is only asked outside these regions. */
   FEATURES_DIR: z.string().default(fileURLToPath(new URL('../../../infra/data/features/', import.meta.url))),
+  /** Cafés, agriturismi, wineries and viewpoints with parking (scripts/build-stops.ts). */
+  STOPS_DIR: z.string().default(fileURLToPath(new URL('../../../infra/data/stops/', import.meta.url))),
   /** live Overpass outside the shipped regions | none (shipped files only) */
   OVERPASS: z.enum(['live', 'none']).default('live'),
   /** commons (Wikimedia Commons photos of places) | none */
   PHOTOS: z.enum(['commons', 'none']).default('commons'),
   DATABASE_URL: z.string().optional(),
   JWT_SECRET: z.string().min(16).default('dev-only-secret-change-me-please'),
-  APPLE_BUNDLE_IDS: list.default('app.scenicroute.ios'),
+  APPLE_BUNDLE_IDS: list.default('com.nikkodime.panoramica,app.scenicroute.ios'),
   CORS_ORIGINS: list.default('http://localhost:5173,https://nikkodime.github.io'),
   USER_AGENT: z.string().default('scenic-route/0.1 (+https://github.com/nikkodime/scenic-route)'),
   TIME_ZONE: z.string().default('Europe/Rome'),
