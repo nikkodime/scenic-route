@@ -28,6 +28,9 @@ const api = await buildApp({
         { id: 's1', kind: 'viewpoint', name: 'Belvedere di Siena', ...at(0.4) },
         { id: 's2', kind: 'winery', name: 'Cantina del Colle', ...at(0.6) },
         { id: 's3', kind: 'cafe', name: 'Bar Centrale', ...at(0.5) },
+        // In the Val d'Orcia, where the long way goes.
+        { id: 's4', kind: 'viewpoint', name: "Belvedere Val d'Orcia", lat: 43.058, lon: 11.642 },
+        { id: 's5', kind: 'winery', name: 'Cantina di San Quirico', lat: 43.09, lon: 11.601 },
       ];
     } },
   }),
@@ -83,8 +86,9 @@ try {
   assert.equal(await page.locator(".island-stage").isVisible(), false, "island stage hides once routes are shown");
   // Every scenic option says what it costs against the fastest road, and the detail shows where it turns off.
   assert.ok(await page.locator('.route .vs').count() >= 2);
-  await page.locator('.ribbon').first().waitFor();
-  if (shots) { await page.locator('.ribbon').first().scrollIntoViewIfNeeded(); await page.screenshot({ path: `${shots}/web-compare.png` }); }
+  // Where it turns off, or (Most beautiful usually) a different road from start to finish.
+  await page.locator('.ribbon, .note').first().waitFor();
+  if (shots) { await page.locator('.ribbon, .note').first().scrollIntoViewIfNeeded(); await page.screenshot({ path: `${shots}/web-compare.png` }); }
   assert.ok(await page.evaluate(() => document.querySelectorAll('.detour-chip').length) >= 1, 'detour chips on the map');
   if (shots) await page.screenshot({ path: `${shots}/web-planner.png` });
 
