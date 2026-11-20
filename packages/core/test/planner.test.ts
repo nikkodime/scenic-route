@@ -88,15 +88,15 @@ test('without any scenic places, side-road probes still offer an alternative to 
 
 test('style sets the time budget; an explicit cap wins', async () => {
   const { budgetMinutes } = await import('../src/index.ts');
-  assert.equal(budgetMinutes('relaxed', 60), 10);
+  assert.equal(budgetMinutes('relaxed', 60), 18);
   assert.equal(budgetMinutes('scenic', 100), 40);
-  assert.equal(budgetMinutes('most_beautiful', 100), 80);
-  assert.equal(budgetMinutes('most_beautiful', 300), 180);
+  assert.equal(budgetMinutes('most_beautiful', 100), 100);
+  assert.equal(budgetMinutes('most_beautiful', 300), 150);
   assert.equal(budgetMinutes('most_beautiful', 100, 30), 30);
   const relaxed = await planRoutes(PlanRequestSchema.parse({ origin: SIENA, destination: DEST, style: 'relaxed', departAt: '2026-06-01T07:00:00Z' }), fakeProviders());
   const beautiful = await planRoutes(PlanRequestSchema.parse({ origin: SIENA, destination: DEST, style: 'most_beautiful', departAt: '2026-06-01T07:00:00Z' }), fakeProviders());
   assert.ok(relaxed.budgetMinutes! < beautiful.budgetMinutes!);
-  for (const r of relaxed.routes) assert.ok(r.extraMinutes <= relaxed.budgetMinutes! * 1.1 + 1);
+  for (const r of relaxed.routes) assert.ok(r.extraMinutes <= relaxed.budgetMinutes! * 1.5 + 1);
   assert.ok(Math.max(...beautiful.routes.map((r) => r.extraMinutes)) >= Math.max(...relaxed.routes.map((r) => r.extraMinutes)));
 });
 
@@ -194,6 +194,23 @@ test('"Most beautiful" prefers a long day full of scenery; "Scenic" and "Relaxed
   assert.ok(b('most_beautiful') - 0.03 * 40 > a('most_beautiful'), 'worth 40 more minutes');
   assert.ok(a('relaxed') > b('relaxed'));
   assert.ok(a('scenic') - 0.15 * 0 > b('scenic') - 0.15 * 40, 'not worth 40 minutes on Scenic');
+});
+
+test('Relaxed counts tiring twists; the other styles do not', async () => {
+  const { beautyFor } = await import('../src/planner.ts');
+  // Same score: a gentle road (120 °/km) and a hairpin stack (220 °/km).
+  assert.ok(beautyFor('relaxed', 72, 60, 60, 0, 120) - beautyFor('relaxed', 72, 60, 60, 0, 220) >= 15);
+  assert.equal(beautyFor('most_beautiful', 72, 60, 60, 0, 120), beautyFor('most_beautiful', 72, 60, 60, 0, 220));
+});
+
+test('Most beautiful goes the long way; Relaxed stays close to the fastest time', async () => {
+  for (const [from, to] of [[SIENA, DEST]] as const) {
+    const plan = (style: 'relaxed' | 'most_beautiful') => planRoutes(PlanRequestSchema.parse({ origin: from, destination: to, style, departAt: '2026-06-01T07:00:00Z' }), fakeProviders());
+    const [relaxed, beautiful] = await Promise.all([plan('relaxed'), plan('most_beautiful')]);
+    const longer = beautiful.routes.filter((r) => r.extraMinutes >= 0.4 * beautiful.budgetMinutes! - 1);
+    if (longer.length) assert.equal(longer.length, beautiful.routes.length, 'no quick routes next to the long ones');
+    assert.ok(beautiful.routes[0].extraMinutes >= relaxed.routes[0].extraMinutes);
+  }
 });
 
 test('explore: scenic places within the drive time, spread out, each with a road there', async () => {

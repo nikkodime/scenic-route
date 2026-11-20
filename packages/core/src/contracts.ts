@@ -32,7 +32,7 @@ export const PlanRequestSchema = z.object({
   stops: z.array(PlaceSchema).max(8).default([]),
   /**
    * How much the driver wants scenery over speed. Sets the time budget from the fastest route
-   * (relaxed ≈ +15%, scenic ≈ +40%, most beautiful ≈ +80%) and how strongly time counts in ranking.
+   * (relaxed ≈ +30% on calm, gentle roads; scenic ≈ +40%; most beautiful ≈ +100%, always a real detour) and how strongly time counts.
    */
   style: z.enum(ROUTE_STYLES).default('scenic'),
   /** What the driver loves; matching places count more, others less. Empty = everything equally. */
