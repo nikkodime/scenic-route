@@ -144,6 +144,8 @@ export interface PlanOptions {
   timeZone?: string;
   log?: (msg: string, extra?: unknown) => void;
   features?: PlanFeatures;
+  /** Tuning hook: every scored candidate before ranking (scripts/compare-styles.ts). */
+  onCandidates?: (c: { source: string; km: number; minutes: number; motorwayKm?: number; unpavedKm?: number; urbanKm?: number; score: number; fit: number; parts: ScoredRoute['parts']; line: LatLon[]; highlights: string[] }[]) => void;
 }
 
 interface Candidate {
@@ -340,6 +342,7 @@ export async function planRoutes(req: PlanRequest, p: Providers, opts: PlanOptio
     warnings.push('Every route has a restriction; check the advisories before you drive.');
   }
 
+  opts.onCandidates?.(usable.map((r) => ({ source: r.source, km: r.path.km, minutes: r.minutes, motorwayKm: r.path.motorwayKm, unpavedKm: r.path.unpavedKm, urbanKm: r.path.urbanKm, score: r.scored.score, fit: r.fit, parts: r.scored.parts, line: r.line, highlights: r.scored.highlights.map((h) => h.name) })));
   const fastestMinutes = fastest.minutes;
   // An explicit time limit is a promise: no slack over it. The style budget may stretch by 10%.
   const chosen = rankRoutes(usable.map((r) => ({ r, minutes: r.minutes, line: r.line, scored: { score: beautyFor(req.style, r.fit, r.path.km, r.scored.parts.scenery) } })), fastestMinutes, budget, req.maxRoutes, style.pointsPerMinute, req.extraMinutes != null ? 0 : 0.1).map((x) => x.r);
