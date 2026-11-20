@@ -141,7 +141,7 @@ struct StopsSection: View {
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .overlay(alignment: .topLeading) {
                 Image(systemName: StopStyle.symbol(s.kind)).font(.system(size: 11, weight: .bold)).foregroundStyle(Theme.green)
-                    .frame(width: 24, height: 24).background(.white, in: Circle()).padding(6)
+                    .frame(width: 24, height: 24).background(Theme.surface, in: Circle()).padding(6)
             }
             Text(s.name.isEmpty ? "Viewpoint" : s.name).font(Theme.sofia(14, .semibold)).foregroundStyle(Theme.ink).lineLimit(1)
             Text("\(StopStyle.reason(s.reason)) · \(Format.time(s.eta) ?? "") · km \(Int(s.atKm))")
@@ -188,7 +188,15 @@ struct ShareCardView: View {
         VStack(spacing: 0) {
             Group {
                 if let photo { Image(uiImage: photo).resizable().scaledToFill() }
-                else { LinearGradient(colors: [Theme.greenTint, Theme.green.opacity(0.45)], startPoint: .top, endPoint: .bottom) }
+                else {
+                    // No photo along the way: the region's island floats on the morning sky instead.
+                    ZStack {
+                        LinearGradient(colors: [Theme.sky, Theme.paper], startPoint: .top, endPoint: .bottom)
+                        if let end = route.line.last {
+                            IslandPoster(region: .nearest(lat: end.lat, lon: end.lon)).frame(width: 300, height: 300).offset(x: -30, y: 12)
+                        }
+                    }
+                }
             }
             .frame(width: 360, height: 252).clipped()
             .overlay(alignment: .topTrailing) {
@@ -265,7 +273,7 @@ extension AppModel {
             guard let p = await photos(lat: m.coordinate.lat, lon: m.coordinate.lon, name: m.name).first, let url = URL(string: p.url) else { continue }
             if let (data, _) = try? await URLSession.shared.data(from: url), let img = UIImage(data: data) { image = img; credit = p.credit; break }
         }
-        let renderer = ImageRenderer(content: ShareCardView(route: route, title: shareTitle, photo: image, credit: credit))
+        let renderer = ImageRenderer(content: ShareCardView(route: route, title: shareTitle, photo: image, credit: credit).environment(\.colorScheme, .light))
         renderer.scale = 3
         guard let ui = renderer.uiImage else { return nil }
         return SharedDrive(image: ui, title: shareTitle)

@@ -3,6 +3,7 @@
 
 import { decodePolyline, type Place, type RouteOption, type RouteStyle, type Interest, type Vehicle } from '@scenic/core';
 import { icon } from './icons.ts';
+import { nearestRegion } from '@scenic/islands/regions';
 import { duration } from './journey.ts';
 
 type Stop = NonNullable<RouteOption['suggestedStops']>[number];
@@ -98,7 +99,6 @@ export function parseShareHash(hash: string): SharedPlan | null {
 }
 
 // ---------- share card ----------
-
 export interface CardInput {
   route: RouteOption;
   title: string;
@@ -131,9 +131,13 @@ export async function drawShareCard(canvas: HTMLCanvasElement, { route, title, p
     const s = Math.max(W / img.width, PH / img.height);
     g.drawImage(img, (W - img.width * s) / 2, (PH - img.height * s) / 2, img.width * s, img.height * s);
   } else {
+    // No photo along the way: the region's island floats on the morning sky instead.
     const grad = g.createLinearGradient(0, 0, 0, PH);
-    grad.addColorStop(0, '#dfe7df'); grad.addColorStop(1, '#9fb8a7');
+    grad.addColorStop(0, '#dde8ec'); grad.addColorStop(1, paper);
     g.fillStyle = grad; g.fillRect(0, 0, W, PH);
+    const end = decodePolyline(route.polyline).at(-1);
+    const isl = end ? await loadImage(`${import.meta.env.BASE_URL}islands/poster-${nearestRegion(end)}.webp`) : null;
+    if (isl) g.drawImage(isl, (W - 820) / 2 - 60, PH - 820 + 40, 820, 820);
   }
   if (img && photo?.credit) {
     g.font = '500 20px "Sofia Sans", sans-serif'; g.textAlign = 'right';

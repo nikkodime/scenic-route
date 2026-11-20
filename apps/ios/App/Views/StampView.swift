@@ -16,6 +16,7 @@ struct StampView: View {
     var rotation: Double = -6
     /// Seed for the worn-ink pattern, so each stamp wears differently but never flickers.
     var seed: Int = 7
+    @Environment(\.colorScheme) private var scheme
 
     var body: some View {
         Group {
@@ -26,7 +27,8 @@ struct StampView: View {
         }
         .foregroundStyle(ink.opacity(0.88))
         .mask { StampWear(seed: seed) }
-        .blendMode(.multiply)
+        // Multiply sinks ink into light paper; on the dark page it would vanish, so the ink sits on top there.
+        .blendMode(scheme == .dark ? .normal : .multiply)
         .rotationEffect(.degrees(rotation))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Scenic score \(score)\(place.isEmpty ? "" : ", \(place)")")

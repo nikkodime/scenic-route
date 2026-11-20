@@ -168,14 +168,14 @@ struct RouteCard: View {
                         Text("\(number)").font(Theme.sofia(13, .bold)).foregroundStyle(Theme.ink)
                     }
                     .padding(.horizontal, 10).padding(.vertical, 6)
-                    .background(.white.opacity(0.82), in: Capsule())
+                    .background(Theme.surface.opacity(0.86), in: Capsule())
                     .padding(12)
                 }
                 .overlay(alignment: .topTrailing) {
                     StampView(score: Int(route.score.rounded()), place: model.destinationShortName, ink: Theme.green, size: 66,
                               rotation: number % 2 == 0 ? 5 : -6, seed: number)
                         .padding(3)
-                        .background(.white.opacity(0.72), in: Circle())
+                        .background(Theme.surface.opacity(0.78), in: Circle())
                         .padding(8)
                 }
                 .overlay(alignment: .bottomLeading) {

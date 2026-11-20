@@ -13,6 +13,8 @@ const P: Record<string, string> = {
   car: '<path d="M3 15v-3l2-4h10l4 4h2v3h-2M3 15h2m4 0h6"/><circle cx="7" cy="15.5" r="1.8"/><circle cx="17" cy="15.5" r="1.8"/>',
   campervan: '<path d="M2 16V6h13l3 4h3v6h-1M2 16h2m4 0h7M2 10h13"/><circle cx="6" cy="16.5" r="1.8"/><circle cx="17" cy="16.5" r="1.8"/>',
   caravan: '<path d="M1 15v-2l1.5-3H8l2 3v2M11 15V7h9a2 2 0 012 2v6h-2M10 15h1M14 10h4"/><circle cx="4" cy="15.5" r="1.5"/><circle cx="17" cy="15.5" r="1.5"/>',
+  auto: '<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 000 16z" fill="currentColor"/>',
+  moon: '<path d="M20 14.5A8 8 0 019.5 4a8 8 0 1010.5 10.5z"/>',
   clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
   dist: '<circle cx="6" cy="18" r="2"/><circle cx="18" cy="6" r="2"/><path d="M8 18h6a3 3 0 000-6h-4a3 3 0 010-6h6"/>',
   sunset: '<path d="M3 18h18M6 14a6 6 0 0112 0M12 4v3M4.9 7.9l1.4 1.4M19.1 7.9l-1.4 1.4M8 21h8"/>',

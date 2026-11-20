@@ -1,0 +1,29 @@
+{
+  "name": "@scenic/islands",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The Panoramica floating islands: procedural low-poly regions rendered live with three.js.",
+  "main": "src/engine.js",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "default": "./src/engine.js"
+    },
+    "./regions": {
+      "types": "./src/regions.d.ts",
+      "default": "./src/regions.js"
+    }
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "posters": "node scripts/posters.cjs"
+  },
+  "dependencies": {
+    "three": "0.160.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0"
+  },
+  "types": "src/index.d.ts"
+}

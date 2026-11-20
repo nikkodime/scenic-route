@@ -1,0 +1,24 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<style>html,body{margin:0;height:100%;background:transparent;overflow:hidden;-webkit-user-select:none;-webkit-touch-callout:none}#stage{position:fixed;inset:0}</style>
+</head><body><div id="stage"></div>
+<script src="island-engine.js"></script>
+<script>
+// Swift sets window.ISLAND_OPTS = {region, fit, lift, air, interactive, motion, mood} before load (or pass them as ?query),
+// and later calls setRegion / setMotion / setMood.
+(function () {
+  var O = window.ISLAND_OPTS || {}, q = new URLSearchParams(location.search);
+  Object.keys(O).forEach(function (k) { q.set(k, typeof O[k] === 'boolean' ? (O[k] ? '1' : '0') : String(O[k])); });
+  var b = function (k, d) { return q.has(k) ? q.get(k) === '1' : d; };
+  var post = function (m) { try { webkit.messageHandlers.island.postMessage(m); } catch (e) {} };
+  var c = PanoramicaIslands.mountIsland(document.getElementById('stage'), {
+    region: q.get('region') || 'tuscany', fit: +(q.get('fit') || 0.9), lift: +(q.get('lift') || 0),
+    air: b('air', true), interactive: b('interactive', true), motion: b('motion', true), phase: +(q.get('phase') || 0.1), mood: q.get('mood') || 'day',
+    onReady: function () { requestAnimationFrame(function () { post('ready'); }); }
+  });
+  window.setRegion = function (k) { c.setRegion(k); };
+  window.setMotion = function (on) { c.setMotion(on); };
+  window.setMood = function (m) { c.setMood(m); };
+})();
+</script></body></html>

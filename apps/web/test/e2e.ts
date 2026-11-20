@@ -40,7 +40,8 @@ const api = await buildApp({
 const server = await preview({ root: fileURLToPath(new URL('..', import.meta.url)), preview: { port: 4179, strictPort: true }, logLevel: 'silent' });
 const browser = await chromium.launch();
 try {
-  const page = await browser.newPage({ viewport: { width: 1280, height: 860 } });
+  // E2E_SCHEME=dark runs the same flow in dark mode.
+  const page = await browser.newPage({ viewport: { width: 1280, height: 860 }, colorScheme: process.env.E2E_SCHEME === 'dark' ? 'dark' : 'light' });
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   // Route API calls to the in-process app; block external tiles/fonts.
@@ -55,6 +56,16 @@ try {
   });
 
   await page.goto('http://localhost:4179/?mapStyle=blank');
+  // An empty map shows the live island stage; it steps aside once routes are on the map.
+  await page.locator('.island-stage').waitFor({ state: 'visible' });
+  // Appearance: follows the system, then the button cycles light → dark → automatic (and remembers it).
+  const theme = () => page.evaluate(() => document.documentElement.dataset.theme);
+  const system = process.env.E2E_SCHEME === 'dark' ? 'dark' : 'light';
+  assert.equal(await theme(), system);
+  await page.locator('.theme-btn').click(); assert.equal(await theme(), 'light');
+  await page.locator('.theme-btn').click(); assert.equal(await theme(), 'dark');
+  await page.reload(); await page.locator('.island-stage').waitFor({ state: 'visible' }); assert.equal(await theme(), 'dark');
+  await page.locator('.theme-btn').click(); assert.equal(await theme(), system);
   await page.getByLabel('From', { exact: true }).fill('Siena');
   await page.getByRole('option', { name: /Siena/ }).click();
   if (shots) await page.screenshot({ path: `${shots}/web-debug.png` });
@@ -69,6 +80,7 @@ try {
   const options = await page.locator('.route').count();
   assert.ok(options >= 2, `expected route options, got ${options}`);
   assert.equal(await page.locator('.route[aria-pressed="true"]').count(), 1);
+  assert.equal(await page.locator(".island-stage").isVisible(), false, "island stage hides once routes are shown");
   // Every scenic option says what it costs against the fastest road, and the detail shows where it turns off.
   assert.ok(await page.locator('.route .vs').count() >= 2);
   await page.locator('.ribbon').first().waitFor();

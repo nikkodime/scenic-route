@@ -88,7 +88,7 @@ struct RouteDetailView: View {
             if page != 99 {
                 StampView(score: Int(route.score.rounded()), place: model.destinationShortName, date: Date(), ink: Theme.green, size: 96, seed: route.rank)
                     .padding(4)
-                    .background(.white.opacity(0.72), in: Circle())
+                    .background(Theme.surface.opacity(0.78), in: Circle())
                     .padding(14)
             }
         }
