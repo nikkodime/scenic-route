@@ -17,6 +17,7 @@ struct IslandView: View {
     /// Drag to turn it. Off where the island sits inside a scroll view, so scrolling keeps working.
     var interactive = true
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.colorScheme) private var scheme
     @State private var ready = false
 
     var body: some View {
@@ -29,7 +30,7 @@ struct IslandView: View {
                 }
                 .transition(.opacity)
             }
-            LiveIsland(region: region, fit: fit, lift: lift, air: air, interactive: interactive, motion: !reduceMotion) {
+            LiveIsland(region: region, fit: fit, lift: lift, air: air, interactive: interactive, motion: !reduceMotion, dusk: scheme == .dark) {
                 withAnimation(.easeOut(duration: 0.35)) { ready = true }
             }
             .opacity(ready ? 1 : 0)
@@ -49,7 +50,7 @@ struct IslandPoster: View {
 
     var body: some View {
         Group {
-            if let img = IslandPoster.image(region) {
+            if let img = IslandPoster.image(region, dusk: scheme == .dark) {
                 Image(uiImage: img).resizable().interpolation(.high).scaledToFit()
             } else {
                 Color.clear
@@ -62,19 +63,21 @@ struct IslandPoster: View {
         .accessibilityHidden(true)
     }
 
-    @MainActor private static var cache: [IslandRegion: UIImage] = [:]
-    @MainActor static func image(_ r: IslandRegion) -> UIImage? {
-        if let i = cache[r] { return i }
-        guard let url = Bundle.main.url(forResource: "poster-\(r.rawValue)", withExtension: "webp"),
-              let data = try? Data(contentsOf: url), let img = UIImage(data: data) else { return nil }
-        cache[r] = img
+    @MainActor private static var cache: [String: UIImage] = [:]
+    /// The day still, or the dusk one (the same island in evening light) for dark mode.
+    @MainActor static func image(_ r: IslandRegion, dusk: Bool = false) -> UIImage? {
+        let name = dusk ? "poster-\(r.rawValue)-dusk" : "poster-\(r.rawValue)"
+        if let i = cache[name] { return i }
+        guard let url = Bundle.main.url(forResource: name, withExtension: "webp"),
+              let data = try? Data(contentsOf: url), let img = UIImage(data: data) else { return dusk ? image(r) : nil }
+        cache[name] = img
         return img
     }
 }
 
 private struct LiveIsland: UIViewRepresentable {
     let region: IslandRegion
-    let fit: Double, lift: Double, air: Bool, interactive: Bool, motion: Bool
+    let fit: Double, lift: Double, air: Bool, interactive: Bool, motion: Bool, dusk: Bool
     let onReady: () -> Void
 
     func makeCoordinator() -> Coordinator { Coordinator(onReady: onReady) }
@@ -83,7 +86,7 @@ private struct LiveIsland: UIViewRepresentable {
         let cfg = WKWebViewConfiguration()
         cfg.mediaTypesRequiringUserActionForPlayback = .all
         cfg.suppressesIncrementalRendering = true
-        let opts = "window.ISLAND_OPTS={region:'\(region.rawValue)',fit:\(fit),lift:\(lift),air:\(air),interactive:\(interactive),motion:\(motion),phase:\(Double.random(in: 0..<1))};"
+        let opts = "window.ISLAND_OPTS={region:'\(region.rawValue)',fit:\(fit),lift:\(lift),air:\(air),interactive:\(interactive),motion:\(motion),mood:'\(dusk ? "dusk" : "day")',phase:\(Double.random(in: 0..<1))};"
         cfg.userContentController.addUserScript(WKUserScript(source: opts, injectionTime: .atDocumentStart, forMainFrameOnly: true))
         cfg.userContentController.add(WeakHandler(context.coordinator), name: "island")
         let web = WKWebView(frame: .zero, configuration: cfg)
@@ -98,6 +101,7 @@ private struct LiveIsland: UIViewRepresentable {
         if #available(iOS 16.4, *) { web.isInspectable = false }
         context.coordinator.region = region
         context.coordinator.motion = motion
+        context.coordinator.dusk = dusk
         if let html = Bundle.main.url(forResource: "island", withExtension: "html") {
             web.loadFileURL(html, allowingReadAccessTo: html.deletingLastPathComponent())
         }
@@ -108,6 +112,7 @@ private struct LiveIsland: UIViewRepresentable {
         let c = context.coordinator
         if c.region != region { c.region = region; web.evaluateJavaScript("setRegion('\(region.rawValue)')") }
         if c.motion != motion { c.motion = motion; web.evaluateJavaScript("setMotion(\(motion))") }
+        if c.dusk != dusk { c.dusk = dusk; web.evaluateJavaScript("setMood('\(dusk ? "dusk" : "day")')") }
     }
 
     static func dismantleUIView(_ web: WKWebView, coordinator: Coordinator) {
@@ -118,6 +123,7 @@ private struct LiveIsland: UIViewRepresentable {
     final class Coordinator: NSObject, WKScriptMessageHandler {
         var region: IslandRegion?
         var motion = true
+        var dusk = false
         let onReady: () -> Void
         init(onReady: @escaping () -> Void) { self.onReady = onReady }
         func userContentController(_ c: WKUserContentController, didReceive message: WKScriptMessage) {

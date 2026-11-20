@@ -99,6 +99,8 @@ export function suggestStops({ line, km, minutes, departure, places, bestStretch
     .sort((a, b) => inBest(b) - inBest(a) || named(b) - named(a) || a.offKm - b.offKm);
   for (const v of views) {
     if (picked.length >= 2) break;
+    // A nameless viewpoint is only worth showing when nothing named is on offer, and then just one.
+    if (!v.name && (views.some((x) => x.name) || picked.some((x) => !x.name))) continue;
     if (spaced(v, Math.max(8, total * 0.15))) take(v, 'view');
   }
 

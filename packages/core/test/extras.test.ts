@@ -107,3 +107,10 @@ test('planner adds stops and a golden departure, and both can be switched off', 
   const without = await planRoutes(req, fakeProviders({ stops }), { now, features: { stops: false, goldenDeparture: false } });
   assert.ok(without.routes.every((r) => !r.suggestedStops && !r.conditions!.goldenDeparture));
 });
+
+test('a viewpoint without a name is shown only when no named one is on offer, and only once', () => {
+  const v = (id: string, name: string, f: number) => ({ id, kind: 'viewpoint' as const, name, ...off(at(f), 0.05) });
+  const pick = (places: StopPlace[]) => suggestStops({ line, km: 70, minutes: 40, departure: new Date('2026-06-01T07:00:00Z'), places }).map((s) => s.id);
+  assert.deepEqual(pick([v('a', '', 0.3), v('b', 'Belvedere', 0.7)]), ['b']);
+  assert.deepEqual(pick([v('a', '', 0.3), v('c', '', 0.7)]), ['a']);
+});

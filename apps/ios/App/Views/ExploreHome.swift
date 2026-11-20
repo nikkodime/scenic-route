@@ -17,6 +17,19 @@ struct ExploreHome: View {
                             }
                             .accessibilityLabel("Regions")
                         }
+                        ToolbarItem(placement: .topBarLeading) {
+                            Button { run(model.exploreMinutes, loop: !model.roundTrip) } label: {
+                                // Text, not a Label: iOS 26 toolbars drop a Label's title.
+                                HStack(spacing: 5) {
+                                    Image(systemName: "arrow.triangle.2.circlepath")
+                                    Text(model.roundTrip ? "Loops" : "Loop")
+                                }
+                                .font(Theme.sofia(14, .semibold)).foregroundStyle(model.roundTrip ? Theme.green : Theme.ink)
+                                .fixedSize()
+                            }
+                            .accessibilityHint(model.roundTrip ? "Switch to places to drive to" : "Switch to loops from here")
+                            .accessibilityIdentifier("loopToggle")
+                        }
                         ToolbarItem(placement: .topBarTrailing) { spanMenu }
                     }
             } else {
@@ -75,6 +88,7 @@ struct ExploreHome: View {
                 .toolbar(.hidden, for: .navigationBar)
             }
         }
+        .onAppear { loop = model.roundTrip }
         .task {
             if model.explore == nil, !model.isExploring { await model.runExplore() }
         }
