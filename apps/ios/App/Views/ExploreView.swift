@@ -122,12 +122,12 @@ struct PlaceCard: View {
                     }
                     .foregroundStyle(Theme.ink)
                     .padding(.horizontal, 10).frame(height: 28)
-                    .background(.white.opacity(0.82), in: Capsule())
+                    .background(Theme.surface.opacity(0.86), in: Capsule())
                     .padding(10)
                 }
                 .overlay(alignment: .topTrailing) {
                     ScoreRing(score: place.score, color: Theme.green, size: 54, inked: false)
-                        .padding(5).background(.white.opacity(0.72), in: Circle())
+                        .padding(5).background(Theme.surface.opacity(0.78), in: Circle())
                         .padding(8)
                 }
                 .overlay(alignment: .bottomTrailing) {

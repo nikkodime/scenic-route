@@ -10,3 +10,5 @@ export * from './exports.ts';
 export * from './contracts.ts';
 export * from './planner.ts';
 export * from './explore.ts';
+export * from './compare.ts';
+export * from './stops.ts';

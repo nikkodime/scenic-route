@@ -159,6 +159,7 @@ struct DriveView: View {
             VStack(spacing: 0) {
                 VStack(alignment: .leading, spacing: 12) {
                     maneuverCard
+                    if let d = route.nextDetour(afterKm: tracker.progressKm) { detourCard(d) }
                     if let t = sunsetIn { sunsetChip(t) }
                 }
                 .padding(.horizontal, 12)
@@ -179,11 +180,14 @@ struct DriveView: View {
 
     private var map: some View {
         Map(position: $camera) {
+            if route.source != "fastest", let f = model.fastest(for: route)?.line, !f.isEmpty {
+                MapPolyline(coordinates: f.map(\.cl)).stroke(Theme.ink3.opacity(0.85), style: StrokeStyle(lineWidth: 5, lineCap: .round, lineJoin: .round, dash: [10, 8]))
+            }
             MapPolyline(coordinates: route.line.map(\.cl)).stroke(Theme.green, style: StrokeStyle(lineWidth: 9, lineCap: .round, lineJoin: .round))
             ForEach(Array(route.moments.prefix(6).enumerated()), id: \.element.id) { i, m in
                 Annotation(m.name, coordinate: m.coordinate.cl) {
                     Text("\(i + 1)").font(Theme.sofia(12, .semibold)).foregroundStyle(Theme.green)
-                        .frame(width: 24, height: 24).background(.white, in: Circle())
+                        .frame(width: 24, height: 24).background(Theme.surface, in: Circle())
                         .overlay(Circle().strokeBorder(Theme.green, lineWidth: 2))
                 }
             }
@@ -227,6 +231,24 @@ struct DriveView: View {
         if let k = tracker.openViewsKm, k >= 1 { return "Open views for \(Int(k.rounded())) km" }
         if let m = tracker.nextMoment { return "Then \(m.name)" }
         return nil
+    }
+
+    /// Heads-up before the route leaves the fastest road: where to, and what it adds.
+    private func detourCard(_ d: Detour) -> some View {
+        let inKm = max(0, d.fromKm - tracker.progressKm)
+        return HStack(spacing: 10) {
+            Image(systemName: "arrow.triangle.branch").font(.system(size: 14, weight: .semibold)).foregroundStyle(.white)
+                .frame(width: 30, height: 30).background(Theme.green, in: Circle())
+            VStack(alignment: .leading, spacing: 1) {
+                Text(d.name.map { "Detour by \($0)" } ?? "Scenic detour").font(Theme.sofia(15, .semibold)).foregroundStyle(Theme.ink).lineLimit(1)
+                Text("In \(distanceText(inKm * 1000)) · +\(Int(d.extraMinutes)) min on the fastest road").font(Theme.sofia(13)).foregroundStyle(Theme.ink2).lineLimit(1).minimumScaleFactor(0.85)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 12).padding(.vertical, 10)
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16))
+        .shadow(color: Theme.ink.opacity(0.1), radius: 8, y: 2)
+        .accessibilityElement(children: .combine)
     }
 
     private func sunsetChip(_ text: String) -> some View {

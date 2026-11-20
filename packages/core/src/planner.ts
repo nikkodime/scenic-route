@@ -10,6 +10,8 @@ import { rankRoutes, retraced } from './rank.ts';
 import { assessConditions, weatherSamplePoints, type HourlyForecast } from './conditions.ts';
 import { isBlocked, routeAdvisories, type Advisory, type Zone } from './advisories.ts';
 import { appleMapsUrl, googleMapsUrl, shapingPoints } from './exports.ts';
+import { compareRoutes } from './compare.ts';
+import { suggestStops, type StopPlace, type StopSource } from './stops.ts';
 import type { Interest, PlanRequest, PlanResponse, Preferences, RouteOption, RouteStyle, Vehicle } from './contracts.ts';
 
 /** What each route style means: time budget as a share of the fastest drive, and what a minute costs in ranking. */
@@ -120,6 +122,19 @@ export interface Providers {
   weather?: WeatherSource;
   segments?: SegmentSource;
   zones?: (bbox: [number, number, number, number]) => Zone[] | Promise<Zone[]>;
+  /** Cafés, agriturismi, wineries and viewpoints with parking, for "stops worth making". */
+  stops?: StopSource;
+}
+
+/**
+ * Optional extras a plan can include. All on by default; a plan tier can switch them off
+ * (see docs/FEATURES.md) without touching the planner.
+ */
+export interface PlanFeatures {
+  /** "Leave at 15:40 to reach Pienza in golden light." */
+  goldenDeparture?: boolean;
+  /** Viewpoints, coffee, lunch and wine stops along each route. */
+  stops?: boolean;
 }
 
 export interface PlanOptions {
@@ -128,6 +143,7 @@ export interface PlanOptions {
   concurrency?: number;
   timeZone?: string;
   log?: (msg: string, extra?: unknown) => void;
+  features?: PlanFeatures;
 }
 
 interface Candidate {
@@ -308,7 +324,7 @@ export async function planRoutes(req: PlanRequest, p: Providers, opts: PlanOptio
     // What this driver would think of it: the same score with their loved places counted double.
     const fit = loved === features ? scored.score : scoreRoute({ route: c.path, features: loved, relief, segments, quiet }).score;
     const advisories = routeAdvisories({
-      line: c.path.line, unpavedKm: c.path.unpavedKm, tollKm: c.path.tollKm, ferryKm: c.path.ferryKm,
+      line: c.path.line, unpavedKm: c.path.unpavedKm, unpavedAtKm: c.path.unpavedAtKm, tollKm: c.path.tollKm, ferryKm: c.path.ferryKm,
       motorwayKmByCountry: c.path.motorwayKmByCountry, zones, date: departure, prefs: rules.prefs,
     });
     // A round trip that comes back the same way is half a drive: count it down.
@@ -346,13 +362,28 @@ export async function planRoutes(req: PlanRequest, p: Providers, opts: PlanOptio
     }
   }
 
+  // 7. Stops worth making: one lookup for the area of all chosen routes.
+  let stopPlaces: StopPlace[] = [];
+  if (p.stops && opts.features?.stops !== false && ranked.length) {
+    try { stopPlaces = await p.stops.stops(paddedBBox(ranked.flatMap((r) => [r.line[0], ...resample(r.line, 5)]), 2)); }
+    catch (e) { log('stops failed', e); }
+  }
+
   // The start and finish towns by name too ("Siena, Tuscany" -> "siena"), wherever OSM puts their node.
   const endNames = [req.origin.label, req.destination.label].flatMap((l) => (l ? [l.split(',')[0].trim().toLowerCase()] : []));
   if (best && best.source === 'fastest' && best.path.km > 0 && (best.path.motorwayKm ?? 0) / best.path.km > 0.5)
     warnings.push('No quieter road fits your time, so the fastest road leads. Allow more time or try "Most beautiful".');
+  // The fastest road is the baseline: each route's detours from it.
   const routes: RouteOption[] = ranked.map((r, i) => {
+    const highlights = r.scored.highlights.filter((h) => !endNames.includes(h.name.toLowerCase()));
+    const vs = r.source === 'fastest'
+      ? { extraKm: 0, extraMinutes: 0, sharedPct: 100, detours: [] }
+      : compareRoutes({ line: r.line, km: r.path.km, minutes: r.minutes, places: highlights }, { line: fastest.line, km: fastest.km, minutes: fastestMinutes });
     const stretch = bestStretch(r.scored.near, r.path.km);
-    const conditions = assessConditions({ line: r.line, km: r.path.km, minutes: r.minutes, departure, forecasts: forecasts[i], bestStretch: stretch, timeZone: opts.timeZone });
+    const mid = stretch ? (stretch.fromKm + stretch.toKm) / 2 : null;
+    const bestPlace = mid == null ? null : [...highlights].filter((h) => h.name && stretch && h.atKm >= stretch.fromKm && h.atKm <= stretch.toKm).sort((a, b) => Math.abs(a.atKm - mid) - Math.abs(b.atKm - mid))[0]?.name ?? null;
+    const conditions = assessConditions({ line: r.line, km: r.path.km, minutes: r.minutes, departure, forecasts: forecasts[i], bestStretch: stretch, bestPlace, now, golden: opts.features?.goldenDeparture !== false, timeZone: opts.timeZone });
+    const suggestedStops = stopPlaces.length ? suggestStops({ line: r.line, km: r.path.km, minutes: r.minutes, departure, places: stopPlaces, bestStretch: stretch, loveWine: req.interests.includes('countryside'), timeZone: opts.timeZone }) : [];
     const handoffPts = shapingPoints(r.line, [...req.stops, ...r.stops.filter((s) => s.count > 0)]);
     return {
       id: `${planId}-${i + 1}`,
@@ -367,13 +398,15 @@ export async function planRoutes(req: PlanRequest, p: Providers, opts: PlanOptio
       extraMinutes: Math.max(0, Math.round(r.minutes - fastestMinutes)),
       polyline: encodePolyline(r.line, 5),
       bbox: paddedBBox(r.line, 0),
-      highlights: r.scored.highlights.filter((h) => !endNames.includes(h.name.toLowerCase())),
+      highlights,
       scenicStops: r.stops.filter((s) => s.count > 0).map((s) => ({ lat: s.lat, lon: s.lon, name: s.name, types: s.types })),
       bestStretch: stretch,
       elevation: profile(r.elev),
       ...(r.path.steps?.length ? { steps: r.path.steps } : {}),
       conditions,
       advisories: r.advisories,
+      vsFastest: vs,
+      ...(suggestedStops.length ? { suggestedStops } : {}),
       handoff: {
         googleMaps: googleMapsUrl(req.origin, req.destination, handoffPts),
         appleMaps: appleMapsUrl(req.origin, req.destination, r.stops[0]),
@@ -381,12 +414,12 @@ export async function planRoutes(req: PlanRequest, p: Providers, opts: PlanOptio
     };
   });
 
-  const attribution = [...new Set([p.router.attribution, p.features.attribution, p.elevation?.attribution, p.weather?.attribution, p.segments?.attribution, '© OpenStreetMap contributors'].filter((x): x is string => !!x))];
+  const attribution = [...new Set([p.router.attribution, p.features.attribution, p.elevation?.attribution, p.weather?.attribution, p.segments?.attribution, stopPlaces.length ? p.stops?.attribution : undefined, '© OpenStreetMap contributors'].filter((x): x is string => !!x))];
   return {
     planId,
     modelVersion: SCORE_MODEL.version,
     budgetMinutes: budget,
-    fastest: { km: Math.round(fastest.km * 10) / 10, minutes: Math.round(fastestMinutes) },
+    fastest: { km: Math.round(fastest.km * 10) / 10, minutes: Math.round(fastestMinutes), polyline: encodePolyline(fastest.line, 5) },
     routes,
     warnings,
     attribution,

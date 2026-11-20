@@ -1,7 +1,7 @@
 // Light and weather along a timed route, turned into plain advice.
 
 import { cumulativeKm, pointAtKm, angleDiff, type LatLon } from './geo.ts';
-import { sunPosition, sunTimes } from './sun.ts';
+import { sunAtElevation, sunPosition, sunTimes } from './sun.ts';
 
 export interface HourlyForecast {
   time: string; // ISO
@@ -37,6 +37,71 @@ export interface Conditions {
   weather: WeatherAtPoint[];
   verdict: Verdict;
   notes: string[];
+  /** When to leave to drive the best stretch in golden light (sunset side), if that is still possible. */
+  goldenDeparture?: GoldenDeparture | null;
+}
+
+export interface GoldenDeparture {
+  /** Leave at this time (rounded to 5 minutes)... */
+  leaveAt: string;
+  /** ...to reach the middle of the best stretch at this time, with the sun about 4° high. */
+  reachAt: string;
+  sunset: string;
+  fromKm: number;
+  toKm: number;
+  /** A named place on the stretch, when there is one. */
+  place: string | null;
+  /** The planned departure already catches it (within 15 minutes). */
+  onTime: boolean;
+}
+
+/** Sun height that reads as "golden": warm, long shadows, not yet in the eyes on every bend. */
+export const GOLDEN_ELEVATION = 4;
+
+export interface GoldenInput {
+  line: LatLon[];
+  km: number;
+  minutes: number;
+  departure: Date;
+  /** Never suggest leaving before this (default: departure day's start, i.e. any time that day). */
+  now?: Date;
+  bestStretch?: { fromKm: number; toKm: number } | null;
+  place?: string | null;
+}
+
+/**
+ * "Leave at 15:40 to reach the Val d'Orcia at golden hour." Aims the middle of the best stretch (else the
+ * last third of the drive) at the moment the sun is GOLDEN_ELEVATION high there. Tries the departure day,
+ * then the next day.
+ */
+export function goldenDeparture({ line, km, minutes, departure, now, bestStretch = null, place = null }: GoldenInput): GoldenDeparture | null {
+  if (line.length < 2 || minutes <= 0) return null;
+  const cum = cumulativeKm(line);
+  const total = cum[cum.length - 1] || km || 1;
+  const stretch = bestStretch ?? { fromKm: Math.round(total * 0.55), toKm: Math.round(total * 0.85) };
+  const midKm = Math.min(total, (stretch.fromKm + stretch.toKm) / 2);
+  const at = pointAtKm(line, midKm, cum).point;
+  const offsetMs = (midKm / total) * minutes * 60000;
+  const earliest = (now ?? departure).getTime() - 5 * 60000;
+  const step = 5 * 60000;
+  for (let day = 0; day < 2; day++) {
+    const d = new Date(departure.getTime() + day * 86400000);
+    const golden = sunAtElevation(d, at.lat, at.lon, GOLDEN_ELEVATION, 'evening');
+    const sun = sunTimes(d, at.lat, at.lon);
+    if (!golden || !sun) continue;
+    const leave = Math.floor((golden.getTime() - offsetMs) / step) * step;
+    if (leave < earliest) continue;
+    return {
+      leaveAt: new Date(leave).toISOString(),
+      reachAt: new Date(leave + offsetMs).toISOString(),
+      sunset: sun.sunset.toISOString(),
+      fromKm: stretch.fromKm,
+      toKm: stretch.toKm,
+      place,
+      onTime: Math.abs(leave - departure.getTime()) <= 15 * 60000,
+    };
+  }
+  return null;
 }
 
 /** Points along a route at which to sample weather, with the time the driver gets there. */
@@ -117,10 +182,16 @@ export interface ConditionsInput {
   forecasts: HourlyForecast[][];
   /** Best scenic stretch, to say whether golden hour lands on it. */
   bestStretch?: { fromKm: number; toKm: number } | null;
+  /** A named place on the best stretch, for "Leave at 15:40 to reach Pienza in golden light". */
+  bestPlace?: string | null;
+  /** The real current time; golden departures before it are not suggested. */
+  now?: Date;
+  /** Suggest a golden-hour departure (a feature that can be switched off per plan). */
+  golden?: boolean;
   timeZone?: string;
 }
 
-export function assessConditions({ line, km, minutes, departure, forecasts, bestStretch = null, timeZone = 'Europe/Rome' }: ConditionsInput): Conditions {
+export function assessConditions({ line, km, minutes, departure, forecasts, bestStretch = null, bestPlace = null, now, golden: wantGolden = true, timeZone = 'Europe/Rome' }: ConditionsInput): Conditions {
   const end = line[line.length - 1];
   const arrival = new Date(departure.getTime() + minutes * 60000);
   const sun = sunTimes(arrival, end.lat, end.lon);
@@ -146,6 +217,11 @@ export function assessConditions({ line, km, minutes, departure, forecasts, best
   else if (verdict === 'poor') notes.push('Rain or low cloud will hide most views. Another day would be better.');
   else if (verdict === 'mixed') notes.push('Some cloud or showers: views may come and go.');
   else if (verdict === 'great') notes.push('Clear skies: a great day for this drive.');
+  const gd = wantGolden ? goldenDeparture({ line, km, minutes, departure, now, bestStretch, place: bestPlace }) : null;
+  if (gd && !gd.onTime) {
+    const sameDay = new Date(gd.leaveAt).toLocaleDateString('en-GB', { timeZone }) === departure.toLocaleDateString('en-GB', { timeZone });
+    notes.push(`Leave at ${hhmm(new Date(gd.leaveAt), timeZone)}${sameDay ? '' : ' tomorrow'} to reach ${gd.place ?? 'the best stretch'} in golden light.`);
+  }
 
   return {
     departure: departure.toISOString(),
@@ -158,5 +234,6 @@ export function assessConditions({ line, km, minutes, departure, forecasts, best
     weather,
     verdict,
     notes,
+    goldenDeparture: gd,
   };
 }

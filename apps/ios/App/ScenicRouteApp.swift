@@ -13,7 +13,6 @@ struct ScenicRouteApp: App {
                 .environment(model)
                 .tint(Theme.accent)
                 .font(Theme.bodyFont)
-                .preferredColorScheme(.light)
                 .task { await model.start() }
         }
     }

@@ -1,0 +1,1337 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "kind": "ztl",
+    "name": "Perugia",
+    "city": "Perugia",
+    "hours": "check the town’s signs",
+    "approx": true
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       12.3814,
+       43.1068
+      ],
+      [
+       12.3962,
+       43.1068
+      ],
+      [
+       12.3962,
+       43.1176
+      ],
+      [
+       12.3814,
+       43.1176
+      ],
+      [
+       12.3814,
+       43.1068
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "kind": "ztl",
+    "name": "Assisi",
+    "city": "Assisi",
+    "hours": "check the town’s signs",
+    "approx": true
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       12.6091,
+       43.0671
+      ],
+      [
+       12.6202,
+       43.0671
+      ],
+      [
+       12.6202,
+       43.0753
+      ],
+      [
+       12.6091,
+       43.0753
+      ],
+      [
+       12.6091,
+       43.0671
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "kind": "ztl",
+    "name": "Orvieto",
+    "city": "Orvieto",
+    "hours": "check the town’s signs",
+    "approx": true
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       12.1014,
+       42.7132
+      ],
+      [
+       12.1161,
+       42.7132
+      ],
+      [
+       12.1161,
+       42.724
+      ],
+      [
+       12.1014,
+       42.724
+      ],
+      [
+       12.1014,
+       42.7132
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "kind": "ztl",
+    "name": "Spoleto",
+    "city": "Spoleto",
+    "hours": "check the town’s signs",
+    "approx": true
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       12.7333,
+       42.7307
+      ],
+      [
+       12.7431,
+       42.7307
+      ],
+      [
+       12.7431,
+       42.7379
+      ],
+      [
+       12.7333,
+       42.7379
+      ],
+      [
+       12.7333,
+       42.7307
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "kind": "ztl",
+    "name": "Todi",
+    "city": "Todi",
+    "hours": "check the town’s signs",
+    "approx": true
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       12.4026,
+       42.7797
+      ],
+      [
+       12.4099,
+       42.7797
+      ],
+      [
+       12.4099,
+       42.7851
+      ],
+      [
+       12.4026,
+       42.7851
+      ],
+      [
+       12.4026,
+       42.7797
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "kind": "ztl",
+    "name": "Gubbio",
+    "city": "Gubbio",
+    "hours": "check the town’s signs",
+    "approx": true
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       12.573,
+       43.3486
+      ],
+      [
+       12.5816,
+       43.3486
+      ],
+      [
+       12.5816,
+       43.3549
+      ],
+      [
+       12.573,
+       43.3549
+      ],
+      [
+       12.573,
+       43.3486
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "kind": "ztl",
+    "name": "Spello",
+    "city": "Spello",
+    "hours": "check the town’s signs",
+    "approx": true
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       12.6687,
+       42.9887
+      ],
+      [
+       12.6749,
+       42.9887
+      ],
+      [
+       12.6749,
+       42.9932
+      ],
+      [
+       12.6687,
+       42.9932
+      ],
+      [
+       12.6687,
+       42.9887
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "kind": "ztl",
+    "name": "Montefalco",
+    "city": "Montefalco",
+    "hours": "check the town’s signs",
+    "approx": true
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       12.6482,
+       42.8905
+      ],
+      [
+       12.6519,
+       42.8905
+      ],
+      [
+       12.6519,
+       42.8932
+      ],
+      [
+       12.6482,
+       42.8932
+      ],
+      [
+       12.6482,
+       42.8905
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "kind": "ztl",
+    "name": "Bevagna",
+    "city": "Bevagna",
+    "hours": "check the town’s signs",
+    "approx": true
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       12.6067,
+       42.9323
+      ],
+      [
+       12.6116,
+       42.9323
+      ],
+      [
+       12.6116,
+       42.9359
+      ],
+      [
+       12.6067,
+       42.9359
+      ],
+      [
+       12.6067,
+       42.9323
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "kind": "ztl",
+    "name": "Città della Pieve",
+    "city": "Città della Pieve",
+    "hours": "check the town’s signs",
+    "approx": true
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       12.0019,
+       42.9509
+      ],
+      [
+       12.0068,
+       42.9509
+      ],
+      [
+       12.0068,
+       42.9545
+      ],
+      [
+       12.0019,
+       42.9545
+      ],
+      [
+       12.0019,
+       42.9509
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "kind": "ztl",
+    "name": "Narni",
+    "city": "Narni",
+    "hours": "check the town’s signs",
+    "approx": true
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       12.5122,
+       42.5173
+      ],
+      [
+       12.5183,
+       42.5173
+      ],
+      [
+       12.5183,
+       42.5218
+      ],
+      [
+       12.5122,
+       42.5218
+      ],
+      [
+       12.5122,
+       42.5173
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "kind": "ztl",
+    "name": "Amelia",
+    "city": "Amelia",
+    "hours": "check the town’s signs",
+    "approx": true
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       12.4143,
+       42.5517
+      ],
+      [
+       12.4192,
+       42.5517
+      ],
+      [
+       12.4192,
+       42.5553
+      ],
+      [
+       12.4143,
+       42.5553
+      ],
+      [
+       12.4143,
+       42.5517
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "kind": "ztl",
+    "name": "Massa Marittima",
+    "city": "Massa Marittima",
+    "hours": "check the town’s signs",
+    "approx": true
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       10.8849,
+       43.0478
+      ],
+      [
+       10.8911,
+       43.0478
+      ],
+      [
+       10.8911,
+       43.0523
+      ],
+      [
+       10.8849,
+       43.0523
+      ],
+      [
+       10.8849,
+       43.0478
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "kind": "ztl",
+    "name": "Castiglion Fiorentino",
+    "city": "Castiglion Fiorentino",
+    "hours": "check the town’s signs",
+    "approx": true
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       11.9213,
+       43.3399
+      ],
+      [
+       11.9263,
+       43.3399
+      ],
+      [
+       11.9263,
+       43.3435
+      ],
+      [
+       11.9213,
+       43.3435
+      ],
+      [
+       11.9213,
+       43.3399
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "kind": "ztl",
+    "name": "Monteriggioni",
+    "city": "Monteriggioni",
+    "hours": "check the town’s signs",
+    "approx": true
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       11.2224,
+       43.3891
+      ],
+      [
+       11.2248,
+       43.3891
+      ],
+      [
+       11.2248,
+       43.3909
+      ],
+      [
+       11.2224,
+       43.3909
+      ],
+      [
+       11.2224,
+       43.3891
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "kind": "ztl",
+    "name": "Anghiari",
+    "city": "Anghiari",
+    "hours": "check the town’s signs",
+    "approx": true
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       12.0531,
+       43.5399
+      ],
+      [
+       12.0561,
+       43.5399
+      ],
+      [
+       12.0561,
+       43.5421
+      ],
+      [
+       12.0531,
+       43.5421
+      ],
+      [
+       12.0531,
+       43.5399
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "kind": "ztl",
+    "name": "Barga",
+    "city": "Barga",
+    "hours": "check the town’s signs",
+    "approx": true
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       10.4824,
+       44.0726
+      ],
+      [
+       10.4861,
+       44.0726
+      ],
+      [
+       10.4861,
+       44.0753
+      ],
+      [
+       10.4824,
+       44.0753
+      ],
+      [
+       10.4824,
+       44.0726
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "kind": "ztl",
+    "name": "Chiusi",
+    "city": "Chiusi",
+    "hours": "check the town’s signs",
+    "approx": true
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       11.9453,
+       43.0147
+      ],
+      [
+       11.9502,
+       43.0147
+      ],
+      [
+       11.9502,
+       43.0183
+      ],
+      [
+       11.9453,
+       43.0183
+      ],
+      [
+       11.9453,
+       43.0147
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "kind": "ztl",
+    "name": "Sansepolcro",
+    "city": "Sansepolcro",
+    "hours": "check the town’s signs",
+    "approx": true
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       12.1366,
+       43.5674
+      ],
+      [
+       12.1441,
+       43.5674
+      ],
+      [
+       12.1441,
+       43.5728
+      ],
+      [
+       12.1366,
+       43.5728
+      ],
+      [
+       12.1366,
+       43.5674
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "kind": "ztl",
+    "name": "Fiesole",
+    "city": "Fiesole",
+    "hours": "check the town’s signs",
+    "approx": true
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       11.2912,
+       43.8053
+      ],
+      [
+       11.2949,
+       43.8053
+      ],
+      [
+       11.2949,
+       43.808
+      ],
+      [
+       11.2912,
+       43.808
+      ],
+      [
+       11.2912,
+       43.8053
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "kind": "ztl",
+    "name": "Certaldo Alto",
+    "city": "Certaldo Alto",
+    "hours": "check the town’s signs",
+    "approx": true
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       11.0391,
+       43.5463
+      ],
+      [
+       11.0428,
+       43.5463
+      ],
+      [
+       11.0428,
+       43.5491
+      ],
+      [
+       11.0391,
+       43.5491
+      ],
+      [
+       11.0391,
+       43.5463
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "kind": "ztl",
+    "name": "Montefiascone",
+    "city": "Montefiascone",
+    "hours": "check the town’s signs",
+    "approx": true
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       12.0286,
+       42.5361
+      ],
+      [
+       12.0334,
+       42.5361
+      ],
+      [
+       12.0334,
+       42.5397
+      ],
+      [
+       12.0286,
+       42.5397
+      ],
+      [
+       12.0286,
+       42.5361
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "kind": "ztl",
+    "name": "Urbino",
+    "city": "Urbino",
+    "hours": "check the town’s signs",
+    "approx": true
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       12.6319,
+       43.7231
+      ],
+      [
+       12.6407,
+       43.7231
+      ],
+      [
+       12.6407,
+       43.7294
+      ],
+      [
+       12.6319,
+       43.7294
+      ],
+      [
+       12.6319,
+       43.7231
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "kind": "ztl",
+    "name": "Pistoia",
+    "city": "Pistoia",
+    "hours": "check the town’s signs",
+    "approx": true
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       10.9114,
+       43.9292
+      ],
+      [
+       10.9226,
+       43.9292
+      ],
+      [
+       10.9226,
+       43.9374
+      ],
+      [
+       10.9114,
+       43.9374
+      ],
+      [
+       10.9114,
+       43.9292
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "kind": "ztl",
+    "name": "Prato",
+    "city": "Prato",
+    "hours": "check the town’s signs",
+    "approx": true
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       11.0904,
+       43.8765
+      ],
+      [
+       11.1028,
+       43.8765
+      ],
+      [
+       11.1028,
+       43.8855
+      ],
+      [
+       11.0904,
+       43.8855
+      ],
+      [
+       11.0904,
+       43.8765
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "kind": "ztl",
+    "name": "Grosseto",
+    "city": "Grosseto",
+    "hours": "check the town’s signs",
+    "approx": true
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       11.1094,
+       42.7574
+      ],
+      [
+       11.118,
+       42.7574
+      ],
+      [
+       11.118,
+       42.7638
+      ],
+      [
+       11.1094,
+       42.7638
+      ],
+      [
+       11.1094,
+       42.7574
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "kind": "ztl",
+    "name": "Pitigliano",
+    "city": "Pitigliano",
+    "hours": "check the town’s signs",
+    "approx": true
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       11.6673,
+       42.6335
+      ],
+      [
+       11.6721,
+       42.6335
+      ],
+      [
+       11.6721,
+       42.6371
+      ],
+      [
+       11.6673,
+       42.6371
+      ],
+      [
+       11.6673,
+       42.6335
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "kind": "ztl",
+    "name": "Lucignano",
+    "city": "Lucignano",
+    "hours": "check the town’s signs",
+    "approx": true
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       11.7445,
+       43.2729
+      ],
+      [
+       11.7475,
+       43.2729
+      ],
+      [
+       11.7475,
+       43.2751
+      ],
+      [
+       11.7445,
+       43.2751
+      ],
+      [
+       11.7445,
+       43.2729
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "kind": "ztl",
+    "name": "Viterbo",
+    "city": "Viterbo",
+    "hours": "check the town’s signs",
+    "approx": true
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       12.0987,
+       42.4116
+      ],
+      [
+       12.1133,
+       42.4116
+      ],
+      [
+       12.1133,
+       42.4224
+      ],
+      [
+       12.0987,
+       42.4224
+      ],
+      [
+       12.0987,
+       42.4116
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "kind": "ztl",
+    "name": "Bologna",
+    "city": "Bologna",
+    "hours": "check the town’s signs",
+    "approx": true
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       11.3289,
+       44.484
+      ],
+      [
+       11.3567,
+       44.484
+      ],
+      [
+       11.3567,
+       44.5038
+      ],
+      [
+       11.3289,
+       44.5038
+      ],
+      [
+       11.3289,
+       44.484
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "kind": "ztl",
+    "name": "Ferrara",
+    "city": "Ferrara",
+    "hours": "check the town’s signs",
+    "approx": true
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       11.6114,
+       44.831
+      ],
+      [
+       11.6266,
+       44.831
+      ],
+      [
+       11.6266,
+       44.8418
+      ],
+      [
+       11.6114,
+       44.8418
+      ],
+      [
+       11.6114,
+       44.831
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "kind": "ztl",
+    "name": "Ravenna",
+    "city": "Ravenna",
+    "hours": "check the town’s signs",
+    "approx": true
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       12.1927,
+       44.4125
+      ],
+      [
+       12.2053,
+       44.4125
+      ],
+      [
+       12.2053,
+       44.4215
+      ],
+      [
+       12.1927,
+       44.4215
+      ],
+      [
+       12.1927,
+       44.4125
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "kind": "ztl",
+    "name": "Mantova",
+    "city": "Mantova",
+    "hours": "check the town’s signs",
+    "approx": true
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       10.7896,
+       45.1545
+      ],
+      [
+       10.8024,
+       45.1545
+      ],
+      [
+       10.8024,
+       45.1635
+      ],
+      [
+       10.7896,
+       45.1635
+      ],
+      [
+       10.7896,
+       45.1545
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "kind": "ztl",
+    "name": "Verona",
+    "city": "Verona",
+    "hours": "check the town’s signs",
+    "approx": true
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       10.985,
+       45.4357
+      ],
+      [
+       11.003,
+       45.4357
+      ],
+      [
+       11.003,
+       45.4483
+      ],
+      [
+       10.985,
+       45.4483
+      ],
+      [
+       10.985,
+       45.4357
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "kind": "ztl",
+    "name": "Bergamo Città Alta",
+    "city": "Bergamo Città Alta",
+    "hours": "check the town’s signs",
+    "approx": true
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       9.6571,
+       45.7001
+      ],
+      [
+       9.6675,
+       45.7001
+      ],
+      [
+       9.6675,
+       45.7073
+      ],
+      [
+       9.6571,
+       45.7073
+      ],
+      [
+       9.6571,
+       45.7001
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "kind": "ztl",
+    "name": "Roma",
+    "city": "Roma",
+    "hours": "check the town’s signs",
+    "approx": true
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       12.4575,
+       41.8842
+      ],
+      [
+       12.4963,
+       41.8842
+      ],
+      [
+       12.4963,
+       41.913
+      ],
+      [
+       12.4575,
+       41.913
+      ],
+      [
+       12.4575,
+       41.8842
+      ]
+     ]
+    ]
+   }
+  }
+ ]
+}

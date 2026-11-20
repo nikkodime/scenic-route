@@ -11,6 +11,7 @@ struct RouteDetailView: View {
     @State private var rated: Bool?
     @State private var page = 0
     @State private var photos: [String: Photo] = [:]
+    @State private var card: SharedDrive?
 
     private var moments: [ScenicMoment] { route.moments }
 
@@ -20,23 +21,44 @@ struct RouteDetailView: View {
                 hero
                 metrics.padding(.horizontal, Theme.gutter)
                 scoreParts.padding(.horizontal, Theme.gutter)
+                if let f = model.fastest(for: route) { VsFastestSection(route: route, fastest: f).padding(.horizontal, Theme.gutter) }
                 if moments.contains(where: { photos[$0.id] != nil }) { highlightStrip }
                 if let e = route.elevation, e.count > 1 {
                     ElevationProfile(samples: e, sunset: Format.time(route.conditions?.sunset)).padding(.horizontal, Theme.gutter)
                 }
                 if let c = route.conditions { light(c).padding(.horizontal, Theme.gutter) }
                 if !route.advisories.isEmpty { goodToKnow.padding(.horizontal, Theme.gutter) }
+                if let stops = route.suggestedStops, !stops.isEmpty {
+                    StopsSection(stops: stops) { s in Task { await model.addStop(s, on: route) } }
+                }
                 rating.padding(.horizontal, Theme.gutter)
             }
             .padding(.bottom, 110)
         }
         .background(Theme.background)
-        .task(id: route.id) { photos = await model.distinctPhotos(for: Array(moments.prefix(10))) }
+        .task(id: route.id) {
+            photos = await model.distinctPhotos(for: Array(moments.prefix(10)))
+            card = await model.shareCard(for: route)
+        }
         .safeAreaInset(edge: .bottom) { driveBar }
         .accessibilityIdentifier("routeDetail")
         .navigationTitle(route.label)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(Theme.paper, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
         .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                if let card {
+                    ShareLink(item: card, subject: Text(card.title), message: Text("\(card.title): a scenic drive on Panoramica"),
+                              preview: SharePreview(card.title, image: Image(uiImage: card.image))) {
+                        Image(systemName: "square.and.arrow.up")
+                    }
+                    .accessibilityLabel("Share this drive")
+                    .accessibilityIdentifier("shareDrive")
+                } else {
+                    Image(systemName: "square.and.arrow.up").foregroundStyle(Theme.ink3).accessibilityHidden(true)
+                }
+            }
             ToolbarItem(placement: .primaryAction) {
                 Button { Task { await model.save(route: route); saved = true } } label: {
                     Image(systemName: saved ? "bookmark.fill" : "bookmark")
@@ -56,7 +78,7 @@ struct RouteDetailView: View {
                     .overlay(alignment: .bottomLeading) { caption(m) }
                     .tag(i)
             }
-            RouteMap(routes: [route], selectedID: route.id, camera: $camera)
+            RouteMap(routes: [route], selectedID: route.id, camera: $camera, fastest: model.fastest(for: route)?.line ?? [])
                 .tag(99)
         }
         .tabViewStyle(.page(indexDisplayMode: .always))
@@ -66,7 +88,7 @@ struct RouteDetailView: View {
             if page != 99 {
                 StampView(score: Int(route.score.rounded()), place: model.destinationShortName, date: Date(), ink: Theme.green, size: 96, seed: route.rank)
                     .padding(4)
-                    .background(.white.opacity(0.72), in: Circle())
+                    .background(Theme.surface.opacity(0.78), in: Circle())
                     .padding(14)
             }
         }
@@ -146,8 +168,12 @@ struct RouteDetailView: View {
                 if let t = Format.time(c.departure) { tile("car.fill", t, "Leave") }
                 if let t = Format.time(c.arrival) { tile("flag.checkered", t, "Arrive") }
                 if let t = Format.time(c.sunset) { tile("sunset.fill", t, "Sunset", tint: Theme.terracotta) }
-                if let w = c.weather.first { tile(w.precipProb > 40 ? "cloud.rain.fill" : w.cloud > 60 ? "cloud.fill" : "sun.max.fill", "\(Int(w.cloud))%", "Cloud") }
             }
+            if let g = c.goldenDeparture {
+                GoldenDepartureCard(golden: g, departure: c.departure) { date in Task { await model.leave(at: date) } }
+            }
+            if c.weather.count > 1 { WeatherAlong(samples: c.weather) }
+            else if let w = c.weather.first { tile(WeatherAlong.symbol(w), "\(Int(w.cloud))%", "Cloud") }
             let flags = lightFlags(c)
             if !flags.isEmpty {
                 ChipFlow(spacing: 8) {

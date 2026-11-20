@@ -11,11 +11,9 @@ struct ScenicPassView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                IslandView(region: .dolomites, fill: true)
-                    .frame(height: 250).frame(maxWidth: .infinity).clipped()
-                    .overlay(alignment: .bottom) {
-                        LinearGradient(colors: [Theme.background.opacity(0), Theme.background], startPoint: .top, endPoint: .bottom).frame(height: 80)
-                    }
+                IslandView(region: .dolomites, fit: 1.0, lift: -0.02, interactive: false)
+                    .frame(height: 320).frame(maxWidth: .infinity)
+                    .background(LinearGradient(colors: [Theme.sky, Theme.background], startPoint: .top, endPoint: .bottom).padding(.top, -200))
                 VStack(alignment: .leading, spacing: 0) {
                     Text("SCENIC PASS").font(Theme.labelFont).tracking(1).foregroundStyle(Theme.green)
                     Text("Plan the whole journey, not just the day")
@@ -29,12 +27,12 @@ struct ScenicPassView: View {
                     }
                     .padding(.top, 24)
                     HStack(spacing: 10) {
-                        plan(on: yearly, title: "Yearly", price: "€29.99", note: "€2.50 a month", badge: "Save 50%") { yearly = true }
-                        plan(on: !yearly, title: "Monthly", price: "€4.99", note: "cancel any time", badge: nil) { yearly = false }
+                        plan(on: yearly, title: "Yearly", price: "€34.99", note: "€2.92 a month", badge: "Save 50%") { yearly = true }
+                        plan(on: !yearly, title: "Monthly", price: "€5.99", note: "cancel any time", badge: nil) { yearly = false }
                     }
                     .padding(.top, 28)
                     Button { notYet = true } label: {
-                        Text("Try 14 days free").font(Theme.buttonFont).foregroundStyle(Theme.onAccent)
+                        Text("Try 7 days free").font(Theme.buttonFont).foregroundStyle(Theme.onAccent)
                             .frame(maxWidth: .infinity, minHeight: 56)
                             .background(Theme.green, in: RoundedRectangle(cornerRadius: 16))
                     }

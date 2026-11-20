@@ -1,0 +1,72 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { compareRoutes, planRoutes, PlanRequestSchema, PlanResponseSchema, lineLengthKm } from '../src/index.ts';
+import { SIENA, MONTALCINO, wigglyLine, fakeProviders } from './fixtures.ts';
+
+const DEST = { lat: 42.95, lon: 11.85 };
+
+test('a detour through Pienza is found, named, and its minutes add up to the extra time', () => {
+  const fastLine = wigglyLine([SIENA, DEST]);
+  // On the fast road for 10 km, out west to a village, back onto the fast road at 30 km, then on it to the end.
+  const out = fastLine[50], back = fastLine[150];
+  const VILLAGE = { lat: 43.12, lon: 11.28 };
+  const line = [...fastLine.slice(0, 50), ...wigglyLine([out, VILLAGE, back]), ...fastLine.slice(151)];
+  const km = lineLengthKm(line), fkm = lineLengthKm(fastLine);
+  const c = compareRoutes(
+    { line, km, minutes: km, places: [{ name: 'Pienza', atKm: 25 }] },
+    { line: fastLine, km: fkm, minutes: fkm * 0.8 },
+  );
+  assert.equal(c.detours.length, 1);
+  const d = c.detours[0];
+  assert.ok(d.fromKm > 8 && d.fromKm < 12, `leaves at ${d.fromKm}`);
+  assert.ok(Math.abs(d.rejoin.lat - back.lat) < 0.01, 'rejoins where it came back');
+  assert.equal(d.name, 'Pienza');
+  assert.ok(d.extraKm > 0 && d.extraKm <= c.extraKm + 0.5);
+  assert.equal(c.detours.reduce((s, x) => s + x.extraMinutes, 0), c.extraMinutes);
+  assert.ok(c.sharedPct > 30 && c.sharedPct < 90, `${c.sharedPct}`);
+});
+
+test('the same road twice has no detours', () => {
+  const line = wigglyLine([SIENA, MONTALCINO]);
+  const km = lineLengthKm(line);
+  const c = compareRoutes({ line, km, minutes: 40 }, { line, km, minutes: 40 });
+  assert.deepEqual(c.detours, []);
+  assert.equal(c.sharedPct, 100);
+  assert.equal(c.extraMinutes, 0);
+});
+
+test('plan: every route is compared with the fastest road, which comes back as a line', async () => {
+  const p = fakeProviders();
+  const res = await planRoutes(PlanRequestSchema.parse({ origin: SIENA, destination: DEST, extraMinutes: 60, departAt: '2026-06-01T07:00:00Z' }), p);
+  PlanResponseSchema.parse(res);
+  assert.ok(res.fastest.polyline && res.fastest.polyline.length > 10);
+  for (const r of res.routes) {
+    assert.ok(r.vsFastest, r.label);
+    assert.equal(r.vsFastest!.extraMinutes, r.extraMinutes);
+    if (r.source !== 'fastest' && r.vsFastest!.detours.length) assert.equal(r.vsFastest!.detours.reduce((s, d) => s + d.extraMinutes, 0), r.extraMinutes);
+  }
+  assert.ok(res.routes.some((r) => r.vsFastest!.detours.length > 0));
+});
+
+test('a shorter quieter road says so: negative extra km, and no shared road means one detour', () => {
+  const fast = wigglyLine([SIENA, { lat: 43.25, lon: 11.8 }, DEST]);
+  const line = wigglyLine([SIENA, { lat: 43.1, lon: 11.5 }, DEST]);
+  const c = compareRoutes({ line, km: 56, minutes: 80 }, { line: fast, km: 69.5, minutes: 75 });
+  assert.equal(c.extraKm, -13.5);
+  assert.equal(c.extraMinutes, 5);
+  assert.ok(c.sharedPct < 15);
+});
+
+test('detours a couple of km apart merge into one, and free ones are dropped', () => {
+  const fastLine = wigglyLine([SIENA, DEST]);
+  const bump = (from: number, to: number, off: number) => {
+    const a = fastLine[from], b = fastLine[to];
+    return wigglyLine([a, { lat: (a.lat + b.lat) / 2 + off, lon: (a.lon + b.lon) / 2 - off }, b]);
+  };
+  // Two detours with 2 km of fast road between them, then a long gap and a third one.
+  const line = [...fastLine.slice(0, 20), ...bump(20, 40, 0.03), ...fastLine.slice(41, 50), ...bump(50, 70, 0.03), ...fastLine.slice(71, 200), ...bump(200, 230, 0.05), ...fastLine.slice(231)];
+  const km = lineLengthKm(line), fkm = lineLengthKm(fastLine);
+  const c = compareRoutes({ line, km, minutes: km }, { line: fastLine, km: fkm, minutes: fkm * 0.8 });
+  assert.equal(c.detours.length, 2, JSON.stringify(c.detours.map((d) => [d.fromKm, d.toKm])));
+  assert.equal(c.detours.reduce((s, d) => s + d.extraMinutes, 0), c.extraMinutes);
+});

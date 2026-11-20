@@ -1,9 +1,12 @@
 import './theme.css';
+import { appearance, setAppearance, type Appearance } from './appearance.ts';
 import { toGpx, decodePolyline, INTERESTS, ROUTE_STYLES, VEHICLES, type GeocodeResult, type Interest, type RouteOption, type RouteStyle, type Trip, type Vehicle } from '@scenic/core';
 import { api } from './api.ts';
 import type { ExploreDestination, ExploreResponse, Place } from '@scenic/core';
 import { RouteMap } from './map.ts';
+import { IslandStage } from './stage.ts';
 import { icon } from './icons.ts';
+import { drawShareCard, goldenChip, localInputValue, parseShareHash, shareCard, shareHash, shareTitle, stopsStrip, weatherStrip } from './extras.ts';
 import {
   INTEREST_LABELS, LIMIT_CHOICES, STYLE_BLURBS, STYLE_LABELS, VEHICLE_LABELS, addDay, normalize, toggleInterest, updateJourney, chosenRoute, defaultName, duration, fromTrip, newJourney, removeDay, toTrip, totals, updateDay,
   type DayPlan, type Journey,
@@ -30,6 +33,9 @@ const saveDraft = (j: Journey) => { try { localStorage.setItem(DRAFT_KEY, JSON.s
 const state: State = { journey: loadDraft() ?? newJourney(uuid()), active: 0, busy: null, error: null, view: 'plan', trips: null, explore: { origin: null, minutes: 120, roundTrip: false, result: null, busy: false } };
 const panel = document.getElementById('panel')!;
 const map = new RouteMap(document.getElementById('map')!);
+// A big live island floats over the map while it is empty or while roads are being found.
+const stage = new IslandStage(document.getElementById('map')!);
+stage.onPickRegion = (_k, p) => set({ view: 'explore', explore: { ...state.explore, origin: { lat: p.lat, lon: p.lon, label: p.label }, result: null }, error: null });
 map.onPick = (id) => { const d = state.journey.days[state.active]; if (d) set({ journey: updateDay(state.journey, state.active, { chosenRouteId: id }) }); };
 
 const esc = (s: unknown) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
@@ -43,6 +49,7 @@ function set(patch: Partial<State>) {
 }
 
 function syncMap() {
+  syncStage();
   if (state.view === 'explore') {
     const res = state.explore.result;
     if (res?.destinations.length) map.showPlaces(res.destinations);
@@ -50,8 +57,19 @@ function syncMap() {
     return;
   }
   const d = state.journey.days[state.active];
-  if (d?.plan?.routes.length) map.show(d.plan.routes, d.chosenRouteId);
+  if (d?.plan?.routes.length) map.show(d.plan.routes, d.chosenRouteId, d.plan.fastest);
   else map.clear();
+}
+
+function syncStage() {
+  if (state.view === 'explore') {
+    const x = state.explore;
+    stage.sync({ show: x.busy || !x.result?.destinations.length, busy: x.busy, near: x.origin });
+    return;
+  }
+  const d = state.journey.days[state.active];
+  const busy = state.busy !== null;
+  stage.sync({ show: busy || !d?.plan?.routes.length, busy, near: d?.destination ?? d?.origin ?? null });
 }
 
 function toast(msg: string) {
@@ -84,10 +102,24 @@ const STYLE_CREDIT: Record<RouteStyle, string> = { relaxed: '© Repuli · CC BY-
 const VEHICLE_ICON: Record<Vehicle, string> = { car: 'car', campervan: 'campervan', caravan: 'caravan' };
 const hhmm = (iso?: string | null) => (iso ? new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '');
 
+/** The wordmark in ink by day, the pale version after dark (CSS shows the one that fits). */
+function wordmark(): string {
+  const b = import.meta.env.BASE_URL;
+  return `<img class="wordmark on-light" src="${b}wordmark.svg" alt="Panoramica" width="150" height="22" /><img class="wordmark on-dark" src="${b}wordmark-dark.svg" alt="" width="150" height="22" />`;
+}
+
+const APPEARANCE_NEXT: Record<Appearance, Appearance> = { auto: 'light', light: 'dark', dark: 'auto' };
+const APPEARANCE_LABEL: Record<Appearance, string> = { auto: 'Automatic (follows your system)', light: 'Light', dark: 'Dark' };
+const APPEARANCE_ICON: Record<Appearance, string> = { auto: 'auto', light: 'sun', dark: 'moon' };
+function themeButton(): string {
+  const a = appearance();
+  return `<button class="theme-btn" data-action="appearance" aria-label="Appearance: ${APPEARANCE_LABEL[a]}. Change" title="Appearance: ${APPEARANCE_LABEL[a]}">${icon(APPEARANCE_ICON[a], 18)}</button>`;
+}
+
 function header(title: string): string {
   return `<header class="day-head">
-      <div><img class="wordmark" src="${import.meta.env.BASE_URL}wordmark.svg" alt="Panoramica" width="150" height="22" /><h1>${title}</h1></div>
-      <button class="btn link" data-action="trips">My trips</button>
+      <div>${wordmark()}<h1>${title}</h1></div>
+      <div class="head-actions">${themeButton()}<button class="btn link" data-action="trips">My trips</button></div>
     </header>`;
 }
 
@@ -223,7 +255,7 @@ function dayCard(d: DayPlan, i: number): string {
     </div>
     <button class="btn primary" data-action="plan" data-day="${i}" ${d.origin && d.destination && !busy ? '' : 'disabled'}>${busy ? '<span class="spin"></span>' : `${d.plan ? 'Plan again' : 'Show routes'} ${icon('chevron', 16)}`}</button>
     ${d.plan ? results(d, i) : ''}
-    ${r ? detail(r) : ''}
+    ${r ? detail(r, d.plan?.fastest, i) : ''}
   </section>`;
 }
 
@@ -267,7 +299,8 @@ function results(d: DayPlan, i: number) {
         </div>
         <div class="body">
           <h3>${esc(r.label)}</h3>
-          <div class="statrow"><span>${icon('clock', 15)}${duration(r.minutes)}</span>${r.extraMinutes >= 1 ? `<span class="extra">+${duration(r.extraMinutes)}</span>` : ''}<span>${icon('dist', 15)}${Math.round(r.km)} km</span></div>
+          <div class="statrow"><span>${icon('clock', 15)}${duration(r.minutes)}</span><span>${icon('dist', 15)}${Math.round(r.km)} km</span></div>
+          ${vsStrip(r)}
           ${scoreRow(r)}
         </div>
       </button>`;
@@ -276,16 +309,70 @@ function results(d: DayPlan, i: number) {
   </div>`;
 }
 
-function detail(r: RouteOption) {
+const km = (x: number) => (Math.abs(x) < 1 ? '' : `<span>${x > 0 ? '+' : '−'}${Math.round(Math.abs(x))} km</span>`);
+
+/** "+38 min · +13 km": what this route costs against the fastest road. */
+function vsStrip(r: RouteOption) {
+  const v = r.vsFastest;
+  if (!v || r.source === 'fastest') return r.source === 'fastest' ? `<div class="vs"><span>Fastest road</span></div>` : '';
+  return `<div class="vs" aria-label="Compared with the fastest road"><span>+${duration(v.extraMinutes)}</span>${km(v.extraKm)}</div>`;
+}
+
+/** Time bars against the fastest road, and a ribbon of where the route turns off. */
+function compare(r: RouteOption, fastest: { minutes: number }) {
+  const v = r.vsFastest;
+  if (!v || r.source === 'fastest') return '';
+  const maxMin = Math.max(r.minutes, fastest.minutes, 1);
+  const bars = (rows: [string, number, number, string][]) => `<div class="cmp">${rows.map(([k, x, max, txt], n) => `<div class="${n === 0 ? 'direct' : ''}"><span>${k}</span><i style="--w:${Math.max(2, (100 * x) / max)}%"></i><b>${txt}</b></div>`).join('')}</div>`;
+  return `
+    <span class="label">Against the fastest road</span>
+    ${bars([['Fastest', fastest.minutes, maxMin, duration(fastest.minutes)], ['This', r.minutes, maxMin, duration(r.minutes)]])}
+    ${v.sharedPct < 15 ? `<p class="note">A different road from start to finish.</p>` : v.detours.length ? `<span class="label">Where you turn off</span>${ribbon(r)}` : ''}`;
+}
+
+const clip = (s: string, n: number) => (s.length > n ? `${s.slice(0, n - 1).trimEnd()}…` : s);
+
+function ribbon(r: RouteOption) {
+  const W = 300, x0 = 8, x1 = W - 8, y = 58, km = r.km || 1;
+  const X = (k: number) => x0 + ((x1 - x0) * Math.min(km, Math.max(0, k))) / km;
+  const maxMin = Math.max(...r.vsFastest!.detours.map((d) => d.extraMinutes), 1);
+  let path = `M${x0} ${y}`;
+  const labels: string[] = [];
+  // Label the costliest detours first; skip a label that would sit on top of one already placed.
+  const placed: number[] = [];
+  const labelled = new Set([...r.vsFastest!.detours].sort((a, b) => b.extraMinutes - a.extraMinutes).filter((d) => {
+    const cx = (X(d.fromKm) + X(d.toKm)) / 2;
+    if (placed.some((p) => Math.abs(p - cx) < 74)) return false;
+    placed.push(cx);
+    return true;
+  }));
+  for (const d of r.vsFastest!.detours) {
+    const a = X(d.fromKm), b = X(d.toKm), h = 14 + 34 * (d.extraMinutes / maxMin);
+    path += ` L${a.toFixed(1)} ${y} Q${((a + b) / 2).toFixed(1)} ${(y - 2 * h).toFixed(1)} ${b.toFixed(1)} ${y}`;
+    const cx = Math.min(x1 - 30, Math.max(x0 + 30, (a + b) / 2));
+    if (labelled.has(d)) labels.push(`<text x="${cx.toFixed(1)}" y="${y + 18}">${esc(clip(d.name ?? '', 18))}</text><text class="m" x="${cx.toFixed(1)}" y="${y + 32}">+${d.extraMinutes} min</text>`);
+  }
+  path += ` L${x1} ${y}`;
+  return `<svg class="ribbon" viewBox="0 0 ${W} ${y + 38}" role="img" aria-label="Where this route leaves the fastest road">
+    <line x1="${x0}" y1="${y}" x2="${x1}" y2="${y}" class="g"/><path d="${path}" class="s"/>
+    <circle cx="${x0}" cy="${y}" r="4.5" class="a"/><circle cx="${x1}" cy="${y}" r="4.5" class="b"/>${labels.join('')}</svg>`;
+}
+
+function detail(r: RouteOption, fastest?: { minutes: number }, day = state.active) {
   const c = r.conditions;
   return `<div class="field">
+    ${fastest ? compare(r, fastest) : ''}
     ${c ? `<div class="statrow"><span>${icon('clock', 15)}${hhmm(c.arrival)}</span><span class="sun">${icon('sunset', 15)}${hhmm(c.sunset)}</span></div>` : ''}
-    ${(c?.notes ?? []).map((n) => `<p class="note ${/fog|rain|dark|hidden|Low sun/i.test(n) ? 'warn' : /Clear|Golden/.test(n) ? 'good' : 'weather'}">${esc(n)}</p>`).join('')}
+    ${c ? goldenChip(c, day) : ''}
+    ${c ? weatherStrip(c) : ''}
+    ${(c?.notes ?? []).filter((n) => !/^Leave at|^Golden hour lands/.test(n)).map((n) => `<p class="note ${/fog|rain|dark|hidden|Low sun/i.test(n) ? 'warn' : /Clear|Golden/.test(n) ? 'good' : 'weather'}">${esc(n)}</p>`).join('')}
     ${r.advisories.map((a) => `<p class="note ${a.severity === 'info' ? 'weather' : 'warn'}"><b>${esc(a.title)}.</b> ${esc(a.detail)}</p>`).join('')}
     ${r.scenicStops.length ? `<div class="strip">${r.scenicStops.map((s, k) => `<div class="hl">${photoSlot(s.lat, s.lon, s.name, 'views', 'hl-photo')}<span class="badge">${k + 1}</span><b>${esc(s.name)}</b></div>`).join('')}</div>` : ''}
+    ${stopsStrip(r, day, photoSlot)}
     <div class="row">
       <a class="btn" style="display:grid;place-content:center;text-decoration:none" href="${esc(r.handoff.googleMaps)}" target="_blank" rel="noopener">Google Maps</a>
       <button class="btn" data-action="gpx" data-route="${esc(r.id)}">GPX</button>
+      <button class="btn" data-action="share" data-day="${day}" data-route="${esc(r.id)}" aria-label="Share this drive">${icon('share', 16)} Share</button>
     </div>
   </div>`;
 }
@@ -294,8 +381,8 @@ function tripsView(): string {
   const list = state.trips;
   return `
     <header class="day-head">
-      <div><img class="wordmark" src="${import.meta.env.BASE_URL}wordmark.svg" alt="Panoramica" width="150" height="22" /><h1>My trips</h1></div>
-      <button class="btn link" data-action="back">Back to planner</button>
+      <div>${wordmark()}<h1>My trips</h1></div>
+      <div class="head-actions">${themeButton()}<button class="btn link" data-action="back">Back to planner</button></div>
     </header>
     ${list == null ? '<p class="muted">Loading…</p>' : list.length === 0 ? '<p class="muted">No saved journeys yet.</p>' : list.map((t) => `
       <div class="card">
@@ -381,6 +468,12 @@ panel.addEventListener('click', (ev) => {
     case 'remove-day': return set({ journey: removeDay(j, i), active: 0 });
     case 'save': return void save();
     case 'trips': return void openTrips();
+    case 'appearance': {
+      setAppearance(APPEARANCE_NEXT[appearance()]);
+      const b = panel.querySelector<HTMLButtonElement>('[data-action="appearance"]');
+      if (b) { b.outerHTML = themeButton(); panel.querySelector<HTMLButtonElement>('[data-action="appearance"]')?.focus(); }
+      return;
+    }
     case 'back': return set({ view: 'plan', error: null });
     case 'mode': return set({ view: el.dataset.v as 'plan' | 'explore', error: null });
     case 'explore-time': return set({ explore: { ...state.explore, minutes: Number(el.dataset.v), result: null } });
@@ -412,9 +505,41 @@ panel.addEventListener('click', (ev) => {
       api.deleteTrip(id).then(() => set({ trips: (state.trips ?? []).filter((t) => t.id !== id) })).catch((e) => set({ error: e.message }));
       return;
     }
+    case 'golden':
+      set({ journey: updateDay(j, i, { departAt: localInputValue(el.dataset.at!) }), active: i });
+      return void plan(i);
+    case 'add-stop': {
+      const d = j.days[i];
+      if (!d?.origin || !d.destination) return;
+      const stop = { lat: Number(el.dataset.lat), lon: Number(el.dataset.lon), label: el.dataset.name };
+      // Insert it in driving order among the stops already there (by distance from the start).
+      const from = d.origin;
+      const dist = (p: { lat: number; lon: number }) => (p.lat - from.lat) ** 2 + ((p.lon - from.lon) * Math.cos((from.lat * Math.PI) / 180)) ** 2;
+      const stops = [...(d.stops ?? []), stop].sort((a, b) => dist(a) - dist(b)).slice(0, 8);
+      set({ journey: updateDay(j, i, { stops }), active: i });
+      return void plan(i);
+    }
+    case 'share': return void share(i, el.dataset.route!);
     case 'place': return; // handled by input events
   }
 });
+
+async function share(i: number, routeId: string) {
+  const d = state.journey.days[i];
+  const r = d?.plan?.routes.find((x) => x.id === routeId);
+  if (!d?.origin || !d.destination || !r) return;
+  const loop = d.stops?.length && Math.abs(d.origin.lat - d.destination.lat) + Math.abs(d.origin.lon - d.destination.lon) < 0.005 ? d.stops[0] : null;
+  const title = shareTitle(d.origin, d.destination, loop);
+  const best = [...r.highlights].filter((h) => h.lat != null && h.name).sort((a, b) => ['viewpoint', 'hilltop_village', 'castle', 'cypress'].indexOf(b.type) - ['viewpoint', 'hilltop_village', 'castle', 'cypress'].indexOf(a.type))[0];
+  const at = best?.lat != null ? { lat: best.lat, lon: best.lon!, name: best.name } : routePhotoAt(r);
+  const p = (await api.photos(at.lat, at.lon, at.name).catch(() => []))[0];
+  const photo = p ? { url: p.url, credit: `${p.author} · ${p.license}` } : null;
+  const canvas = document.createElement('canvas');
+  await drawShareCard(canvas, { route: r, title, photo, wordmarkUrl: `${import.meta.env.BASE_URL}wordmark.svg` });
+  const url = `${location.origin}${location.pathname}${shareHash({ origin: d.origin, destination: d.destination, stops: d.stops ?? [], style: state.journey.style, interests: state.journey.interests, vehicle: state.journey.vehicle })}`;
+  const how = await shareCard(canvas, title, url);
+  if (how === 'downloaded') toast('Card saved, link copied');
+}
 
 panel.addEventListener('change', (ev) => {
   const el = ev.target as HTMLInputElement;
@@ -458,5 +583,14 @@ panel.addEventListener('focusout', (ev) => {
   if (el.dataset.action === 'place') setTimeout(() => panel.querySelector<HTMLElement>(`[data-suggest="${el.dataset.field}${el.dataset.day}"]`)?.setAttribute('hidden', ''), 150);
 });
 
+// Opened from a shared link: the same trip, planned fresh.
+const shared = parseShareHash(location.hash);
+if (shared) {
+  const journey = { ...newJourney(uuid()), ...(shared.style ? { style: shared.style } : {}), ...(shared.interests ? { interests: shared.interests } : {}), ...(shared.vehicle ? { vehicle: shared.vehicle } : {}) };
+  journey.days = [{ ...journey.days[0], origin: shared.origin, destination: shared.destination, stops: shared.stops }];
+  state.journey = journey;
+  history.replaceState(null, '', location.pathname + location.search);
+}
 render();
 syncMap();
+if (shared) void plan(0);

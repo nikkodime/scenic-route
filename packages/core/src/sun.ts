@@ -46,3 +46,22 @@ export function isGoldenHour(date: Date, lat: number, lon: number): boolean {
   const { elevation } = sunPosition(date, lat, lon);
   return elevation > -4 && elevation < 6;
 }
+
+/**
+ * When the sun drops to `elevation` degrees in the evening (or rises to it in the morning) on the UTC day of `date`.
+ * Golden light is strongest around +3° to +6°. Null when the sun never gets that high or low that day.
+ */
+export function sunAtElevation(date: Date, lat: number, lon: number, elevation: number, when: 'evening' | 'morning'): Date | null {
+  const t = sunTimes(date, lat, lon);
+  if (!t) return null;
+  const noon = new Date((t.sunrise.getTime() + t.sunset.getTime()) / 2);
+  if (sunPosition(noon, lat, lon).elevation < elevation) return null;
+  // Elevation falls monotonically from noon to sunset (rises from sunrise to noon): bisect.
+  let [lo, hi] = when === 'evening' ? [noon.getTime(), t.sunset.getTime()] : [t.sunrise.getTime(), noon.getTime()];
+  for (let i = 0; i < 30; i++) {
+    const mid = (lo + hi) / 2;
+    const above = sunPosition(new Date(mid), lat, lon).elevation > elevation;
+    if ((when === 'evening') === above) lo = mid; else hi = mid;
+  }
+  return new Date((lo + hi) / 2);
+}

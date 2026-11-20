@@ -60,7 +60,8 @@ export function customModel(opts: RouteOptions): CustomModel {
   return { priority, distance_influence, ...(areas.length ? { areas: { type: 'FeatureCollection', features: areas } } : {}) };
 }
 
-const ALPHA3: Record<string, string> = { AUT: 'AT', CHE: 'CH', CZE: 'CZ', SVK: 'SK', SVN: 'SI', HUN: 'HU', ROU: 'RO', BGR: 'BG', ITA: 'IT', FRA: 'FR', DEU: 'DE', HRV: 'HR', SMR: 'SM', VAT: 'VA', ESP: 'ES', PRT: 'PT', GRC: 'GR', GBR: 'GB' };
+const ALPHA3: Record<string, string> = { AUT: 'AT', CHE: 'CH', CZE: 'CZ', SVK: 'SK', SVN: 'SI', HUN: 'HU', ROU: 'RO', BGR: 'BG', ITA: 'IT', FRA: 'FR', DEU: 'DE', HRV: 'HR', SMR: 'SM', VAT: 'VA', ESP: 'ES', PRT: 'PT', GRC: 'GR', GBR: 'GB',
+  POL: 'PL', NOR: 'NO', IRL: 'IE', SRB: 'RS', MKD: 'MK', NLD: 'NL', BEL: 'BE', LUX: 'LU', DNK: 'DK', SWE: 'SE', MNE: 'ME', BIH: 'BA', ALB: 'AL', MCO: 'MC', LIE: 'LI', AND: 'AD' };
 
 type Interval = [number, number, string | boolean | number];
 
@@ -98,6 +99,10 @@ export function parseGhPath(path: GhPath): RoutedPath {
   };
   const motorwayKm = fastKm(0, line.length - 1);
   const unpavedKm = sumWhere('surface', (v) => UNPAVED.includes(v)) + sumWhere('road_class', (v) => v === 'TRACK');
+  // Where the first gravel starts, so the warning can be pinned on the map.
+  const firstUnpaved = [...(path.details?.surface ?? []).filter(([, , v]) => UNPAVED.includes(up(v))), ...(path.details?.road_class ?? []).filter(([, , v]) => up(v) === 'TRACK')]
+    .reduce((m, [a]) => Math.min(m, a), Infinity);
+  const unpavedAtKm = unpavedKm > 0 && Number.isFinite(firstUnpaved) ? segKm(0, firstUnpaved) : undefined;
   const tollKm = sumWhere('toll', (v) => v === 'ALL');
   const ferryKm = sumWhere('road_environment', (v) => v === 'FERRY');
   const urbanKm = sumWhere('urban_density', (v) => v === 'CITY');
@@ -123,7 +128,7 @@ export function parseGhPath(path: GhPath): RoutedPath {
     return step;
   });
 
-  return { line, km: path.distance / 1000, minutes: path.time / 60000, motorwayKm, unpavedKm, tollKm, ferryKm, urbanKm, motorwayKmByCountry, ...(steps.length ? { steps } : {}) };
+  return { line, km: path.distance / 1000, minutes: path.time / 60000, motorwayKm, unpavedKm, ...(unpavedAtKm != null ? { unpavedAtKm } : {}), tollKm, ferryKm, urbanKm, motorwayKmByCountry, ...(steps.length ? { steps } : {}) };
 }
 
 export class GraphHopperRouter implements Router {
