@@ -39,9 +39,9 @@ public enum RouteStyle: String, Codable, CaseIterable, Sendable, Identifiable {
     }
     public var blurb: String {
         switch self {
-        case .relaxed: "Nicer roads, barely any extra time."
+        case .relaxed: "Calm, easy roads, a few minutes more."
         case .scenic: "The beautiful way, within reason."
-        case .mostBeautiful: "Take your time; the drive is the day."
+        case .mostBeautiful: "The long way round, for the views."
         }
     }
 }

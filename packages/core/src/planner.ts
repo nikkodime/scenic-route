@@ -5,7 +5,7 @@
 import { distKm, encodePolyline, paddedBBox, pointInGeometry, resample, type LatLon } from './geo.ts';
 import { FEATURE_FAMILY, type ScenicFeature } from './features.ts';
 import { candidateWaypointSets, clusterSpots, corridorBBox, detourProbes, type Spot } from './candidates.ts';
-import { bestStretch, describe, reliefStats, scoreRoute, SCORE_MODEL, type RouteGeometry, type ScoredRoute, type SegmentSample } from './score.ts';
+import { bendiness, bestStretch, describe, reliefStats, scoreRoute, SCORE_MODEL, type RouteGeometry, type ScoredRoute, type SegmentSample } from './score.ts';
 import { rankRoutes, retraced } from './rank.ts';
 import { assessConditions, weatherSamplePoints, type HourlyForecast } from './conditions.ts';
 import { isBlocked, routeAdvisories, type Advisory, type Zone } from './advisories.ts';
@@ -18,22 +18,47 @@ import type { Interest, PlanRequest, PlanResponse, Preferences, RouteOption, Rou
 /** Longer than this as the crow flies is not one day's scenic drive (and usually a wrong start point). */
 export const MAX_DIRECT_KM = 900;
 
+export interface StyleRules {
+  /** Time budget: this share of the fastest drive, within min..max minutes. */
+  share: number; min: number; max: number;
+  /** Over-budget slack when the driver set no limit (0.1 = 10%). */
+  slack: number;
+  /** What one extra minute costs in ranking points. */
+  pointsPerMinute: number;
+  /** Points per km of scenery beyond what the fastest road already has: the amount of beauty, not only its average. */
+  pointsPerScenicKm: number;
+  /** Twisty roads tire: points lost per °/km of heading change above `twistyFrom` (hairpin stacks, white lanes). */
+  twistyFrom: number; pointsPerTwist: number;
+  /** "Most beautiful" is a real detour: routes under this share of the budget only show when nothing longer fits. */
+  minExtraShare: number;
+  /** Which order the routes are shown in: beauty first, or the best trade-off (time counted) first. */
+  order: 'beauty' | 'value';
+  strengths: number[];
+}
+
 /**
- * pointsPerScenicKm: how much the amount of beauty counts, not only its average. The score is a mean, so a long
- * day through Chianti and the Val d'Orcia can average the same as a short pretty hop; "Most beautiful" prefers
- * the long day.
+ * Three clearly different drives (field test, Nov 2026: Relaxed and Most beautiful came out nearly the same):
+ * - Relaxed: the calm, easy road. A small detour at most, gentle curves; time costs a lot.
+ * - Scenic: the beautiful way, within reason.
+ * - Most beautiful: the drive is the day. Goes the long way to take in more scenery, about double the drive.
  */
-export const STYLES: Record<RouteStyle, { share: number; min: number; max: number; pointsPerMinute: number; pointsPerScenicKm: number; strengths: number[] }> = {
-  relaxed: { share: 0.15, min: 10, max: 30, pointsPerMinute: 0.6, pointsPerScenicKm: 0, strengths: [1] },
-  scenic: { share: 0.4, min: 20, max: 90, pointsPerMinute: 0.15, pointsPerScenicKm: 0.03, strengths: [1, 2, 3] },
-  most_beautiful: { share: 0.8, min: 40, max: 180, pointsPerMinute: 0.03, pointsPerScenicKm: 0.15, strengths: [2, 3] },
+export const STYLES: Record<RouteStyle, StyleRules> = {
+  relaxed: { share: 0.3, min: 15, max: 40, slack: 0.5, pointsPerMinute: 0.6, pointsPerScenicKm: 0, twistyFrom: 140, pointsPerTwist: 0.2, minExtraShare: 0, order: 'value', strengths: [1] },
+  scenic: { share: 0.4, min: 20, max: 90, slack: 0.1, pointsPerMinute: 0.15, pointsPerScenicKm: 0.1, twistyFrom: 0, pointsPerTwist: 0, minExtraShare: 0, order: 'beauty', strengths: [1, 2, 3] },
+  most_beautiful: { share: 1, min: 40, max: 150, slack: 0.1, pointsPerMinute: 0, pointsPerScenicKm: 0.5, twistyFrom: 0, pointsPerTwist: 0, minExtraShare: 0.4, order: 'value', strengths: [2, 3] },
 };
 
 /** Km of scenery on a route: length weighted by how scenic it is (0..1). */
 export const scenicKm = (km: number, scenery: number) => (km * scenery) / 100;
 
-/** How beautiful a route is for this style, before time is counted: the score, plus the amount of scenery. */
-export const beautyFor = (style: RouteStyle, score: number, km: number, scenery: number) => score + STYLES[style].pointsPerScenicKm * scenicKm(km, scenery);
+/**
+ * How good a route is for this style, before time is counted: the score, plus the scenery it adds over the
+ * fastest road (Most beautiful), minus tiring twists (Relaxed). `bendsPerKm` is heading change in °/km.
+ */
+export function beautyFor(style: RouteStyle, score: number, km: number, scenery: number, baseScenicKm = 0, bendsPerKm = 0): number {
+  const s = STYLES[style];
+  return score + s.pointsPerScenicKm * Math.max(0, scenicKm(km, scenery) - baseScenicKm) - (s.pointsPerTwist ? s.pointsPerTwist * Math.max(0, bendsPerKm - s.twistyFrom) : 0);
+}
 
 /** Extra-time budget for a style, optionally capped by the driver. */
 export function budgetMinutes(style: RouteStyle, fastestMinutes: number, cap?: number): number {
@@ -144,6 +169,8 @@ export interface PlanOptions {
   timeZone?: string;
   log?: (msg: string, extra?: unknown) => void;
   features?: PlanFeatures;
+  /** Tuning hook: every scored candidate before ranking (scripts/compare-styles.ts). */
+  onCandidates?: (c: { source: string; km: number; minutes: number; motorwayKm?: number; unpavedKm?: number; urbanKm?: number; score: number; fit: number; parts: ScoredRoute['parts']; line: LatLon[]; highlights: string[] }[]) => void;
 }
 
 interface Candidate {
@@ -340,13 +367,23 @@ export async function planRoutes(req: PlanRequest, p: Providers, opts: PlanOptio
     warnings.push('Every route has a restriction; check the advisories before you drive.');
   }
 
+  opts.onCandidates?.(usable.map((r) => ({ source: r.source, km: r.path.km, minutes: r.minutes, motorwayKm: r.path.motorwayKm, unpavedKm: r.path.unpavedKm, urbanKm: r.path.urbanKm, score: r.scored.score, fit: r.fit, parts: r.scored.parts, line: r.line, highlights: r.scored.highlights.map((h) => h.name) })));
   const fastestMinutes = fastest.minutes;
   // An explicit time limit is a promise: no slack over it. The style budget may stretch by 10%.
-  const chosen = rankRoutes(usable.map((r) => ({ r, minutes: r.minutes, line: r.line, scored: { score: beautyFor(req.style, r.fit, r.path.km, r.scored.parts.scenery) } })), fastestMinutes, budget, req.maxRoutes, style.pointsPerMinute, req.extraMinutes != null ? 0 : 0.1).map((x) => x.r);
-  // Show the most beautiful first, ignoring time (that already decided which to keep); ties: quicker first.
-  // For "Most beautiful" the amount of scenery counts too, so the long day leads.
-  const beauty = (r: Evaluated) => beautyFor(req.style, r.scored.score, r.path.km, r.scored.parts.scenery);
-  const ranked = [...chosen].sort((a, b) => beauty(b) - beauty(a) || a.minutes - b.minutes);
+  const slack = req.extraMinutes != null ? 0 : style.slack;
+  const plain = evaluated.find((r) => r.source === 'fastest');
+  const baseScenicKm = plain ? scenicKm(plain.path.km, plain.scored.parts.scenery) : 0;
+  const twists = new Map(usable.map((r) => [r, style.pointsPerTwist ? bendiness(r.line) : 0]));
+  const value = (r: Evaluated, score: number) => beautyFor(req.style, score, r.path.km, r.scored.parts.scenery, baseScenicKm, twists.get(r));
+  // "Most beautiful" leaves the quick roads to the other styles, unless nothing longer fits.
+  const floor = style.minExtraShare * budget;
+  const fits = (r: Evaluated) => r.minutes - fastestMinutes <= budget * (1 + slack) + 0.5;
+  const candidatesForStyle = floor > 0 && usable.some((r) => fits(r) && r.minutes - fastestMinutes >= floor) ? usable.filter((r) => r.minutes - fastestMinutes >= floor) : usable;
+  const chosen = rankRoutes(candidatesForStyle.map((r) => ({ r, minutes: r.minutes, line: r.line, scored: { score: value(r, r.fit) } })), fastestMinutes, budget, req.maxRoutes, style.pointsPerMinute, slack).map((x) => x.r);
+  // Scenic shows the most beautiful first, ignoring time (that already decided which to keep); ties: quicker first.
+  // Relaxed shows the best easy drive first (time counted); Most beautiful the one with the most scenery.
+  const shown = (r: Evaluated) => value(r, r.scored.score) - (style.order === 'value' ? style.pointsPerMinute * Math.max(0, r.minutes - fastestMinutes) : 0);
+  const ranked = [...chosen].sort((a, b) => shown(b) - shown(a) || a.minutes - b.minutes);
   const best = ranked[0] ?? null;
 
   // 6. Weather and light for the chosen routes: one batched forecast call.

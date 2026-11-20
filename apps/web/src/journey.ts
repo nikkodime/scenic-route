@@ -31,9 +31,9 @@ export const LIMIT_CHOICES = [null, 15, 30, 60, 120] as const;
 
 export const STYLE_LABELS: Record<RouteStyle, string> = { relaxed: 'Relaxed', scenic: 'Scenic', most_beautiful: 'Most beautiful' };
 export const STYLE_BLURBS: Record<RouteStyle, string> = {
-  relaxed: 'Nicer roads, barely any extra time.',
+  relaxed: 'Calm, easy roads, a few minutes more.',
   scenic: 'The beautiful way, within reason.',
-  most_beautiful: 'Take your time; the drive is the day.',
+  most_beautiful: 'The long way round, for the views.',
 };
 export const INTEREST_LABELS: Record<Interest, string> = {
   views: 'Views', heritage: 'Hill towns', water: 'Lakes & coast', mountains: 'Mountains & passes', countryside: 'Vineyards & cypresses', quiet: 'Quiet roads',
